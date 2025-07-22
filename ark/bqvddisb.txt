@@ -1,0 +1,622 @@
+V00000TIPO RECORD                                       256
+V00003ORDINANTE                                         260
+V00008DATA BONIFICO                                     264
+V00016PROGRESSIVO DELEGA                                272
+V00022PROGRESSIVO TRASMISSIONE                          276
+V00024TIPO INVIO                                        280
+V00025PROGRESSIVO INVIO CORREZIONE/ANNULLAMENTO         284
+V00027IDENTIFICATIVO FILE                               288
+V00047IDENTIFICATIVO FILE ORIGINARIO                    292
+V00067DATA CREAZIONE FILE                               296
+V00075DATA INVIO FILE                                   300
+V00083CODICE DIVISA OPERAZIONE                          304
+V00086MITTENTE                                          308
+V00091RICEVENTE                                         312
+V00096RELEASE                                           316
+V00099TIPO ENTE                                         320
+V00100FILLER                                            000
+V00998TIPO RECORD SUCCESSIVO                            268
+V01000TIPO RECORD                                       256
+V01003ORDINANTE                                         260
+V01008DATA BONIFICO                                     264
+V01016PROGRESSIVO DELEGA                                272
+V01022PROGRESSIVO RIGA                                  276
+V01025SIGLA PROVINCIA                                   280
+V01027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V01029CODICE CONCESSIONE                                288
+V01032CODICE FISCALE                                    292
+V01048FLAG ERRORE CODICE CONCESSIONE                    296
+V01049FLAG ERRORE CODICE FISCALE                        300
+V01050DATA RISCOSSIONE                                  304
+V01058CODICE TRIBUTO                                    308
+V01062FLAG ERRORE CODICE TRIBUTO                        312
+V01063RIFERIMENTI TRIBUTO                               316
+V01071FLAG ERRORE RIFERIMENTO TRIBUTO                   320
+V01072CODICE DIVISA OPERAZIONE                          324
+V01075IMPORTO PAGAMENTI                                 328
+V01090IMPORTO RIMBORSI                                  332
+V01105CODICE UFFICIO                                    336
+V01108FLAG ERRORE CODICE UFFICIO                        340
+V01109NUMERO DI RIFERIMENTO                             344
+V01120FLAG ERRORE NUMERO DI RIFERIMENTO                 348
+V01121FLAG AGEVOLAZIONE                                 352
+V01122FILLER                                            000
+V01998TIPO RECORD SUCCESSIVO                            268
+V02000TIPO RECORD                                       256
+V02003ORDINANTE                                         260
+V02008DATA BONIFICO                                     264
+V02016PROGRESSIVO DELEGA                                272
+V02022PROGRESSIVO RIGA                                  276
+V02025SIGLA PROVINCIA                                   280
+V02027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V02029CODICE CONCESSIONE                                288
+V02032CODICE FISCALE                                    292
+V02048FLAG ERRORE CODICE CONCESSIONE                    296
+V02049FLAG ERRORE CODICE FISCALE                        300
+V02050DATA RISCOSSIONE                                  304
+V02058CODICE SEDE                                       308
+V02062FLAG ERRORE CODICE SEDE                           312
+V02063CAUSALE CONTRIBUTO                                316
+V02067FLAG ERRORE CAUSALE CONTRIBUTO                    320
+V02068MATRICOLA INPS/CODICE INPS/FILIALE AZIENDA        324
+V02085FLAG ERRORE MATR. INPS/CODICE INPS/FIL.AZ.        328
+V02086INIZIO RIFERIMENTO                                332
+V02092FLAG ERRORE INIZIO RIFERIMENTO                    336
+V02093FINE RIFERIMENTO                                  340
+V02099FLAG ERRORE FINE RIFERIMENTO                      344
+V02100CODICE DIVISA OPERAZIONE                          348
+V02103FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   508
+V02119IMPORTO PAGAMENTI                                 352
+V02134IMPORTO RIMBORSI                                  356
+V02149FILLER                                            000
+V02998TIPO RECORD SUCCESSIVO                            268
+V03000TIPO RECORD                                       256
+V03003ORDINANTE                                         260
+V03008DATA BONIFICO                                     264
+V03016PROGRESSIVO DELEGA                                272
+V03022PROGRESSIVO RIGA                                  276
+V03025SIGLA PROVINCIA                                   280
+V03027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V03029CODICE CONCESSIONE                                288
+V03032CODICE FISCALE                                    292
+V03048FLAG ERRORE CODICE CONCESSIONE                    296
+V03049FLAG ERRORE CODICE FISCALE                        300
+V03050DATA RISCOSSIONE                                  304
+V03058CODICE REGIONE                                    308
+V03060FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   508
+V03061CODICE TRIBUTO                                    312
+V03065FLAG ERRORE CODICE TRIBUTO                        316
+V03066PERIODO RIFERIMENTO                               320
+V03074FLAG ERRORE PERIODO RIFERIMENTO                   324
+V03075CODICE DIVISA OPERAZIONE                          328
+V03078IMPORTO PAGAMENTI                                 332
+V03093IMPORTO RIMBORSI                                  336
+V03108FILLER                                            000
+V03998TIPO RECORD SUCCESSIVO                            268
+V04000TIPO RECORD                                       256
+V04003ORDINANTE                                         260
+V04008DATA BONIFICO                                     264
+V04016PROGRESSIVO DELEGA                                272
+V04022PROGRESSIVO RIGA                                  276
+V04025SIGLA PROVINCIA                                   280
+V04027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V04029CODICE CONCESSIONE                                288
+V04032CODICE FISCALE                                    292
+V04048FLAG ERRORE CODICE CONCESSIONE                    296
+V04049FLAG ERRORE CODICE FISCALE                        300
+V04050DATA RISCOSSIONE                                  304
+V04058CODICE ENTE                                       308
+V04062FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   508
+V04063CODICE TRIBUTO                                    312
+V04067FLAG ERRORE CODICE TRIBUTO                        316
+V04068PERIODO DI RIFERIMENTO                            320
+V04076FLAG ERRORE PERIODO DI RIFERIMENTO                324
+V04077CODICE DIVISA OPERAZIONE                          328
+V04080IMPORTO PAGAMENTI                                 332
+V04095IMPORTO RIMBORSI                                  336
+V04110RAVVEDIMENTO                                      340
+V04111IMMOBILI VARIATI                                  344
+V04112ACCONTO                                           348
+V04113SALDO                                             352
+V04114NUMERO FABBRICATI                                 356
+V04117FLAG ERRORE DATI ICI                              360
+V04118DETRAZIONE ICI                                    364
+V04133FLAG ERRORE DETRAZIONE ICI                        368
+V04134IDENTIF. OPERAZIONE                               372
+V04152FILLER                                            000
+V04998TIPO RECORD SUCCESSIVO                            268
+V05000TIPO RECORD                                       256
+V05003ORDINANTE                                         260
+V05008DATA BONIFICO                                     264
+V05016PROGRESSIVO DELEGA                                272
+V05022PROGRESSIVO RIGA                                  276
+V05025SIGLA PROVINCIA                                   280
+V05027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V05029CODICE CONCESSIONE                                288
+V05032CODICE FISCALE                                    292
+V05048FLAG ERRORE CODICE CONCESSIONE                    296
+V05049FLAG ERRORE CODICE FISCALE                        300
+V05050DATA RISCOSSIONE                                  304
+V05058CODICE SEDE                                       308
+V05063FLAG ERRORE CODICE SEDE                           312
+V05064NUMERO POSIZIONE ASSICURATIVA                     316
+V05072CODICE CONTROLLO NUMERO POSIZIONE ASSICURATIVA    320
+V05074FLAG ERRORE POSIZIONE ASSICURATIVA                324
+V05075NUMERO RIFERIMENTO                                328
+V05081FLAG ERRORE NUMERO RIFERIMENTO                    332
+V05082CAUSALE                                           336
+V05083FLAG ERRORE CAUSALE                               340
+V05084CODICE DIVISA OPERAZIONE                          344
+V05087IMPORTO PAGAMENTI                                 348
+V05102IMPORTO RIMBORSI                                  352
+V05117FILLER                                            000
+V05998TIPO RECORD SUCCESSIVO                            268
+V06000TIPO RECORD                                       256
+V06003ORDINANTE                                         260
+V06008DATA BONIFICO                                     264
+V06016PROGRESSIVO DELEGA                                272
+V06022PROGRESSIVO RIGA                                  276
+V06025SIGLA PROVINCIA                                   280
+V06027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V06029CODICE CONCESSIONE                                288
+V06032CODICE FISCALE                                    292
+V06048FLAG ERRORE CODICE CONCESSIONE                    296
+V06049FLAG ERRORE CODICE FISCALE                        300
+V06050DATA RISCOSSIONE                                  304
+V06058CODICE ENTE                                       308
+V06062CODICE SEDE                                       312
+V06067FLAG ERRORE CODICE SEDE                           316
+V06068CAUSALE CONTRIBUTO                                320
+V06072FLAG ERRORE CAUSALE CONTRIBUTO                    324
+V06073CODICE POSIZIONE ASSICURATIVA                     328
+V06082FLAG ERRORE CODICE POSIZIONE ASSICURATIVA         332
+V06083INIZIO RIFERIMENTO                                336
+V06089FLAG ERRORE INIZIO RIFERIMENTO                    340
+V06090FINE RIFERIMENTO                                  344
+V06096FLAG ERRORE FINE RIFERIMENTO                      348
+V06097CODICE DIVISA OPERAZIONE                          352
+V06100IMPORTO PAGAMENTI                                 356
+V06115IMPORTO RIMBORSI                                  360
+V06130FILLER                                            000
+V06998TIPO RECORD SUCCESSIVO                            268
+V07000TIPO RECORD                                       256
+V07003ORDINANTE                                         260
+V07008DATA BONIFICO                                     264
+V07016PROGRESSIVO DELEGA                                272
+V07022PROGRESSIVO RIGA                                  276
+V07025SIGLA PROVINCIA                                   280
+V07027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V07029CODICE CONCESSIONE                                288
+V07032CODICE FISCALE                                    292
+V07048FLAG ERRORE CODICE CONCESSIONE                    296
+V07049FLAG ERRORE CODICE FISCALE                        300
+V07050DATA RISCOSSIONE                                  304
+V07058CODICE REGIONE                                    308
+V07060FLAG ERRORE CODICE REGIONE                        312
+V07061CODICE TRIBUTO                                    316
+V07065FLAG ERRORE CODICE TRIBUTO                        320
+V07066CODICE DITTA                                      324
+V07075FLAG ERRORE CODICE DITTA                          328
+V07076CODICE DIVISA OPERAZIONE                          332
+V07079IMPORTO PAGAMENTI                                 336
+V07094IMPORTO RIMBORSI                                  340
+V07109FILLER                                            000
+V07998TIPO RECORD SUCCESSIVO                            268
+V12000TIPO RECORD                                       256
+V12003ORDINANTE                                         260
+V12008DATA BONIFICO                                     264
+V12016PROGRESSIVO DELEGA                                272
+V12022PROGRESSIVO RIGA                                  276
+V12025SIGLA PROVINCIA                                   280
+V12027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V12029FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   496
+V12032CODICE FISCALE                                    288
+V12048FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   500
+V12049FLAG ERRORE CODICE FISCALE                        292
+V12050DATA RISCOSSIONE                                  296
+V12058TIPO                                              300
+V12059FLAG ERRORE TIPO                                  304
+V12060ELEMENTI IDENTIFICATIVI                           308
+V12077FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   504
+V12078CODICE TRIBUTO                                    312
+V12082FLAG ERRORE CODICE TRIBUTO                        316
+V12083RIFERIMENTO TRIBUTO                               320
+V12087FLAG ERRORE RIFERIMENTO TRIBUTO                   324
+V12088CODICE DIVISA OPERAZIONE                          328
+V12091IMPORTO PAGAMENTI                                 332
+V12106IMPORTO RIMBORSI                                  336
+V12121CODICE UFFICIO                                    340
+V12124FLAG ERRORE CODICE UFFICIO                        344
+V12125CODICE ATTO                                       348
+V12136FLAG ERRORE CODICE ATTO                           352
+V12137FILLER                                            000
+V12998TIPO RECORD SUCCESSIVO                            268
+V14000TIPO RECORD                                       256
+V14003ORDINANTE                                         260
+V14008DATA BONIFICO                                     264
+V14016PROGRESSIVO DELEGA                                272
+V14022PROGRESSIVO RIGA                                  276
+V14025SIGLA PROVINCIA                                   280
+V14027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V14029CODICE CONCESSIONE                                288
+V14032CODICE FISCALE                                    292
+V14048FLAG ERRORE CODICE CONCESSIONE                    296
+V14049COGNOME SOGGETTO INDICATO SU DELEGA               300
+V14073NOME SOGGETTO INDICATO SU DELEGA                  304
+V14093SESSO                                             308
+V14094DATA DI NASCITA                                   312
+V14102COMUNE DI NASCITA                                 316
+V14127PROVINCIA DI NASCITA                              320
+V14129FILLER                                            000
+V14998TIPO RECORD SUCCESSIVO                            268
+V15000TIPO RECORD                                       256
+V15003ORDINANTE                                         260
+V15008DATA BONIFICO                                     264
+V15016PROGRESSIVO DELEGA                                272
+V15022PROGRESSIVO RIGA                                  276
+V15025SIGLA PROVINCIA                                   280
+V15027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V15029CODICE CONCESSIONE                                288
+V15032CODICE FISCALE                                    292
+V15048FLAG ERRORE CODICE CONCESSIONE                    296
+V15049RAGIONE SOCIALE                                   300
+V15104COMUNE DOMICILIO FISCALE                          304
+V15129PROVINCIA DOMICILIO FISCALE                       308
+V15131FILLER                                            000
+V15998TIPO RECORD SUCCESSIVO                            268
+V20000TIPO RECORD                                       256
+V20003ORDINANTE                                         260
+V20008DATA BONIFICO                                     264
+V20016PROGRESSIVO DELEGA                                272
+V20022PROGRESSIVO RIGA                                  276
+V20025SIGLA PROVINCIA                                   280
+V20027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V20029CODICE CONCESSIONE                                288
+V20032CODICE FISCALE                                    292
+V20048FLAG ERRORE CODICE CONCESSIONE                    296
+V20049FLAG ERRORE CODICE FISCALE                        300
+V20050DATA RISCOSSIONE                                  304
+V20058CAB DIPENDENZA DELEGATA                           308
+V20063NUMERO RIFERIMENTO                                312
+V20074CODICE CONTROLLO NUMERO DI RIFERIMENTO            316
+V20076CODICE DIVISA OPERAZIONE                          320
+V20079IMPORTO PAGAMENTI                                 324
+V20094ESITO PAGAMENTO                                   328
+V20095IDENTIFICATIVO PAGAMENTO                          332
+V20113FILLER                                            000
+V20998TIPO RECORD SUCCESSIVO                            268
+V36000TIPO RECORD                                       256
+V36003ORDINANTE                                         260
+V36008DATA BONIFICO                                     264
+V36016PROGRESSIVO DELEGA                                272
+V36022PROGRESSIVO RIGA                                  276
+V36025SIGLA PROVINCIA                                   280
+V36027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V36029CODICE CONCESSIONE                                288
+V36032CODICE FISCALE                                    292
+V36048FLAG ERRORE CODICE CONCESSIONE                    296
+V36049FLAG ERRORE CODICE FISCALE                        300
+V36050DATA RISCOSSIONE                                  304
+V36058CAB DIPENDENZA DELEGATA                           308
+V36063CODICE DIVISA OPERAZIONE                          312
+V36066SEGNO SEZIONE ERARIO                              316
+V36067SALDO SEZIONE ERARIO                              320
+V36082SEGNO SEZIONE INPS                                324
+V36083SALDO SEZIONE INPS                                328
+V36098SEGNO REGIONE                                     332
+V36099SALDO REGIONE                                     336
+V36114SEGNO ENTE LOCALE                                 340
+V36115SALDO ENTE LOCALE                                 344
+V36130SEGNO INAIL                                       348
+V36131SALDO INAIL                                       352
+V36146CODICE ALTRO ENTE                                 356
+V36150SEGNO ALTRO ENTE                                  360
+V36151SALDO ALTRO ENTE                                  364
+V36166SEGNO ACCISE                                      368
+V36167SALDO ACCISE                                      372
+V36182SALDO FINALE                                      376
+V36197NUMERO RECORD RIGHE DETTAGLIO ERARIO              380
+V36200NUMERO RECORD RIGHE DETTAGLIO INPS                384
+V36203NUMERO RECORD RIGHE DETTAGLIO REGIONI             388
+V36206NUMERO RECORD RIGHE DETTAGLIO ENTI LOCALI         392
+V36209NUMERO RECORD RIGHE DETTAGLIO INAIL               396
+V36212NUMERO RECORD RIGHE DETTAGLIO ALTRI ENTI          400
+V36215NUMERO RECORD RIGHE DETTAGLIO ACCISE              404
+V36218MODALITA' PAGAMENTO                               408
+V36219MODALITA' CONFERIMENTO DELEGA                     412
+V36220FLAG TARDIVITA'                                   420
+V36221FIRMATARIO                                        424
+V36222FLAG ESERCIZIO A CAVALLO                          428
+V36223CODICE ABI BANCA DELEGATA                         432
+V36228ESITO PAGAMENTO                                   436
+V36229SECONDO CODICE FISCALE                            442
+V36245FLAG ERRORE SECONDO CODICE FISCALE                446
+V36246CODICE IDENTIFICATIVO                             450
+V36248PROGRESSIVO IUD                                   454
+V36255TIPO MODELLO                                      458
+V36256FILLER - DISPLACEMENT FITTIZIO                    462
+V36997FILLER                                            000
+V36998TIPO RECORD SUCCESSIVO                            268
+V36999IMPORTO RIMBORSI DELEGA                           416
+V37000TIPO RECORD                                       256
+V37003ORDINANTE                                         260
+V37008DATA BONIFICO                                     264
+V37016PROGRESSIVO DELEGA                                272
+V37022PROGRESSIVO RIGA                                  276
+V37025SIGLA PROVINCIA                                   280
+V37027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V37029FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   496
+V37040CODICE DIVISA OPERAZIONE                          288
+V37043FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   500
+V37106NUMERO DELEGHE ERARIO                             292
+V37112NUMERO DELEGHE SENZA ERARIO                       296
+V37118FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   504
+V37132SALDO TOTALE                                      300
+V37147FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   508
+V37163SEGNO SEZIONI DIVERSE DA ERARIO                   304
+V37164SALDO SEZIONI DIVERSE DA ERARIO                   308
+V37179SEGNO SEZIONI ERARIO                              312
+V37180SALDO SEZIONI ERARIO                              316
+V37195FILLER                                            000
+V37998TIPO RECORD SUCCESSIVO                            268
+V38000TIPO RECORD                                       256
+V38003ORDINANTE                                         260
+V38008DATA BONIFICO                                     264
+V38016PROGRESSIVO DELEGA                                272
+V38022PROGRESSIVO RIGA                                  276
+V38025SIGLA PROVINCIA                                   280
+V38027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V38029DATA BONIFICO ANTICIPO/COMPENSATIVO               288
+V38037CODICE RIFERIMENTO OPERAZIONE                     292
+V38048BANCA MITTENTE BONIFICO                           296
+V38053CODICE DIVISA OPERAZIONE                          300
+V38056IMPORTO BONIFICO                                  304
+V38071IMPORTO COMMISSIONI TRATTENUTE                    308
+V38086IMPORTO RESIDUO COMMISSIONI SPETTANZA             312
+V38101IMPORTO BONIFICI ANTICIPI/COMPENSATIVI            316
+V38116NUMERO BONIFICI ANTICIPI/COMPENSATIVI             320
+V38118FLAG BONIFICO                                     325
+V38119IMPORTO PIGNORATO                                 329
+V38134IMPORTO REVOCA DI  PIGNORAMENTO                   333
+V38149IMPORTO REVOCA DI SGRAVI                          337
+V38164FLAG ANTICIPO                                     341
+V38165IMPORTO ANTICIPO                                  345
+V38180IMPORTO INTERESSI ANTICIPO TRATTENUTI             349
+V38195IMPORTO INTERESSI ANTICIPO RESIDUI                353
+V38210FLAG CAUSALE IMPORTO NON VERSATO                  357
+V38211IMPORTO DA RECUPERARE                             361
+V38226IMPORTO ANTICIPO I24                              376
+V38241FILLER                                            000
+V38998TIPO RECORD SUCCESSIVO                            268
+V49000TIPO RECORD                                       256
+V49003ORDINANTE                                         260
+V49008DATA BONIFICO                                     264
+V49016PROGRESSIVO DELEGA                                272
+V49022PROGRESSIVO RIGA                                  276
+V49025SIGLA PROVINCIA                                   280
+V49027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V49029CODICE CONCESSIONE                                288
+V49032CODICE FISCALE                                    292
+V49048FLAG ERRORE CODICE CONCESSIONE                    296
+V49049FLAG ERRORE CODICE FISCALE                        300
+V49050DATA RISCOSSIONE                                  304
+V49058CAB DIPENDENZA DELEGATA                           308
+V49063CODICE DIVISA OPERAZIONE                          312
+V49066SEGNO SEZIONE ERARIO                              316
+V49067SALDO SEZIONE ERARIO                              320
+V49082SEGNO SEZIONE INPS                                324
+V49083SALDO SEZIONE INPS                                328
+V49098SEGNO SEZIONE REGIONE                             332
+V49099SALDO REGIONE                                     336
+V49114SEGNO SEZIONE ENTI LOCALI                         340
+V49115SALDO SEZIONE ENTI LOCALI                         344
+V49130SEGNO SEZIONE INAIL                               348
+V49131SALDO SEZIONE INAIL                               352
+V49146CODICE ALTRO ENTE                                 356
+V49150SEGNO ALTRO ENTE                                  360
+V49151SALDO ALTRO ENTE                                  364
+V49166SEGNO ACCISE                                      368
+V49167SALDO ACCISE                                      372
+V49182SALDO FINALE DELEGA                               376
+V49197NUMERO RECORD RIGHE DETTAGLIO ERARIO              380
+V49200NUMERO RECORD RIGHE DETTAGLIO INPS                384
+V49203NUMERO RECORD RIGHE DETTAGLIO REGIONI             388
+V49206NUMERO RECORD RIGHE DETTAGLIO ENTI LOCALI         392
+V49209NUMERO RECORD RIGHE DETTAGLIO INAIL               396
+V49212NUMERO RECORD RIGHE DETTAGLIO ALTRI ENTI          400
+V49215NUMERO RECORD RIGHE DETTAGLIO ACCISE              404
+V49218MODALITA' PAGAMENTO                               408
+V49219CAUSALE DI ANNULLAMENTO                           412
+V49220DATA BONIFICO DELEGA DA ANNULLARE                 416
+V49228DATA BONIFICO RENDICONTAZIONE                     420
+V49236BANCA TRASSATA/EMITTENTE                          424
+V49241CAB DIPENDENZA TRASSATA/EMITTENTE                 428
+V49246NUMERO ASSEGNO                                    432
+V49888FILLER                                            000
+V49998TIPO RECORD SUCCESSIVO                            268
+V59000TIPO RECORD                                       256
+V59003ORDINANTE                                         260
+V59008DATA BONIFICO                                     264
+V59016PROGRESSIVO DELEGA                                272
+V59022PROGRESSIVO RIGA                                  276
+V59025SIGLA PROVINCIA                                   280
+V59027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V59029CODICE CONCESSIONE                                288
+V59032CODICE FISCALE                                    292
+V59048FLAG ERRORE CODICE CONCESSIONE                    296
+V59049FLAG ERRORE CODICE FISCALE                        300
+V59050DATA RISCOSSIONE                                  304
+V59058CAB DIPENDENZA DELEGATA                           308
+V59063CODICE DIVISA OPERAZIONE                          312
+V59066SEGNO SEZIONE ERARIO                              316
+V59067SALDO SEZIONE ERARIO                              320
+V59082SEGNO SEZIONE INPS                                324
+V59083SALDO SEZIONE INPS                                328
+V59098SEGNO SEZIONE REGIONE                             332
+V59099SALDO REGIONE                                     336
+V59114SEGNO SEZIONE ENTI LOCALI                         340
+V59115SALDO SEZIONE ENTI LOCALI                         344
+V59130SEGNO SEZIONE INAIL                               348
+V59131SALDO SEZIONE INAIL                               352
+V59146CODICE ALTRO ENTE                                 356
+V59150SEGNO ALTRO ENTE                                  360
+V59151SALDO ALTRO ENTE                                  364
+V59166SEGNO ACCISE                                      368
+V59167SALDO ACCISE                                      372
+V59182SALDO FINALE DELEGA                               376
+V59197NUMERO RECORD RIGHE DETTAGLIO ERARIO              380
+V59200NUMERO RECORD RIGHE DETTAGLIO INPS                384
+V59203NUMERO RECORD RIGHE DETTAGLIO REGIONI             388
+V59206NUMERO RECORD RIGHE DETTAGLIO ENTI LOCALI         392
+V59209NUMERO RECORD RIGHE DETTAGLIO INAIL               396
+V59212NUMERO RECORD RIGHE DETTAGLIO ALTRI ENTI          400
+V59215NUMERO RECORD RIGHE DETTAGLIO ACCISE              404
+V59218MODALITA' PAGAMENTO                               408
+V59219CAUSALE DI ANNULLAMENTO                           412
+V59220DATA BONIFICO DELEGA DA ANNULLARE                 416
+V59228DATA BONIFICO RENDICONTAZIONE                     420
+V59236NUMERO RIFERIMENTO                                436
+V59247CODICE CONTROLLO NUMERO RIFERIMENTO               440
+V59249FILLER                                            000
+V59998TIPO RECORD SUCCESSIVO                            268
+V69000TIPO RECORD                                       256
+V69003ORDINANTE                                         260
+V69008DATA BONIFICO                                     264
+V69016PROGRESSIVO DELEGA                                272
+V69022PROGRESSIVO RIGA                                  276
+V69025SIGLA PROVINCIA                                   280
+V69027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V69029CODICE CONCESSIONE                                288
+V69032CODICE FISCALE                                    292
+V69048FLAG ERRORE CODICE CONCESSIONE                    296
+V69049FLAG ERRORE CODICE FISCALE                        300
+V69050DATA RISCOSSIONE                                  304
+V69058CAB DIPENDENZA DELEGATA                           308
+V69063CODICE DIVISA OPERAZIONE                          312
+V69066SEGNO SEZIONE ERARIO                              316
+V69067SALDO SEZIONE ERARIO                              320
+V69082SEGNO SEZIONE INPS                                324
+V69083SALDO SEZIONE INPS                                328
+V69098SEGNO SEZIONE REGIONE                             332
+V69099SALDO REGIONE                                     336
+V69114SEGNO SEZIONE ENTI LOCALI                         340
+V69115SALDO SEZIONE ENTI LOCALI                         344
+V69130SEGNO SEZIONE INAIL                               348
+V69131SALDO SEZIONE INAIL                               352
+V69146CODICE ALTRO ENTE                                 356
+V69150SEGNO ALTRO ENTE                                  360
+V69151SALDO ALTRO ENTE                                  364
+V69166SEGNO ACCISE                                      368
+V69167SALDO ACCISE                                      372
+V69182SALDO FINALE DELEGA                               376
+V69197NUMERO RECORD RIGHE DETTAGLIO ERARIO              380
+V69200NUMERO RECORD RIGHE DETTAGLIO INPS                384
+V69203NUMERO RECORD RIGHE DETTAGLIO REGIONI             388
+V69206NUMERO RECORD RIGHE DETTAGLIO ENTI LOCALI         392
+V69209NUMERO RECORD RIGHE DETTAGLIO INAIL               396
+V69212NUMERO RECORD RIGHE DETTAGLIO ALTRI ENTI          400
+V69215NUMERO RECORD RIGHE DETTAGLIO ACCISE              404
+V69218MODALITA' PAGAMENTO                               408
+V69219CAUSALE DI ANNULLAMENTO                           412
+V69220DATA BONIFICO DELEGA DA ANNULLARE                 416
+V69228DATA BONIFICO RENDICONTAZIONE                     420
+V69236IDENTIFICATIVO PAGAMENTO                          444
+V69254FILLER                                            000
+V69998TIPO RECORD SUCCESSIVO                            268
+V77000TIPO RECORD                                       256
+V77003ORDINANTE                                         260
+V77008DATA BONIFICO                                     264
+V77016PROGRESSIVO DELEGA                                272
+V77022PROGRESSIVO RIGA                                  276
+V77025SIGLA PROVINCIA                                   280
+V77027PROGRESSIVO ACCREDITAMENTO/BONIFICO               284
+V77029FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   288
+V77032CODICE FISCALE                                    292
+V77048FILLER-IL DISP. DEVE ESSERE IN POSIZIONE LIBERA   296
+V77049FLAG ERRORE CODICE FISCALE                        300
+V77050DATA RISCOSSIONE                                  304
+V77058CODICE ENTE                                       344
+V77060CODICE PROVINCIA                                  308
+V77062FLAG ERRORE CODICE PROVINCIA                      312
+V77063CODICE TRIBUTO                                    316
+V77067FLAG ERRORE CODICE TRIBUTO                        320
+V77068CODICE IDENTIFICATIVO                             348
+V77082FLAG ERRORE CODICE IDENTIFICATIVO                 352
+V77083RIFERIMENTO TRIBUTO                               356
+V77089FLAG ERRORE RIFERIMENTO TRIBUTO                   360
+V77090CODICE DIVISA OPERAZIONE                          332
+V77093IMPORTO A DEBITO                                  336
+V77108IMPORTO A CREDITO                                 340
+V77123CODICE UFFICIO                                    364
+V77126FLAG ERRORE CODICE UFFICIO                        368
+V77127CODICE ATTO                                       372
+V77138FLAG ERRORE CODICE ATTO                           376
+V77139RATEAZIONE                                        380
+V77143FLAG ERRORE RATEAZIONE                            384
+V77144FILLER                                            000
+V77998TIPO RECORD SUCCESSIVO                            268
+V98000TIPO RECORD                                       256
+V98003ORDINANTE                                         260
+V98008DATA BONIFICO                                     264
+V98016PROGRESSIVO DELEGA                                272
+V98022PROGRESSIVO TRASMISIONE                           276
+V98024TIPO INVIO                                        280
+V98025PROGRESSIVO INVIO CORREZIONE                      284
+V98027IDENTIFICATIVO FILE                               288
+V98047IDENTIFICATIVO FILE ORIGINARIO                    292
+V98067DATA CREAZIONE FILE                               296
+V98075DATA INVIO FILE                                   300
+V98083CODICE DIVISA OPERAZIONE                          304
+V98086N.RECORD V01                                      308
+V98092N.RECORD V02                                      312
+V98098N.RECORD V03                                      316
+V98104N.RECORD V04                                      320
+V98110N.RECORD V05                                      324
+V98116N.RECORD V06                                      328
+V98122N.RECORD V07                                      332
+V98128N.RECORD V14                                      336
+V98134N.RECORD V15                                      340
+V98140N.RECORD V20                                      344
+V98146N.RECORD V36                                      348
+V98152N.RECORD V37                                      352
+V98158N.RECORD V38                                      356
+V98164N.RECORD V49                                      360
+V98176FILLER - DISPLACEMENT FITTIZIO                    508
+V98240TOTALE RECORD                                     368
+V98246MITTENTE                                          372
+V98251RICEVENTE                                         376
+V98888FILLER - DISPLACEMENT FITTIZIO                    000
+V99000TIPO RECORD                                       256
+V99003ORDINANTE                                         260
+V99008DATA BONIFICO                                     264
+V99016PROGRESSIVO DELEGA                                272
+V99022PROGRESSIVO TRASMISIONE                           276
+V99024TIPO INVIO                                        280
+V99025PROGRESSIVO INVIO CORREZIONE                      284
+V99027IDENTIFICATIVO FILE                               288
+V99047IDENTIFICATIVO FILE ORIGINARIO                    292
+V99067DATA CREAZIONE FILE                               296
+V99075DATA INVIO FILE                                   300
+V99083CODICE DIVISA OPERAZIONE                          304
+V99086N.RECORD V01                                      308
+V99092N.RECORD V02                                      312
+V99098N.RECORD V03                                      316
+V99104N.RECORD V04                                      320
+V99110N.RECORD V05                                      324
+V99116N.RECORD V06                                      328
+V99122N.RECORD V07                                      332
+V99128N.RECORD V12                                      336
+V99134N.RECORD V14                                      340
+V99140N.RECORD V15                                      344
+V99146N.RECORD V20                                      348
+V99152N.RECORD V36                                      352
+V99158N.RECORD V37                                      356
+V99164N.RECORD V38                                      360
+V99170N.RECORD V49                                      364
+V99176FILLER - DISPLACEMENT FITTIZIO                    508
+V99240TOTALE RECORD                                     368
+V99246MITTENTE                                          372
+V99251RICEVENTE                                         376
+V99255PRESENZA DI F24 E I24                             380
+V99888FILLER - DISPLACEMENT FITTIZIO                    000
+
