@@ -1,0 +1,28 @@
+000100********************************************************          00000100
+000200* COPY CATALOGATA FBQVFAE1.COBOL2                      *          00000200
+000300*                                                      *          00000300
+000400* A.D'URSO - NETSIEL - 10/11/98                        *          00000400
+000500*                                                      *          00000500
+000600*              TRACCIATO RECORD ARCHIVIO               *          00000600
+000700*                ALTRI ENTI PREVIDENZIALI              *          00000700
+000800* LUNGHEZZA RECORD: 125 BYTES                          *          00000800
+000900*                                                      *          00000900
+001000*                                                      *          00001000
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *          00001100
+001200* BARG.BQVX22                                          *          00001200
+001300********************************************************          00001300
+001400 01 BQVFAE1.                                                      00001400
+001500*      CHIAVE                                                     00001500
+001600    03 BQVFAE1-KEY.                                               00001600
+001700*      CODICE ENTE                                                00001700
+001800       05 BQVFAE1-COD         PIC 9(004).                         00001800
+001900*      SEDE ENTE                                                  00001900
+002000       05 BQVFAE1-SEDE        PIC X(005).                         00002000
+002100*      DATA INIZIO VALIDITA'                                      00002100
+002200       05 BQVFAE1-INIZ-VAL    PIC X(008).                         00002200
+002300*      DATA FINE VALIDITA'                                        00002300
+002400    03 BQVFAE1-FINE-VAL       PIC X(008).                         00002400
+002500*      NOME ENTE                                                        00
+002600    03 BQVFAE1-NOME-ENTE      PIC X(050).                         00002400
+002700*      NOME SEDE                                                        00
+002800    03 BQVFAE1-NOME-SEDE      PIC X(050).                         00002400

@@ -1,0 +1,448 @@
+000010 IDENTIFICATION DIVISION.                                         00000100
+000020 PROGRAM-ID.     BQVFB4.                                          00000200
+000030 AUTHOR. N9143 - R. D'ELIA.                                       00000300
+000040 DATE-WRITTEN.  04/04/2000.                                       00000400
+000050*************************************************************     00000500
+000060*$1 TITOLO - CONTROLLO TIPO RECORD 14/15                          00000600
+000070*************************************************************     00000700
+000080*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00000800
+000090*   IL COMPONENTE RICEVE IN INPUT I DATI RELATIVI AI RECORD       00000900
+000100*   DI TIPO 14/15 (TRAMITE MODULO DI COLLOQUIO FBQVFB21) E        00001000
+000110*   SVOLGE DEI CONTROLLI FORMALI; IN CASO DI INCORRETTEZZE        00001100
+000120*   PROVVEDE AD IMPOSTARE (NELLO STESSO MODULO) DEI               00001200
+000130*   CODICI DI ERRORE ED INCREMENTA DEI CONTATORI RELATIVI         00001300
+000140*   AL TIPO DI ERRORE(BLOCCANTE/NON BLOCCANTE)                    00001400
+000150*                                                                 00001500
+000160* 2. ARCHIVI GESTITI                                              00001600
+000170*    NESSUNO                                                      00001700
+000180*                                                                 00001800
+000190* 3. SUBROUTINES RICHIAMATE                                       00001900
+000200*      NOME       DESCRIZIONE                                     00002000
+000210*    BQVFDA    ROUTINE CALCOLO DATE                               00002100
+000220*                                                                 00002200
+000230 ENVIRONMENT DIVISION.                                            00002300
+000240 CONFIGURATION SECTION.                                           00002400
+000250 SPECIAL-NAMES.                                                   00002500
+000260     DECIMAL-POINT IS COMMA.                                      00002600
+000270 INPUT-OUTPUT SECTION.                                            00002700
+000280 FILE-CONTROL.                                                    00002800
+000290 DATA DIVISION.                                                   00002900
+000300 FILE SECTION.                                                    00003000
+000310***************  WORKING STORAGE SECTION  **********************  00003100
+000320 WORKING-STORAGE SECTION.                                         00003200
+000330 77  W-S                            PIC X(8) VALUE 'BQVFB4WS'.    00003300
+000340*---                                                              00003400
+000350 77  W-ABEND-CODE                   PIC 9(004).                   00003500
+000360**CAMPO INDICANTE LA PRESENZA (SE PARI A 1) O MENO DELLA PROV.    00003600
+000370 77  W-FLG-TROVATO                  PIC 9      VALUE ZERO.        00003700
+000380 77  W-PROV-INP                     PIC X(002) VALUE ZERO.        00003800
+000390*---   CAMPI APPOGGIO PER PERFORM DI CONTROLLO PROVINCIA          00003900
+000400*---                                                              00004000
+000410 01  W-PROVINCIA                    PIC X(002) VALUE ZERO.        00004100
+000420*---   CAMPI APPOGGIO PER ERRORI DEL FILE ESITO                   00004200
+000430*---                                                              00004300
+000440 01  W-ERR-COD-PROV                 PIC 9(003) VALUE ZERO.        00004400
+000450*---   CAMPI APPOGGIO PER SEGNALARE SE L'ERRORE E'                00004500
+000460*---   BLOCCANTE O MENO:                                          00004600
+000470*---   ...   IMPOSTATO A "E" NEL PRIMO CASO                       00004700
+000480*---   ...   IMPOSTATO A "W" NEL SECONDO                          00004800
+000490*---                                                              00004900
+000500 01  W-SEGNAL-COD-PROV              PIC X(001) VALUE ZERO.        00005000
+000510*---------     APPOGGIO PER DATA       -------------              00005100
+000520*---                                                              00005200
+000530 01 W-ANNO-DIFF     PIC S9(004) VALUE ZERO.                       00005300
+000540 01 W-ANNO.                                                       00005400
+000550    03 W-ANNO1                      PIC S9(004).                  00005500
+000560    03 W-ANNO2                      PIC S9(004).                  00005600
+000570*---                                                              00005700
+000580 01 W-DATA-PASS                     PIC 9(6).                     00005800
+000590*---                                                              00005900
+000600 01 W-DATA-APPO.                                                  00006000
+000610    03 W-DATA-APP-GG                PIC 99.                       00006100
+000620    03 W-DATA-APP-MM                PIC 99.                       00006200
+000630    03 W-DATA-APP-ANNO.                                           00006300
+000640        05 W-DATA-APP-SS                PIC 99.                   00006400
+000650        05 W-DATA-APP-AA                PIC 99.                   00006500
+000660    03 W-APP-ANNO REDEFINES W-DATA-APP-ANNO  PIC 9(004).          00006600
+000670*---                                                              00006700
+000680 01 W-DATA-INPUT.                                                 00006800
+000690    03 W-DATA-INP-SS                PIC 99.                       00006900
+000700    03 W-DATA-INP.                                                00007000
+000710        05 W-DATA-INP-AA            PIC 99.                       00007100
+000720        05 W-DATA-INP-MM            PIC 99.                       00007200
+000730        05 W-DATA-INP-GG            PIC 99.                       00007300
+000740*---                                                              00007400
+000750 01 W-DATA-OUTPUT.                                                00007500
+000760    03 W-DATA-OUT-SS                PIC 99.                       00007600
+000770    03 W-DATA-OUT.                                                00007700
+000780        05 W-DATA-OUT-AA            PIC 99.                       00007800
+000790        05 W-DATA-OUT-MM            PIC 99.                       00007900
+000800        05 W-DATA-OUT-GG            PIC 99.                       00008000
+000810*----      ROUTINE PER IL CALCOLO DATE                            00008100
+000820*                                                                 00008200
+000830     COPY 'FBQVFDA1'.                                             00008300
+000840*---               TRACCIATO RECORD "ESITI" FLUSSI BANCHE         00008400
+000850     COPY 'FBQVFB21'.                                             00008500
+000860**---               TRACCIATO RECORD "ESITI" FLUSSI CONCESSIONARI 00008600
+000870**     COPY 'FBQVFD21'.                                           00008700
+000880*                      LINKAGE SECTION                            00008800
+000890 LINKAGE SECTION.                                                 00008900
+000900*---                                                              00009000
+000910*---   TIPO DI FLUSSO DI RIFERIMENTO:                             00009100
+000920*---   'C' = CONCESSIONARI                                        00009200
+000930*---   'B' = BANCHE                                               00009300
+000940 01  W-TIPO-FLUSSO                     PIC X(001).                00009400
+000950*---   SEZIONE RELATIVA AI DATI DEL FILE ESITO                    00009500
+000960 01  W-DATI                            PIC X(512).                00009600
+000970*---   CONTATORE ERRORI NON BLOCCANTI                             00009700
+000980 01  W-CTR1                            PIC 9(009).                00009800
+000990**TABELLA CONTENENTE I CODICI PROVINCE PRELEVATI DAL FILE BQVFPR  00009900
+001000 01  W-TAB-PROV.                                                  00010000
+001010     03 W-TAB-PROV-NUM-MAX        PIC 9(003).                     00010100
+001020     03 W-TAB-PROV-OCC.                                           00010200
+001030        05 W-TAB-PROV-EL OCCURS   150 TIMES                       00010300
+001040                                    ASCENDING W-TAB-PROV-COD      00010400
+001050                                    INDEXED BY W-PUNT-PROV.       00010500
+001060           07 W-TAB-PROV-COD      PIC X(002).                     00010600
+001070*                      LINKAGE SECTION                            00010700
+001080********************** PROCEDURE DIVISION ************************00010800
+001090*                                                                 00010900
+001100 PROCEDURE DIVISION   USING W-TIPO-FLUSSO                         00011000
+001110                            W-DATI                                00011100
+001120                            W-CTR1                                00011200
+001130                            W-TAB-PROV.                           00011300
+001140 ML-010-INIZIO.                                                   00011400
+001150*---   INIZIALIZZAZIONE DELLE AREE DI LAVORO                      00011500
+001160*---                                                              00011600
+001170* SI CONTROLLA IL TIPO DI FLUSSO DATI: SE SI TRATTA DI            00011700
+001180* CONCESSIONARI SI TRASFERISCONO LE INFORMAZIONI SUI              00011800
+001190* CORRISPONDENTI CAMPI DEL MODULO CATALOGATO RELATIVO             00011900
+001200* ALLE BANCHE                                                     00012000
+001210**      IF W-TIPO-FLUSSO = 'B'                                    00012100
+001220**         GO TO ML-015.                                          00012200
+001230** ML-012.                                                        00012300
+001240***---   FLUSSO CONCESSIONARI.                                    00012400
+001250**      MOVE W-DATI                    TO BQVFD21.                00012500
+001260***---   SI INIZIALIZZANO LE AREE RELATIVE AI FLAG DI ERRORE      00012600
+001270***---   DEL TRACCIATO FBQVFB21, CHE VERRA' UTILIZZATO PER I      00012700
+001280***---   SUCCESSIVI CONTROLLI                                     00012800
+001290**      MOVE ZERO               TO BQVFB21-14-ERR-COGNOME         00012900
+001300**      MOVE ZERO               TO BQVFB21-14-ERR-NOME            00013000
+001310**      MOVE ZERO               TO BQVFB21-14-ERR-SESSO           00013100
+001320**      MOVE ZERO               TO BQVFB21-14-ERR-DATA-NASC       00013200
+001330**      MOVE ZERO               TO BQVFB21-14-ERR-COMUNE-NASC     00013300
+001340**      MOVE ZERO               TO BQVFB21-14-ERR-PROV-NASC       00013400
+001350**      MOVE ZERO               TO BQVFB21-14-ERR-COGNOME-A       00013500
+001360**      MOVE ZERO               TO BQVFB21-14-ERR-NOME-A          00013600
+001370**      MOVE ZERO               TO BQVFB21-14-ERR-SESSO-A         00013700
+001380**      MOVE ZERO               TO BQVFB21-14-ERR-DATA-NASC-A     00013800
+001390**      MOVE ZERO               TO BQVFB21-14-ERR-COMUNE-NASC-A   00013900
+001400**      MOVE ZERO               TO BQVFB21-14-ERR-PROV-NASC-A     00014000
+001410**      MOVE ZERO               TO BQVFB21-15-ERR-RAG-SOC         00014100
+001420**      MOVE ZERO               TO BQVFB21-15-ERR-COMUNE          00014200
+001430**      MOVE ZERO               TO BQVFB21-15-ERR-PROV            00014300
+001440**      MOVE ZERO               TO BQVFB21-15-ERR-RAG-SOC-A       00014400
+001450**      MOVE ZERO               TO BQVFB21-15-ERR-COMUNE-A        00014500
+001460**      MOVE ZERO               TO BQVFB21-15-ERR-PROV-A          00014600
+001470**     MOVE BQVFD21-DATA-BONIF  TO BQVFB21-DATA-BONIF.            00014700
+001480***---   SI CONTROLLA IL TIPO RECORD                              00014800
+001490***---                                                            00014900
+001500**      IF BQVFD21-TIPO-RECORD EQUAL '15'                         00015000
+001510**         GO TO ML-014.                                          00015100
+001520** ML-013.                                                        00015200
+001530***---   TIPO RECORD = '14': PERSONA FISICA                       00015300
+001540**     MOVE 'V14'                     TO BQVFB21-TIPO-RECORD.     00015400
+001550**     MOVE BQVFD21-14-COGNOME        TO BQVFB21-14-COGNOME.      00015500
+001560**     MOVE BQVFD21-14-NOME           TO BQVFB21-14-NOME.         00015600
+001570**     MOVE BQVFD21-14-SESSO          TO BQVFB21-14-SESSO.        00015700
+001580**     MOVE BQVFD21-14-DATA-NASC      TO BQVFB21-14-DATA-NASC.    00015800
+001590**     MOVE BQVFD21-14-COMUNE-NASC    TO BQVFB21-14-COMUNE-NASC.  00015900
+001600**     MOVE BQVFD21-14-PROV-NASC      TO BQVFB21-14-PROV-NASC.    00016000
+001610**     GO TO ML-016.                                              00016100
+001620** ML-014.                                                        00016200
+001630***---   TIPO RECORD = '15': PERSONA NON FISICA                   00016300
+001640**     MOVE 'V15'                     TO BQVFB21-TIPO-RECORD.     00016400
+001650**     MOVE BQVFD21-15-RAG-SOC        TO BQVFB21-15-RAG-SOC.      00016500
+001660**     MOVE BQVFD21-15-COMUNE         TO BQVFB21-15-COMUNE.       00016600
+001670**     MOVE BQVFD21-15-PROV           TO BQVFB21-15-PROV.         00016700
+001680**     GO TO ML-016.                                              00016800
+001690 ML-015.                                                          00016900
+001700* FLUSSO BANCHE                                                   00017000
+001710     MOVE W-DATI                    TO BQVFB21.                   00017100
+001720 ML-016.                                                          00017200
+001730*---   SI CONTROLLA IL TIPO RECORD                                00017300
+001740*---                                                              00017400
+001750     IF BQVFB21-TIPO-RECORD EQUAL 'V15'                           00017500
+001760       GO TO ML-200.                                              00017600
+001770 ML-020.                                                          00017700
+001780*---   TIPO RECORD V14:                                           00017800
+001790*--- SI CONTROLLA CHE IL COGNOME SIA IMPOSTATO                    00017900
+001800*---                                                              00018000
+001810     IF BQVFB21-14-COGNOME NOT = SPACE AND                        00018100
+001820        BQVFB21-14-COGNOME NOT = LOW-VALUE                        00018200
+001830        GO TO ML-040.                                             00018300
+001840 ML-030.                                                          00018400
+001850*--- COGNOME NON IMPOSTATO                                        00018500
+001860*---                                                              00018600
+001870     MOVE 039                     TO BQVFB21-14-ERR-COGNOME.      00018700
+001880     ADD 1                        TO W-CTR1.                      00018800
+001890     MOVE 'W'                     TO BQVFB21-14-ERR-COGNOME-A.    00018900
+001900 ML-040.                                                          00019000
+001910*--- SI CONTROLLA CHE IL NOME    SIA IMPOSTATO                    00019100
+001920*---                                                              00019200
+001930     IF BQVFB21-14-NOME    NOT = SPACE AND                        00019300
+001940        BQVFB21-14-NOME    NOT = LOW-VALUE                        00019400
+001950        GO TO ML-060.                                             00019500
+001960 ML-050.                                                          00019600
+001970*--- NOME    NON IMPOSTATO                                        00019700
+001980*---                                                              00019800
+001990     MOVE 039                     TO BQVFB21-14-ERR-NOME.         00019900
+002000     ADD 1                        TO W-CTR1.                      00020000
+002010     MOVE 'W'                     TO BQVFB21-14-ERR-NOME-A.       00020100
+002020 ML-060.                                                          00020200
+002030*--- SI CONTROLLA CHE IL SESSO ASSUMA VALORE 'F' O 'M'            00020300
+002040*---                                                              00020400
+002050     IF BQVFB21-14-SESSO   = 'F'   OR                             00020500
+002060        BQVFB21-14-SESSO   = 'M'                                  00020600
+002070        GO TO ML-075.                                             00020700
+002080 ML-070.                                                          00020800
+002090*--- SESSO IMPOSTATO IN MODO ERRATO                               00020900
+002100*---                                                              00021000
+002110     ADD 1                        TO W-CTR1.                      00021100
+002120     MOVE 055                     TO BQVFB21-14-ERR-SESSO         00021200
+002130     MOVE 'W'                     TO BQVFB21-14-ERR-SESSO-A.      00021300
+002140 ML-075.                                                          00021400
+002150*--- SI CONTROLLA CHE LA DATA DI NASCITA SIA IMPOSTATA E          00021500
+002160*---              ABBIA VALORE NUMERICO MAGGIORE DI ZERO          00021600
+002170*---                                                              00021700
+002180     IF BQVFB21-14-DATA-NASC NUMERIC                              00021800
+002190        GO TO ML-085.                                             00021900
+002200 ML-080.                                                          00022000
+002210*--- DATA DI NASCITA NON NUMERICA : ERRORE NON BLOCCANTE          00022100
+002220     ADD 1                        TO W-CTR1.                      00022200
+002230     MOVE 033                     TO BQVFB21-14-ERR-DATA-NASC.    00022300
+002240     MOVE 'W'                     TO BQVFB21-14-ERR-DATA-NASC-A.  00022400
+002250     GO TO ML-140.                                                00022500
+002260 ML-085.                                                          00022600
+002270*--- SI CONTROLLA CHE LA DATA DI NASCITA ABBIA VALORE > ZERO      00022700
+002280*---                                                              00022800
+002290     IF BQVFB21-14-DATA-NASC NOT = ZERO                           00022900
+002300        GO TO ML-100.                                             00023000
+002310 ML-090.                                                          00023100
+002320*--- DATA DI NASCITA NON NUMERICA : ERRORE NON BLOCCANTE          00023200
+002330     ADD 1                        TO W-CTR1.                      00023300
+002340     MOVE 096                     TO BQVFB21-14-ERR-DATA-NASC.    00023400
+002350     MOVE 'W'                     TO BQVFB21-14-ERR-DATA-NASC-A.  00023500
+002360     GO TO ML-140.                                                00023600
+002370 ML-100.                                                          00023700
+002380*---   IMPOSTAZIONE PARAMETRI PER RICHIAMO ROUTINE DI CONTROLLO   00023800
+002390*---   DATA                                                       00023900
+002400*---                                                              00024000
+002410     MOVE BQVFB21-14-DATA-NASC       TO BQVFDA1-DAT1.             00024100
+002420     MOVE SPACES                     TO BQVFDA1-DAT2.             00024200
+002430*---                                                              00024300
+002440     CALL 'BQVFDA' USING BQVFDA1.                                 00024400
+002450*---                                                              00024500
+002460     IF BQVFDA1-OK EQUAL 0                                        00024600
+002470        GO TO ML-120.                                             00024700
+002480 ML-110.                                                          00024800
+002490*---   ERRORE NON BLOCCANTE                                       00024900
+002500*---                                                              00025000
+002510     ADD 1                        TO W-CTR1.                      00025100
+002520     MOVE 096                     TO BQVFB21-14-ERR-DATA-NASC.    00025200
+002530     MOVE 'W'                     TO BQVFB21-14-ERR-DATA-NASC-A.  00025300
+002540     GO TO ML-140.                                                00025400
+002550 ML-120.                                                          00025500
+002560*---   SI CONTROLLA CHE LA DATA DI NASCITA SI INFERIORE ALLA      00025600
+002570*---   DATA DI BONIFICO                                           00025700
+002580     IF BQVFB21-14-DATA-NASC < BQVFB21-DATA-BONIF                 00025800
+002590        GO TO ML-140.                                             00025900
+002600 ML-130.                                                          00026000
+002610*---   ERRORE NON BLOCCANTE                                       00026100
+002620*---                                                              00026200
+002630     ADD 1                        TO W-CTR1.                      00026300
+002640     MOVE 045                     TO BQVFB21-14-ERR-DATA-NASC     00026400
+002650     MOVE 'W'                     TO BQVFB21-14-ERR-DATA-NASC-A.  00026500
+002660 ML-140.                                                          00026600
+002670*---   SI CONTROLLA IL COMUNE DI NASCITA SIA IMPOSTATO            00026700
+002680*---                                                              00026800
+002690     IF BQVFB21-14-COMUNE-NASC NOT = SPACE     AND                00026900
+002700        BQVFB21-14-COMUNE-NASC NOT = LOW-VALUE                    00027000
+002710        GO TO ML-160.                                             00027100
+002720 ML-150.                                                          00027200
+002730*---   ERRORE NON BLOCCANTE                                       00027300
+002740*---                                                              00027400
+002750     ADD 1                        TO W-CTR1.                      00027500
+002760     MOVE 039                     TO BQVFB21-14-ERR-COMUNE-NASC.  00027600
+002770     MOVE 'W'                     TO BQVFB21-14-ERR-COMUNE-NASC-A.00027700
+002780 ML-160.                                                          00027800
+002790*---   SI CONTROLLA L'IMPOSTAZIONE DELLA PROVINCIA DI NASCITA     00027900
+002800*---                                                              00028000
+002810     MOVE BQVFB21-14-PROV-NASC     TO W-PROVINCIA.                00028100
+002820     PERFORM A1-010-CTL-PROV   THRU A1-010-CTL-PROV-EX.           00028200
+002830     MOVE W-ERR-COD-PROV           TO BQVFB21-14-ERR-PROV-NASC.   00028300
+002840     MOVE W-SEGNAL-COD-PROV        TO BQVFB21-14-ERR-PROV-NASC-A. 00028400
+002850     GO TO ML-300.                                                00028500
+002860 ML-200.                                                          00028600
+002870*---   TIPO RECORD V15:                                           00028700
+002880*--- SI CONTROLLA CHE LA RAGIONE SOCIALE SIA IMPOSTATA            00028800
+002890*---                                                              00028900
+002900     IF BQVFB21-15-RAG-SOC NOT = SPACE AND                        00029000
+002910        BQVFB21-15-RAG-SOC NOT = LOW-VALUE                        00029100
+002920        GO TO ML-220.                                             00029200
+002930 ML-210.                                                          00029300
+002940*--- RAGIONE SOCIALE NON IMPOSTATA                                00029400
+002950*---                                                              00029500
+002960     ADD 1                        TO W-CTR1.                      00029600
+002970     MOVE 039                     TO BQVFB21-15-ERR-RAG-SOC.      00029700
+002980     MOVE 'W'                     TO BQVFB21-15-ERR-RAG-SOC-A.    00029800
+002990 ML-220.                                                          00029900
+003000*--- SI CONTROLLA CHE IL COMUNE DOMICILIO SIA IMPOSTATO           00030000
+003010*---                                                              00030100
+003020     IF BQVFB21-15-COMUNE  NOT = SPACE AND                        00030200
+003030        BQVFB21-15-COMUNE  NOT = LOW-VALUE                        00030300
+003040        GO TO ML-240.                                             00030400
+003050 ML-230.                                                          00030500
+003060*--- COMUNE NON IMPOSTATO                                         00030600
+003070*---                                                              00030700
+003080     ADD 1                        TO W-CTR1.                      00030800
+003090     MOVE 039                     TO BQVFB21-15-ERR-COMUNE.       00030900
+003100     MOVE 'W'                     TO BQVFB21-15-ERR-COMUNE-A.     00031000
+003110 ML-240.                                                          00031100
+003120*---   SI CONTROLLA L'IMPOSTAZIONE DELLA PROVINCIA                00031200
+003130*---                                                              00031300
+003140     MOVE BQVFB21-15-PROV          TO W-PROVINCIA.                00031400
+003150     PERFORM A1-010-CTL-PROV   THRU A1-010-CTL-PROV-EX.           00031500
+003160     MOVE W-ERR-COD-PROV           TO BQVFB21-15-ERR-PROV.        00031600
+003170     MOVE W-SEGNAL-COD-PROV        TO BQVFB21-15-ERR-PROV-A.      00031700
+003180 ML-300.                                                          00031800
+003190*** IN BASE AL TIPO DI FLUSSO ELABORATO SI REIMPOSTANO LE AREE    00031900
+003200*** DI PASSAGGIO                                                  00032000
+003210**     IF W-TIPO-FLUSSO = 'B'                                     00032100
+003220**        GO TO ML-350.                                           00032200
+003230** ML-310.                                                        00032300
+003240*** FLUSSO CONCESSIONARI: SI REIMPOSTA L'AREA FBQVFD21            00032400
+003250**     IF BQVFD21-TIPO-RECORD = '15'                              00032500
+003260**        GO TO ML-330.                                           00032600
+003270** ML-320.                                                        00032700
+003280*** TIPO RECORD = '14'                                            00032800
+003290**     MOVE BQVFB21-14-ERR-COGNOME                                00032900
+003300**                        TO BQVFD21-14-ERR-COGNOME               00033000
+003310**     MOVE BQVFB21-14-ERR-COGNOME-A                              00033100
+003320**                        TO BQVFD21-14-ERR-COGNOME-A             00033200
+003330***                                                               00033300
+003340**     MOVE BQVFB21-14-ERR-NOME                                   00033400
+003350**                        TO BQVFD21-14-ERR-NOME                  00033500
+003360**     MOVE BQVFB21-14-ERR-NOME-A                                 00033600
+003370**                        TO BQVFD21-14-ERR-NOME-A                00033700
+003380***                                                               00033800
+003390**     MOVE BQVFB21-14-ERR-SESSO                                  00033900
+003400**                        TO BQVFD21-14-ERR-SESSO                 00034000
+003410**     MOVE BQVFB21-14-ERR-SESSO-A                                00034100
+003420**                        TO BQVFD21-14-ERR-SESSO-A               00034200
+003430***                                                               00034300
+003440**     MOVE BQVFB21-14-ERR-DATA-NASC                              00034400
+003450**                        TO BQVFD21-14-ERR-DATA-NASC             00034500
+003460**     MOVE BQVFB21-14-ERR-DATA-NASC-A                            00034600
+003470**                        TO BQVFD21-14-ERR-DATA-NASC-A           00034700
+003480***                                                               00034800
+003490**     MOVE BQVFB21-14-ERR-COMUNE-NASC                            00034900
+003500**                        TO BQVFD21-14-ERR-COMUNE-NASC           00035000
+003510**     MOVE BQVFB21-14-ERR-COMUNE-NASC-A                          00035100
+003520**                        TO BQVFD21-14-ERR-COMUNE-NASC-A         00035200
+003530***                                                               00035300
+003540**     MOVE BQVFB21-14-ERR-PROV-NASC                              00035400
+003550**                        TO BQVFD21-14-ERR-PROV-NASC             00035500
+003560**     MOVE BQVFB21-14-ERR-PROV-NASC-A                            00035600
+003570**                        TO BQVFD21-14-ERR-PROV-NASC-A           00035700
+003580**     GO TO ML-340.                                              00035800
+003590** ML-330.                                                        00035900
+003600*** TIPO RECORD = '15'                                            00036000
+003610**     MOVE BQVFB21-15-ERR-RAG-SOC                                00036100
+003620**                        TO BQVFD21-15-ERR-RAG-SOC               00036200
+003630**     MOVE BQVFB21-15-ERR-RAG-SOC-A                              00036300
+003640**                        TO BQVFD21-15-ERR-RAG-SOC-A             00036400
+003650***                                                               00036500
+003660**     MOVE BQVFB21-15-ERR-COMUNE                                 00036600
+003670**                        TO BQVFD21-15-ERR-COMUNE                00036700
+003680**     MOVE BQVFB21-15-ERR-COMUNE-A                               00036800
+003690**                        TO BQVFD21-15-ERR-COMUNE-A              00036900
+003700***                                                               00037000
+003710**     MOVE BQVFB21-15-ERR-PROV                                   00037100
+003720**                        TO BQVFD21-15-ERR-PROV                  00037200
+003730**     MOVE BQVFB21-15-ERR-PROV-A                                 00037300
+003740**                        TO BQVFD21-15-ERR-PROV-A.               00037400
+003750** ML-340.                                                        00037500
+003760**     MOVE BQVFD21            TO W-DATI.                         00037600
+003770**     GO TO ML-990.                                              00037700
+003780** ML-350.                                                        00037800
+003790     MOVE BQVFB21            TO W-DATI.                           00037900
+003800 ML-990.                                                          00038000
+003810     GOBACK.                                                      00038100
+003820*---                                                              00038200
+003830*---              CONTROLLO CODICE PROVINCIA                      00038300
+003840*---                                                              00038400
+003850 A1-010-CTL-PROV.                                                 00038500
+003860*---   SI INIZIALIZZANO I CODICI DI ERRORE                        00038600
+003870*---                                                              00038700
+003880     MOVE 000                     TO W-ERR-COD-PROV.              00038800
+003890     MOVE ZERO                    TO W-SEGNAL-COD-PROV.           00038900
+003900*--- SI CONTROLLA L'IMPOSTAZIONE DEL CAMPO PROVINCIA              00039000
+003910*---                                                              00039100
+003920     IF W-PROVINCIA = SPACE     OR                                00039200
+003930        W-PROVINCIA = LOW-VALUE OR                                00039300
+003931        W-PROVINCIA = 'EE'      OR                                00039400
+003932        W-PROVINCIA = 'PL'      OR                                00039410
+003933        W-PROVINCIA = 'FU'      OR                                00039420
+003934        W-PROVINCIA = 'ZA'      OR                                00039430
+003935        W-PROVINCIA = 'ZR'                                        00039440
+003950        GO TO A1-050.                                             00039500
+003960 A1-015.                                                          00039600
+003970*---   ACCESSO ALLA TABELLA DELLE PROVINCE                        00039700
+003980*---                                                              00039800
+003990     MOVE W-PROVINCIA             TO W-PROV-INP.                  00039900
+004000     PERFORM RN-010-RIC-PROV   THRU RN-990-RIC-PROV-EX.           00040000
+004010*---   SI CONTROLLA L'ESITO DELL'ACCESSO                          00040100
+004020*---                                                              00040200
+004030     IF W-FLG-TROVATO EQUAL 1                                     00040300
+004040       GO TO A1-010-CTL-PROV-EX.                                  00040400
+004050 A1-020.                                                          00040500
+004060*---   IL CODICE PROVINCIA NON ESISTE IN BASE INFORMATIVA;        00040600
+004070*---                                                              00040700
+004080     ADD 1                        TO W-CTR1.                      00040800
+004090     MOVE 119                     TO W-ERR-COD-PROV.              00040900
+004100     MOVE 'W'                     TO W-SEGNAL-COD-PROV.           00041000
+004110     GO TO A1-010-CTL-PROV-EX.                                    00041100
+004120 A1-050.                                                          00041200
+004121*---  NEL CASO DI TIPO-RECORD = '14' O 15                         00041300
+004122*---  AMMESSO IL CODICE PROVINCIA = 'EE'                          00041400
+004123     IF ((BQVFB21-TIPO-RECORD = 'V14' OR                          00041500
+004124          BQVFB21-TIPO-RECORD = 'V15') AND                        00041600
+004125          W-PROVINCIA = 'EE') OR                                  00041700
+004126        (BQVFB21-TIPO-RECORD = 'V14' AND                          00041710
+004127        (W-PROVINCIA = 'PL'  OR                                   00041720
+004128         W-PROVINCIA = 'FU'  OR                                   00041730
+004129         W-PROVINCIA = 'ZA'  OR                                   00041740
+004130         W-PROVINCIA = 'ZR'))                                     00041750
+004131              GO TO A1-010-CTL-PROV-EX.                           00041800
+004132 A1-060.                                                          00041900
+004133*---   CODICE PROVINCIA NON IMPOSTATO                             00042000
+004134*---                                                              00042100
+004135     ADD 1                        TO W-CTR1.                      00042200
+004136     MOVE 119                     TO W-ERR-COD-PROV.              00042300
+004137     MOVE 'W'                     TO W-SEGNAL-COD-PROV.           00042400
+004138 A1-010-CTL-PROV-EX.                                              00042500
+004139     EXIT.                                                        00042600
+004140***************************************************************** 00042700
+004141*    RICERCA DEL CODICE PROVINCIA                               * 00042800
+004142***************************************************************** 00042900
+004143 RN-010-RIC-PROV.                                                 00043000
+004144     SEARCH  ALL W-TAB-PROV-EL                                    00043100
+004145        AT END MOVE ZERO TO W-FLG-TROVATO                         00043200
+004146     WHEN W-TAB-PROV-COD(W-PUNT-PROV) EQUAL W-PROV-INP            00043300
+004147        MOVE 1           TO W-FLG-TROVATO.                        00043400
+004148 RN-990-RIC-PROV-EX.                                              00043500
+004149     EXIT.                                                        00043600
+004150     EJECT                                                        00043700
+004151                                                                  00043800
+

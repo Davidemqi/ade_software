@@ -1,0 +1,24 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFT31                             *
+000300*                                                      *
+000400* A.LANZAROTTI - 06/02/2006                            *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*      CODICI AMMESSI FORMALISMO TERRITORIALITA'       *
+000800*                                                      *
+000900* LUNGHEZZA RECORD: 22 BYTES                           *
+001000*                                                      *
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001200* BARG.BQVX38                                          *
+001300********************************************************
+001400 01 BQVFT31.
+001500*      CHIAVE
+001600    03 BQVFT31-KEY.
+001700*      CODICE FORMALISMO
+001800       05 BQVFT31-COD-FORMAL     PIC X(002).
+001900*      CODICE PROV REG
+002000       05 BQVFT31-CODICE         PIC X(004).
+002100*      DATA INIZIO VALIDITA'
+002200       05 BQVFT31-INIZIO-VAL     PIC X(008).
+002300*      DATA FINE VALIDITA'
+002400    03 BQVFT31-FINE-VAL          PIC X(008).

@@ -1,0 +1,722 @@
+000100 IDENTIFICATION DIVISION.                                         00000100
+000200 PROGRAM-ID.     BQVFE2.                                          00000200
+000300 AUTHOR. N9143 - R. D'ELIA.                                       00000300
+000400 DATE-WRITTEN.  05/04/2000.                                       00000400
+000500*************************************************************     00000500
+000600*$1 TITOLO -  CONTROLLO TIPO RECORD 20  -  ATM O INTERNET         00000600
+000700*************************************************************     00000700
+000800*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00000800
+000900*   IL COMPONENTE RICEVE IN INPUT I DATI RELATIVI AL RECORD       00000900
+001000*   DI TIPO 20 (TRAMITE MODULO DI COLLOQUIO FBQVFB21) E           00001000
+001100*   SVOLGE DEI CONTROLLI FORMALI E DI CONGRUENZA SUI CAMPI;       00001100
+001200*   IN CASO DI INCORRETTEZZE PROVVEDE AD IMPOSTARE (NELLO         00001200
+001300*   STESSO MODULO) DEI CODICI DI ERRORE ED INCREMENTA I           00001300
+001400*   CONTATORI RELATIVI AL TIPO DI ERRORE (BLOCCANTE/NON           00001400
+001500*   BLOCCANTE)                                                    00001500
+001600*                                                                 00001600
+001700* 2. ARCHIVI GESTITI                                              00001700
+001800*      NESSUNO                                                    00001800
+001900*                                                                 00001900
+002000* 3. SUBROUTINES RICHIAMATE                                       00002000
+002100*      NOME       DESCRIZIONE                                     00002100
+002200*    SSUT02    ROUTINE DI ABEND                                   00002200
+002300*                                                                 00002300
+002400 ENVIRONMENT DIVISION.                                            00002400
+002500 CONFIGURATION SECTION.                                           00002500
+002600 SPECIAL-NAMES.                                                   00002600
+002700     DECIMAL-POINT IS COMMA.                                      00002700
+002800 INPUT-OUTPUT SECTION.                                            00002800
+002900 FILE-CONTROL.                                                    00002900
+003000 DATA DIVISION.                                                   00003000
+003100 FILE SECTION.                                                    00003100
+003200***************  WORKING STORAGE SECTION  *********************   00003200
+003300 WORKING-STORAGE SECTION.                                         00003300
+003400 77  W-S                            PIC X(8) VALUE 'BQVFE2WS'.    00003400
+003500*---   CAMPI PER DATA RISCOSSIONE                                 00003500
+003600*---                                                              00003600
+003700 01  W-DATA-RISC                    PIC X(008).                   00003700
+003800 01  W-DATA-RISC1 REDEFINES W-DATA-RISC.                          00003800
+003900     03  W-DATA-RISC-AA             PIC 9(004).                   00003900
+004000     03  W-DATA-RISC-MM             PIC 9(002).                   00004000
+004100     03  W-DATA-RISC-GG             PIC 9(002).                   00004100
+004200 01  W-DATA-RISC2 REDEFINES W-DATA-RISC.                          00004200
+004300     03  W-DATA-RIS2-AA             PIC 9(004).                   00004300
+004400     03  W-DATA-RIS2-MM             PIC 9(002).                   00004400
+004500     03  W-DATA-RIS2-GG             PIC 9(002).                   00004500
+004600*---   CAMPI APPOGGIO PER CAMPI DEL FILE ESITO                    00004600
+004700*                                                                 00004700
+004800 01  W-CAB-DIP                      PIC 9(005).                   00004800
+004900 01  W-CAB-DIPA   REDEFINES                                       00004900
+005000     W-CAB-DIP                      PIC X(005).                   00005000
+005100*                                                                 00005100
+005200*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00005200
+005300*                                                                 00005300
+005400 01  W-ID-PAGAM                     PIC 9(018).                   00005400
+005500 01  W-ID-PAGAM-R REDEFINES                                       00005500
+005600     W-ID-PAGAM                     PIC X(018).                   00005600
+005700*                                                                 00005700
+005800 01  W-IDENT-PAGAM                  PIC 9(018).                   00005800
+005900 01  W-IDENT-PAGAM-R REDEFINES                                    00005900
+006000     W-IDENT-PAGAM.                                               00006000
+006100     03  W-IDENT-PAGAM-16           PIC 9(016).                   00006100
+006200     03  W-IDENT-PAGAM-16-R REDEFINES                             00006200
+006300         W-IDENT-PAGAM-16.                                        00006300
+006400        05  W-IDENT-PAGAM-15        PIC 9(015).                   00006400
+006500        05  W-IDENT-PAGAM-C1        PIC 9(001).                   00006500
+006600     03  W-IDENT-PAGAM-C2           PIC 9(002).                   00006600
+006700*                                                                 00006700
+006800 01  W-IDENT-PAGAM-CALC-16      PIC 9(016).                       00006800
+006900 01  W-IDENT-PAGAM-CALC-16-R REDEFINES                            00006900
+007000     W-IDENT-PAGAM-CALC-16.                                       00007000
+007100    03  W-IDENT-PAGAM-CALC-15        PIC 9(015).                  00007100
+007200    03  W-IDENT-PAGAM-CALC-C1        PIC 9(001).                  00007200
+007300*                                                                 00007300
+007400 01  W-IND1                         PIC 9(002).                   00007400
+007500 01  W-IND2                         PIC 9(002).                   00007500
+007600*                                                                 00007600
+007700 01  W-RESTO-PAGAM                  PIC 9(002).                   00007700
+007800* INIZIO MODIFICA GM                                              00007800
+007900*01  W-APPO-DIVIDE                  PIC 9(001).                   00007900
+008000 01  W-APPO-DIVIDE                  PIC 9(008).                   00008000
+008100 01  W-RESTO-PAGAM1                 PIC 9(002).                   00008100
+008200 01  W-RESTO-PAGAM2                 PIC 9(002).                   00008200
+008300* FINE MODIFICA GM                                                00008300
+008400*                                                                 00008400
+008500 01  W-TOTALE1                      PIC 9(016).                   00008500
+008600 01  W-TOTALE1-TAB REDEFINES W-TOTALE1.                           00008600
+008700     03  W-TOTALE1-EL OCCURS 16    PIC 9(001).                    00008700
+008800*                                                                 00008800
+008900 01  W-TOTALE2                      PIC 9(003).                   00008900
+009000*                                                                 00009000
+009100 01  W-APPO-TOTALE3                 PIC 9(003).                   00009100
+009200*                                                                 00009200
+009300 01  W-TOTALE3                      PIC 9(003).                   00009300
+009400 01  W-TOTALE3A   REDEFINES                                       00009400
+009500     W-TOTALE3.                                                   00009500
+009600    03  W-TOTALE3-1-2               PIC 9(002).                   00009600
+009700    03  W-TOTALE3-3                 PIC 9(001).                   00009700
+009800*                                                                 00009800
+009900 01  W-TOTALE4                      PIC 9(002).                   00009900
+010000 01  W-TOTALE4A   REDEFINES                                       00010000
+010100     W-TOTALE4.                                                   00010100
+010200    03  W-TOTALE4-1                 PIC 9(001).                   00010200
+010300    03  W-TOTALE4-2                 PIC 9(001).                   00010300
+010400*                                                                 00010400
+010500*F FINE MODIFICA CODICE A BARRE - 12/2004                         00010500
+010600* INIZIO MODIFICA GM PER PC                                       00010600
+010700 01  W-APPO-PAGAM-CALC.                                           00010700
+010800     03 W-IDENT-PAGAM-CALC-A         PIC 9(8).                    00010800
+010900     03 W-IDENT-PAGAM-CALC-B         PIC 9(8).                    00010900
+011000 01 W-IDENT-PAGAM-CALC-10            PIC 9(10).                   00011000
+011100* FINE MODIFICA GM PER PC                                         00011100
+011200*                                                                 00011200
+011300 01  W-NUM-RIFER                    PIC 9(011).                   00011300
+011400 01  W-NUM-RIFERA REDEFINES                                       00011400
+011500     W-NUM-RIFER                    PIC X(011).                   00011500
+011600*                                                                 00011600
+011700 01  W-NUMERO-RIF.                                                00011700
+011800     03  W-NUMERO-RIF-10            PIC X(010).                   00011800
+011900     03  W-NUMERO-RIF-CK            PIC X(001).                   00011900
+012000*                                                                 00012000
+012100 01  W-COD-CONT-NRIF                PIC 9(002).                   00012100
+012200 01  W-COD-CONT-NRIFA REDEFINES                                   00012200
+012300     W-COD-CONT-NRIF                PIC X(002).                   00012300
+012400*                                                                 00012400
+012500 01  W-IMP-PAGAM                    PIC 9(015).                   00012500
+012600 01  W-IMP-PAGAM1 REDEFINES W-IMP-PAGAM.                          00012600
+012700     03  W-IMP-PAGAM1-12            PIC X(012).                   00012700
+012800     03  W-IMP-PAGAM1-03            PIC X(003).                   00012800
+012900 01  W-IMP-PAGAM2 REDEFINES W-IMP-PAGAM.                          00012900
+013000     03  W-IMP-PAGAM1-13            PIC X(013).                   00013000
+013100     03  W-IMP-PAGAM1-02            PIC X(002).                   00013100
+013200*                                                                 00013200
+013300*--- INTERNET                                                     00013300
+013400*                                                                 00013400
+013500 01  W-ESITO                        PIC X(001).                   00013500
+013600*                                                                 00013600
+013700*** MODIFICA CONTRIBUTO UNIFICATO                                 00013700
+013800*01  W-APPO-NUM-RIF.                                              00013800
+013900***  03  FILLER                     PIC X(9).                     00013900
+014000***  03  W-APPO-SETTORE             PIC X(1).                     00014000
+014100 01  W-APPO-NUM-RIF.                                              00014100
+014200     03  W-APPO-PRIMA-CIFRA         PIC 9(1).                     00014200
+014300     03  FILLER                     PIC X(7).                     00014300
+014400     03  W-APPO-NONA-CIFRA          PIC X(1).                     00014400
+014410     03  W-APPO-SETTORE             PIC X(1).                     00014410
+014500     03  FILLER                     PIC X(1).                     00014500
+014600*** MODIFICA CONTRIBUTO UNIFICATO                                 00014600
+014700*                                                                 00014700
+014800 01  W-SP                           PIC 9(005).                   00014800
+014900 01  W-SP1 REDEFINES W-SP.                                        00014900
+015000     03  FILLER                     PIC X(003).                   00015000
+015100     03  W-U2                       PIC 9(002).                   00015100
+015200 01  W-C100                         PIC 9(002).                   00015200
+015300 01  W-C100-R REDEFINES W-C100.                                   00015300
+015400     03  W-C100-R1                  PIC 9(001).                   00015400
+015500     03  W-C100-R2                  PIC 9(001).                   00015500
+015600 01  W-COD-CONTR.                                                 00015600
+015700     03  W-C1                       PIC 9(001).                   00015700
+015800     03  W-C2                       PIC 9(001).                   00015800
+015900 01  W-UNITA                        PIC 9(001).                   00015900
+016000*01  W-RESTO                        PIC 9(002).                   00016000
+016100*                                                                 00016100
+016200*---   CAMPI APPOGGIO PER L'IMPOSTAZIONE DEI CODICI               00016200
+016300*---   DI ERRORE DELFILE ESITI                                    00016300
+016400*                                                                 00016400
+016500 01  W-ERR.                                                       00016500
+016600     03  W-ERR-CAB-DIP                  PIC 9(003).               00016600
+016700     03  W-ERR-NUM-RIFER                PIC 9(003).               00016700
+016800     03  W-ERR-IMP-PAGAM                PIC 9(003).               00016800
+016900     03  W-ERR-COD-CONT                 PIC 9(003).               00016900
+017000*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00017000
+017100     03  W-ERR-ID-PAGAM                 PIC 9(003).               00017100
+017200*F FINE MODIFICA CODICE A BARRE - 12/2004                         00017200
+017300*                                                                 00017300
+017400*--- INTERNET                                                     00017400
+017500*                                                                 00017500
+017600     03  W-ERR-ESITO                    PIC 9(003).               00017600
+017700*                                                                 00017700
+017800*---   CAMPI APPOGGIO PER SEGNALARE SE L'ERRORE E'                00017800
+017900*---   BLOCCANTE O MENO:                                          00017900
+018000*---   ...   IMPOSTATO A "E" NEL PRIMO CASO                       00018000
+018100*---   ...   IMPOSTATO A "W" NEL SECONDO                          00018100
+018200*---                                                              00018200
+018300 01  W-SEGNAL.                                                    00018300
+018400     03  W-SEGNAL-CAB-DIP               PIC X(001).               00018400
+018500     03  W-SEGNAL-NUM-RIFER             PIC X(001).               00018500
+018600     03  W-SEGNAL-IMP-PAGAM             PIC X(001).               00018600
+018700     03  W-SEGNAL-COD-CONT              PIC X(001).               00018700
+018800*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00018800
+018900     03  W-SEGNAL-ID-PAGAM              PIC X(001).               00018900
+019000*F FINE MODIFICA CODICE A BARRE - 12/2004                         00019000
+019100*                                                                 00019100
+019200*--- INTERNET                                                     00019200
+019300*                                                                 00019300
+019400     03  W-SEGNAL-ESITO                 PIC X(001).               00019400
+019500*                                                                 00019500
+019600*---------     APPOGGIO PER DATA       -------------              00019600
+019700*                                                                 00019700
+019800 01  W-ANNO-DIFF                       PIC S9(004).               00019800
+019900 01  W-ANNO.                                                      00019900
+020000     03  W-ANNO1                       PIC 9(004).                00020000
+020100     03  W-ANNO2                       PIC 9(004).                00020100
+020200 01  W-ANNO-MILL.                                                 00020200
+020300     03  W-ANNO-MILL1                  PIC 9(001).                00020300
+020400     03  W-ANNO-MILL7                  PIC 9(007).                00020400
+020500*---                                                              00020500
+020600*                                                                 00020600
+020700 01  W-DATA-PASS                       PIC 9(6).                  00020700
+020800*---                                                              00020800
+020900*                                                                 00020900
+021000 01  W-DATA-APPO.                                                 00021000
+021100     03  W-DATA-APP-GG                 PIC 99.                    00021100
+021200     03  W-DATA-APP-MM                 PIC 99.                    00021200
+021300     03  W-DATA-APP-ANNO.                                         00021300
+021400         05  W-DATA-APP-SS             PIC 99.                    00021400
+021500         05  W-DATA-APP-AA             PIC 99.                    00021500
+021600     03  W-APP-ANNO REDEFINES W-DATA-APP-ANNO PIC 9(004).         00021600
+021700*---                                                              00021700
+021800*                                                                 00021800
+021900 01  W-DATA-INPUT.                                                00021900
+022000     03  W-DATA-INP-SS                 PIC 99.                    00022000
+022100     03  W-DATA-INP.                                              00022100
+022200         05  W-DATA-INP-AA             PIC 99.                    00022200
+022300         05  W-DATA-INP-MM             PIC 99.                    00022300
+022400         05  W-DATA-INP-GG             PIC 99.                    00022400
+022500*---                                                              00022500
+022600*                                                                 00022600
+022700 01  W-DATA-OUTPUT.                                               00022700
+022800     03  W-DATA-OUT-SS                 PIC 99.                    00022800
+022900     03  W-DATA-OUT.                                              00022900
+023000         05  W-DATA-OUT-AA             PIC 99.                    00023000
+023100         05  W-DATA-OUT-MM             PIC 99.                    00023100
+023200         05  W-DATA-OUT-GG             PIC 99.                    00023200
+023300*                                                                 00023300
+023400*---------     APPOGGIO PER COD. CONT. NRIF. -------              00023400
+023500*                                                                 00023500
+023600 01  W-TEST-COD-A.                                                00023600
+023700     03  W-COD-NUMRIF                  PIC 9(011).                00023700
+023800     03  W-COD-IMPPAG                  PIC 9(015).                00023800
+023900     03  W-COD-CODCON                  PIC 9(002).                00023900
+024000*                                                                 00024000
+024100 01  W-TEST-COD-N REDEFINES W-TEST-COD-A.                         00024100
+024200     03  W-TEST-COD-A1                 PIC 9(014).                00024200
+024300     03  W-TEST-COD-A2                 PIC 9(014).                00024300
+024400*                                                                 00024400
+024500 01  W-APP-DIVIDENDO.                                             00024500
+024600     03  W-APP-DIV1                    PIC 9(002).                00024600
+024700     03  W-APP-TCOD2                   PIC 9(014).                00024700
+024800*                                                                 00024800
+024900 01  W-APP-DIVIDENDO-N REDEFINES                                  00024900
+025000     W-APP-DIVIDENDO                   PIC 9(016).                00025000
+025100*                                                                 00025100
+025200 77  W-DIVISORE                        PIC 9(002) VALUE 97.       00025200
+025300*                                                                 00025300
+025400 77  W-RISULTATO                       PIC 9(014).                00025400
+025500*                                                                 00025500
+025600 77  W-RESTO                           PIC 9(002).                00025600
+025700*                                                                 00025700
+025800*---                                                              00025800
+025900*----      CAMPI DI PASSAGGIO PER LA ROUTINE BQVFB3               00025900
+026000 01  W-PARAM-BQVFB3.                                              00026000
+026100     03  W-BQVFB3-COD-FISC             PIC X(16).                 00026100
+026200     03  W-BQVFB3-COD-RIT              PIC X.                     00026200
+026300*---                                                              00026300
+026400*----              ROUTINE PER IL CALCOLO DATE                    00026400
+026500     COPY 'FBQVFDA1'.                                             00026500
+026600*---               TRACCIATO RECORD "ESITI" - BANCA               00026600
+026700     COPY 'FBQVFB21'.                                             00026700
+026800***---               TRACCIATO RECORD "ESITI" - CONCESSIONARIO    00026800
+026900**     COPY 'FBQVFD21'.                                           00026900
+027000*                                                                 00027000
+027100*---        TABELLA PER TOTALIZZARE                               00027100
+027200 01  W-TAB.                                                       00027200
+027300     03  W-TAB-EL OCCURS 7.                                       00027300
+027400         05  W-TAB-EL-PAG          PIC 9(015).                    00027400
+027500         05  W-TAB-EL-RIM          PIC 9(015).                    00027500
+027600*                                                                 00027600
+027700*                      LINKAGE SECTION                            00027700
+027800 LINKAGE SECTION.                                                 00027800
+027900*                                                                 00027900
+028000*---             AREA DI PASSAGGIO                                00028000
+028100*                                                                 00028100
+028200*---   FLAG INDICANTE LA PROVENIENZA:                             00028200
+028300*---   .. "B" BANCA                                               00028300
+028400*---   .. "C" CONCESSIONARIO                                      00028400
+028500*                                                                 00028500
+028600 01  W-PROV                        PIC X(001).                    00028600
+028700*---   SEZIONE RELATIVA AI DATI DEL FILE ESITO                    00028700
+028800*                                                                 00028800
+028900 01  W-DATI                        PIC X(512).                    00028900
+029000*---   TABELLA RELATIVA AGLI IMPORTI                              00029000
+029100*                                                                 00029100
+029200 01  W-TABELLA                     PIC X(210).                    00029200
+029300*---   DIVISA                                                     00029300
+029400*                                                                 00029400
+029500 01  W-DIVISA                      PIC X(003).                    00029500
+029600*---   CONTATORE ERRORI NON BLOCCANTI                             00029600
+029700*                                                                 00029700
+029800 01  W-CTR1                        PIC 9(009).                    00029800
+029900*---   CONTATORE ERRORI BLOCCANTI                                 00029900
+030000*                                                                 00030000
+030100 01  W-CTR2                        PIC 9(009).                    00030100
+030200*---                                                              00030200
+030300********************** PROCEDURE DIVISION *********************   00030300
+030400*                                                                 00030400
+030500 PROCEDURE DIVISION   USING    W-PROV W-DATI W-TABELLA            00030500
+030600                      W-DIVISA W-CTR1 W-CTR2.                     00030600
+030700 ML-010-INIZIO.                                                   00030700
+030800*---   INIZIALIZZAZIONE DELLE AREE DI LAVORO                      00030800
+030900*                                                                 00030900
+031000     MOVE ZERO                      TO W-ANNO-DIFF.               00031000
+031100     MOVE ZERO                      TO W-ERR.                     00031100
+031200     MOVE ZERO                      TO W-SEGNAL.                  00031200
+031300     MOVE W-TABELLA                 TO W-TAB.                     00031300
+031400***---   IMPOSTAZIONE AREA DI PASSAGGIO RELATIVA AI DATI E        00031400
+031500***---   ALLA TABELLA DI TOTALIZZAZIONE.                          00031500
+031600***                                                               00031600
+031700     MOVE W-DATI                       TO BQVFB21.                00031700
+031800*                                                                 00031800
+031900     MOVE BQVFB21-20-CAB-DIP           TO W-CAB-DIP.              00031900
+032000     MOVE BQVFB21-20-NUM-RIFER         TO W-NUM-RIFER.            00032000
+032100     MOVE BQVFB21-20-IMP-PAGAM         TO W-IMP-PAGAM.            00032100
+032200     MOVE BQVFB21-20-COD-CONT-NRIF     TO W-COD-CONT-NRIF.        00032200
+032300*                                                                 00032300
+032400*--- INTERNET                                                     00032400
+032500*                                                                 00032500
+032600     MOVE BQVFB21-20-NUM-RIFER         TO W-APPO-NUM-RIF.         00032600
+032700     MOVE BQVFB21-20-ESITO-PAGAM       TO W-ESITO.                00032700
+032800*                                                                 00032800
+032900*                                                                 00032900
+033000*---   ROUTINE DI CONTROLLO DEL CODICE CAB.                       00033000
+033100*                                                                 00033100
+033200     PERFORM A1-010-CAB-DIP THRU A1-010-CAB-DIP-EX.               00033200
+033300*                                                                 00033300
+033400*---   ROUTINE DI CONTROLLO DEL NUMERO DI RIFERIMENTO.            00033400
+033500*                                                                 00033500
+033600*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00033600
+033700*F MODIFICA DEL 19/09/2005: CONTR. NUM-RIF ANCHE SE ID-PAG SPACE  00033700
+033800     IF BQVFB21-20-IDENT-PAGAM EQUAL ZERO OR                      00033800
+033900        BQVFB21-20-IDENT-PAGAM EQUAL SPACE THEN                   00033900
+034000         PERFORM B1-010-NUM-RIF THRU B1-010-NUM-RIF-EX.           00034000
+034100*                                                                 00034100
+034200*---   ROUTINE DI CONTROLLO DELL'IDENTIFICATIVO PAGAMENTO         00034200
+034300*                                                                 00034300
+034400     MOVE BQVFB21-20-IDENT-PAGAM TO W-ID-PAGAM.                   00034400
+034500*F MODIFICA DEL 19/09/2005: CONTR. ID-PAG ANCHE SE NUM-RIF SPACE  00034500
+034600     IF BQVFB21-20-NUM-RIFER EQUAL ZERO OR                        00034600
+034700        BQVFB21-20-NUM-RIFER EQUAL SPACE                          00034700
+034800           PERFORM B2-010-ID-PAGAM THRU B2-010-ID-PAGAM-EX.       00034800
+034900     IF W-NUM-RIFER > 0 AND                                       00034900
+035000        W-ID-PAGAM > 0                                            00035000
+035100*---     ERRORE BLOCCANTE                                         00035100
+035200           MOVE 36                   TO W-ERR-ID-PAGAM            00035200
+035300           ADD 1                     TO W-CTR2                    00035300
+035400           MOVE 'E'                  TO W-SEGNAL-ID-PAGAM.        00035400
+035500*                                                                 00035500
+035600*---   ROUTINE DI CONTROLLO DEL CODICE NUMERO DI RIFERIMENTO.     00035600
+035700*                                                                 00035700
+035800*F MODIFICA DEL 19/09/2005: CONTR. ID-PAG ANCHE SE NUM-RIF SPACE  00035800
+035900     IF BQVFB21-20-IDENT-PAGAM EQUAL ZERO OR                      00035900
+036000        BQVFB21-20-IDENT-PAGAM EQUAL SPACE THEN                   00036000
+036100            PERFORM C1-010-COD-CONT THRU C1-010-COD-CONT-EX.      00036100
+036200*                                                                 00036200
+036300*F FINE MODIFICA CODICE A BARRE - 12/2004                         00036300
+036400*                                                                 00036400
+036500*---   ROUTINE DI CONTROLLO DELL'IMPORTO DI PAGAMENTO.            00036500
+036600*                                                                 00036600
+036700     PERFORM D1-010-PAGA    THRU D1-010-PAGA-EX.                  00036700
+036800*                                                                 00036800
+036900*---                                                              00036900
+037000*---   INTERNET                                                   00037000
+037100*---                                                              00037100
+037200*---   ROUTINE DI CONTROLLO DELL'ESITO PAGAMENTO E DI             00037200
+037300*---   ESISTENZA DEL VERSAMENTO INTERNET                          00037300
+037400*---                                                              00037400
+037500     PERFORM E1-010-INTERNET THRU E1-010-INTERNET-EX.             00037500
+037600*---                                                              00037600
+037700     MOVE W-TAB               TO W-TABELLA.                       00037700
+037800*                                                                 00037800
+037900     MOVE W-ERR-CAB-DIP       TO BQVFB21-20-ERR-CAB-DIP.          00037900
+038000     MOVE W-ERR-NUM-RIFER     TO BQVFB21-20-ERR-NUM-RIFER.        00038000
+038100     MOVE W-ERR-IMP-PAGAM     TO BQVFB21-20-ERR-IMP-PAGAM.        00038100
+038200     MOVE W-ERR-COD-CONT      TO BQVFB21-20-ERR-COD-CONT-NRIF.    00038200
+038300*                                                                 00038300
+038400*--- INTERNET                                                     00038400
+038500*                                                                 00038500
+038600     MOVE W-ERR-ESITO         TO BQVFB21-20-ERR-ESITO-PAGAM.      00038600
+038700*                                                                 00038700
+038800*---   IMPOSTAZIONE SEGNALAZIONE TIPO ERRORE VERIFICATOSI         00038800
+038900*                                                                 00038900
+039000     MOVE W-SEGNAL-CAB-DIP    TO BQVFB21-20-ERR-CAB-DIP-A.        00039000
+039100     MOVE W-SEGNAL-NUM-RIFER  TO BQVFB21-20-ERR-NUM-RIFER-A.      00039100
+039200     MOVE W-SEGNAL-IMP-PAGAM  TO BQVFB21-20-ERR-IMP-PAGAM-A.      00039200
+039300     MOVE W-SEGNAL-COD-CONT   TO BQVFB21-20-ERR-COD-CONT-NRIF-A.  00039300
+039400*                                                                 00039400
+039500*--- INTERNET                                                     00039500
+039600*                                                                 00039600
+039700     MOVE W-SEGNAL-ESITO      TO BQVFB21-20-ERR-ESITO-PAGAM-A.    00039700
+039800*                                                                 00039800
+039900*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00039900
+040000     MOVE W-ERR-ID-PAGAM      TO BQVFB21-20-ERR-IDENT-PAGAM.      00040000
+040100     MOVE W-SEGNAL-ID-PAGAM   TO BQVFB21-20-ERR-IDENT-PAGAM-A.    00040100
+040200*F FINE MODIFICA CODICE A BARRE - 12/2004                         00040200
+040300*                                                                 00040300
+040400     MOVE BQVFB21             TO W-DATI.                          00040400
+040500*                                                                 00040500
+040600 ML-990.                                                          00040600
+040700     GOBACK.                                                      00040700
+040800*                                                                 00040800
+040900*---              CONTROLLO CODICE CAB.                           00040900
+041000*                                                                 00041000
+041100 A1-010-CAB-DIP.                                                  00041100
+041200     IF W-CAB-DIPA     NUMERIC      AND                           00041200
+041300        W-CAB-DIP      GREATER ZERO                               00041300
+041400        GO TO A1-010-CAB-DIP-EX.                                  00041400
+041500*                                                                 00041500
+041600     IF W-CAB-DIPA     NOT NUMERIC                                00041600
+041700        MOVE 33                      TO W-ERR-CAB-DIP             00041700
+041800        ADD 1                        TO W-CTR2                    00041800
+041900        MOVE 'E'                     TO W-SEGNAL-CAB-DIP          00041900
+042000        GO TO A1-010-CAB-DIP-EX.                                  00042000
+042100*                                                                 00042100
+042200     IF W-CAB-DIP      EQUAL ZERO                                 00042200
+042300        MOVE 39                      TO W-ERR-CAB-DIP             00042300
+042400        ADD 1                        TO W-CTR2                    00042400
+042500        MOVE 'E'                     TO W-SEGNAL-CAB-DIP.         00042500
+042600*                                                                 00042600
+042700 A1-010-CAB-DIP-EX.                                               00042700
+042800     EXIT.                                                        00042800
+042900*                                                                 00042900
+043000*                                                                 00043000
+043100*---              CONTROLLO NUMERO DI RIFERIMENTO.                00043100
+043200*                                                                 00043200
+043300 B1-010-NUM-RIF.                                                  00043300
+043400*                                                                 00043400
+043500     IF W-NUM-RIFERA   NUMERIC                                    00043500
+043600       GO TO B1-030.                                              00043600
+043700*                                                                 00043700
+043800 B1-020.                                                          00043800
+043900*                                                                 00043900
+044000     MOVE 33                      TO W-ERR-NUM-RIFER.             00044000
+044100     ADD 1                        TO W-CTR2.                      00044100
+044200     MOVE 'E'                     TO W-SEGNAL-NUM-RIFER.          00044200
+044300     GO TO B1-010-NUM-RIF-EX.                                     00044300
+044400*                                                                 00044400
+044500 B1-030.                                                          00044500
+044600*                                                                 00044600
+044700     MOVE W-NUM-RIFERA            TO W-NUMERO-RIF.                00044700
+044800*                                                                 00044800
+044900*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00044900
+045000**** IF W-NUMERO-RIF NOT EQUAL SPACES  AND                        00045000
+045100******* W-NUMERO-RIF NOT EQUAL ZERO                               00045100
+045200******* GO TO B1-050.                                             00045200
+045300     IF (W-NUMERO-RIF NOT EQUAL SPACES  AND                       00045300
+045400         W-NUMERO-RIF NOT EQUAL ZERO)                             00045400
+045500     OR                                                           00045500
+045600        (BQVFB21-20-IDENT-PAGAM NOT EQUAL SPACES  AND             00045600
+045700         BQVFB21-20-IDENT-PAGAM NOT EQUAL ZERO)                   00045700
+045800        GO TO B1-050.                                             00045800
+045900*F FINE MODIFICA CODICE A BARRE - 12/2004                         00045900
+046000*                                                                 00046000
+046100 B1-040.                                                          00046100
+046200*                                                                 00046200
+046300     MOVE 96                      TO W-ERR-NUM-RIFER.             00046300
+046400     ADD 1                        TO W-CTR2.                      00046400
+046500     MOVE 'E'                     TO W-SEGNAL-NUM-RIFER.          00046500
+046600     GO TO B1-010-NUM-RIF-EX.                                     00046600
+046700*                                                                 00046700
+046800 B1-050.                                                          00046800
+046900*---                                                              00046900
+047000*--- CONTROLLO FORMALE DEL CAMPO NUMERO RIFERIMENTO               00047000
+047100*---                                                              00047100
+047200     MOVE SPACE                   TO W-BQVFB3-COD-FISC.           00047200
+047300     MOVE W-NUMERO-RIF            TO W-BQVFB3-COD-FISC.           00047300
+047400     CALL 'BQVFB3'        USING    W-PARAM-BQVFB3.                00047400
+047500*---                                                              00047500
+047600     IF W-BQVFB3-COD-RIT  EQUAL    ZERO                           00047600
+047700        GO TO B1-010-NUM-RIF-EX.                                  00047700
+047800*                                                                 00047800
+047900 B1-060.                                                          00047900
+048000*---     ERRORE BLOCCANTE                                         00048000
+048100     MOVE 36                      TO W-ERR-NUM-RIFER.             00048100
+048200     ADD 1                        TO W-CTR2.                      00048200
+048300     MOVE 'E'                     TO W-SEGNAL-NUM-RIFER.          00048300
+048400*                                                                 00048400
+048500 B1-010-NUM-RIF-EX.                                               00048500
+048600     EXIT.                                                        00048600
+048700*                                                                 00048700
+048800*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00048800
+048900*                                                                 00048900
+049000*                                                                 00049000
+049100*---              CONTROLLO IDENTIFICATIVO PAGAMENTO              00049100
+049200*                                                                 00049200
+049300 B2-010-ID-PAGAM.                                                 00049300
+049400*                                                                 00049400
+049500     IF W-ID-PAGAM-R   NUMERIC                                    00049500
+049600       GO TO B2-030.                                              00049600
+049700*                                                                 00049700
+049800 B2-020.                                                          00049800
+049900*                                                                 00049900
+050000     MOVE 33                      TO W-ERR-ID-PAGAM.              00050000
+050100     ADD 1                        TO W-CTR2.                      00050100
+050200     MOVE 'E'                     TO W-SEGNAL-ID-PAGAM.           00050200
+050300     GO TO B2-010-ID-PAGAM-EX.                                    00050300
+050400*                                                                 00050400
+050500 B2-030.                                                          00050500
+050600*                                                                 00050600
+050700     MOVE W-ID-PAGAM              TO W-IDENT-PAGAM.               00050700
+050800*                                                                 00050800
+050900     IF (W-IDENT-PAGAM NOT EQUAL SPACES  AND                      00050900
+051000         W-IDENT-PAGAM NOT EQUAL ZERO) OR                         00051000
+051100        (BQVFB21-20-NUM-RIFER NOT EQUAL SPACES  AND               00051100
+051200         BQVFB21-20-NUM-RIFER NOT EQUAL ZERO)                     00051200
+051300            GO TO B2-050.                                         00051300
+051400*                                                                 00051400
+051500 B2-040.                                                          00051500
+051600*                                                                 00051600
+051700     MOVE 96                      TO W-ERR-ID-PAGAM.              00051700
+051800     ADD 1                        TO W-CTR2.                      00051800
+051900     MOVE 'E'                     TO W-SEGNAL-ID-PAGAM.           00051900
+052000     GO TO B2-010-ID-PAGAM-EX.                                    00052000
+052100*                                                                 00052100
+052200 B2-050.                                                          00052200
+052300*---                                                              00052300
+052400*--- CONTROLLO FORMALE DEL CAMPO NUMERO RIFERIMENTO               00052400
+052500*---                                                              00052500
+052600     MOVE 1                           TO W-IND1.                  00052600
+052700     MOVE 2                           TO W-IND2.                  00052700
+052800     COMPUTE W-TOTALE1 = W-IDENT-PAGAM-15 + W-IMP-PAGAM.          00052800
+052900     MOVE ZERO                        TO W-TOTALE2.               00052900
+053000     MOVE ZERO                        TO W-APPO-TOTALE3.          00053000
+053100     MOVE ZERO                        TO W-TOTALE3.               00053100
+053200     MOVE ZERO                        TO W-TOTALE4.               00053200
+053300*                                                                 00053300
+053400 B2-060.                                                          00053400
+053500*---                                                              00053500
+053600     COMPUTE W-TOTALE2 = W-TOTALE2 + (W-TOTALE1-EL(W-IND2) * 2).  00053600
+053700     ADD 2 TO W-IND2.                                             00053700
+053800     IF W-IND2 NOT GREATER 16                                     00053800
+053900        GO TO B2-060.                                             00053900
+054000*                                                                 00054000
+054100 B2-070.                                                          00054100
+054200*---                                                              00054200
+054300     COMPUTE W-APPO-TOTALE3 = W-APPO-TOTALE3 +                    00054300
+054400                             W-TOTALE1-EL(W-IND1).                00054400
+054500     ADD 2 TO W-IND1.                                             00054500
+054600     IF W-IND1 NOT GREATER 15                                     00054600
+054700        GO TO B2-070.                                             00054700
+054800*                                                                 00054800
+054900 B2-080.                                                          00054900
+055000*---                                                              00055000
+055100     COMPUTE W-TOTALE3 = W-APPO-TOTALE3 + W-TOTALE2.              00055100
+055200     COMPUTE W-TOTALE4 = 10 - W-TOTALE3-3.                        00055200
+055300     MOVE W-IDENT-PAGAM-15 TO W-IDENT-PAGAM-CALC-15.              00055300
+055400     MOVE W-TOTALE4-2      TO W-IDENT-PAGAM-CALC-C1.              00055400
+055500* INIZIO MODIFICA GM PER PC                                       00055500
+055600**** DIVIDE 93 INTO W-IDENT-PAGAM-CALC-16 GIVING W-APPO-DIVIDE    00055600
+055700******************************** REMAINDER W-RESTO-PAGAM.         00055700
+055800     MOVE W-IDENT-PAGAM-CALC-16  TO W-APPO-PAGAM-CALC.            00055800
+055900     DIVIDE 93 INTO W-IDENT-PAGAM-CALC-A GIVING W-APPO-DIVIDE     00055900
+056000                                 REMAINDER W-RESTO-PAGAM1.        00056000
+056100     DIVIDE 93 INTO W-IDENT-PAGAM-CALC-B GIVING W-APPO-DIVIDE     00056100
+056200                                 REMAINDER W-RESTO-PAGAM2.        00056200
+056300     COMPUTE W-IDENT-PAGAM-CALC-10 = W-RESTO-PAGAM1 * 100000000 + 00056300
+056400                                     W-RESTO-PAGAM2.              00056400
+056500     DIVIDE 93 INTO W-IDENT-PAGAM-CALC-10 GIVING W-APPO-DIVIDE    00056500
+056600                                 REMAINDER W-RESTO-PAGAM.         00056600
+056700*FINE MODIFICA GM PER PC                                          00056700
+056800     IF W-TOTALE4-2 = W-IDENT-PAGAM-C1 AND                        00056800
+056900        W-RESTO-PAGAM = W-IDENT-PAGAM-C2                          00056900
+057000           GO TO B2-010-ID-PAGAM-EX.                              00057000
+057100*                                                                 00057100
+057200 B2-090.                                                          00057200
+057300*---     ERRORE BLOCCANTE                                         00057300
+057400     MOVE 36                      TO W-ERR-ID-PAGAM.              00057400
+057500     ADD 1                        TO W-CTR2.                      00057500
+057600     MOVE 'E'                     TO W-SEGNAL-ID-PAGAM.           00057600
+057700*                                                                 00057700
+057800 B2-010-ID-PAGAM-EX.                                              00057800
+057900     EXIT.                                                        00057900
+058000*                                                                 00058000
+058100*F FINE MODIFICA CODICE A BARRE - 12/2004                         00058100
+058200*                                                                 00058200
+058300*---         CONTROLLO CODICE DI CONTROLLO NUMERO DI RIFERIMENTO  00058300
+058400*                                                                 00058400
+058500 C1-010-COD-CONT.                                                 00058500
+058600     IF W-COD-CONT-NRIFA NOT NUMERIC                              00058600
+058700        MOVE 33                   TO W-ERR-COD-CONT               00058700
+058800        ADD 1                     TO W-CTR2                       00058800
+058900        MOVE 'E'                  TO W-SEGNAL-COD-CONT            00058900
+059000        GO TO C1-010-COD-CONT-EX.                                 00059000
+059100*                                                                 00059100
+059200     IF (W-NUM-RIFERA NUMERIC) AND                                00059200
+059300        (W-IMP-PAGAM  NUMERIC)                                    00059300
+059400        GO TO C1-030.                                             00059400
+059500*                                                                 00059500
+059600 C1-020.                                                          00059600
+059700     GO TO C1-010-COD-CONT-EX.                                    00059700
+059800*                                                                 00059800
+059900 C1-030.                                                          00059900
+060000     MOVE W-NUM-RIFER             TO W-COD-NUMRIF.                00060000
+060100     MOVE W-IMP-PAGAM             TO W-COD-IMPPAG.                00060100
+060200     MOVE W-COD-CONT-NRIF         TO W-COD-CODCON.                00060200
+060300     DIVIDE W-DIVISORE INTO W-TEST-COD-A1 GIVING                  00060300
+060400            W-RISULTATO  REMAINDER  W-RESTO.                      00060400
+060500     MOVE W-RESTO                 TO W-APP-DIV1.                  00060500
+060600     MOVE W-TEST-COD-A2           TO W-APP-TCOD2.                 00060600
+060700     DIVIDE W-DIVISORE INTO W-APP-DIVIDENDO-N GIVING              00060700
+060800            W-RISULTATO  REMAINDER  W-RESTO.                      00060800
+060900     IF W-RESTO NOT EQUAL 1                                       00060900
+061000        MOVE 36                   TO W-ERR-COD-CONT               00061000
+061100        ADD 1                     TO W-CTR2                       00061100
+061200        MOVE 'E'                  TO W-SEGNAL-COD-CONT.           00061200
+061300*                                                                 00061300
+061400 C1-010-COD-CONT-EX.                                              00061400
+061500     EXIT.                                                        00061500
+061600*                                                                 00061600
+061700*                                                                 00061700
+061800*---         CONTROLLO PAGAMENTI                                  00061800
+061900*                                                                 00061900
+062000 D1-010-PAGA.                                                     00062000
+062100     IF W-IMP-PAGAM1 NUMERIC                                      00062100
+062200       GO TO D1-030.                                              00062200
+062300 D1-020.                                                          00062300
+062400*---   ERRORE BLOCCANTE                                           00062400
+062500*                                                                 00062500
+062600     ADD 1                        TO W-CTR2.                      00062600
+062700     MOVE 'E'                     TO W-SEGNAL-IMP-PAGAM.          00062700
+062800     MOVE 33                      TO W-ERR-IMP-PAGAM.             00062800
+062900     GO TO D1-010-PAGA-EX.                                        00062900
+063000 D1-030.                                                          00063000
+063100*    IF W-IMP-PAGAM GREATER ZERO                                  00063100
+063200*      GO TO D1-055.                                              00063200
+063300*D1-040.                                                          00063300
+063400*                                                                 00063400
+063500*D1-050.                                                          00063500
+063600*---   ERRORE BLOCCANTE                                           00063600
+063700*    ADD 1                        TO W-CTR2.                      00063700
+063800*    MOVE 39                      TO W-ERR-IMP-PAGAM.             00063800
+063900*    MOVE 'E'                     TO W-SEGNAL-IMP-PAGAM.          00063900
+064000*    GO TO D1-010-PAGA-EX.                                        00064000
+064100*D1-055.                                                          00064100
+064200*---   S'INCREMENTA L'IMPORTO NELLA TABELLA DI TOTALIZZAZIONE     00064200
+064300*---                                                              00064300
+064400     ADD W-IMP-PAGAM           TO W-TAB-EL-PAG(1).                00064400
+064500*---   SI CONTROLLA IL TIPO DI DIVISA                             00064500
+064600*---                                                              00064600
+064700     IF W-DIVISA EQUAL SPACE      OR                              00064700
+064800        W-DIVISA EQUAL LOW-VALUE                                  00064800
+064900       GO TO D1-010-PAGA-EX.                                      00064900
+065000 D1-070.                                                          00065000
+065100*---   SE LA DIVISA E' 'ITL' LE ULTIME TRE CIFRE DEL PAGAMENTO    00065100
+065200*---   DEVONO ESSERE NON IMPOSTATE;                               00065200
+065300*---   SE 'EUR' LE ULTIME DUE CIFRE  DEVONO ESSERE NON IMPOSTATE  00065300
+065400*---                                                              00065400
+065500*INIZIO MODIFICA EURO                                             00065500
+065600*CB 30/11/2001                                                    00065600
+065700     IF BQVFB21-20-DATA-RISC <= '20011231'                        00065700
+065800          IF (W-DIVISA EQUAL 'ITL'        AND                     00065800
+065900              W-IMP-PAGAM1-03 EQUAL ZERO)      OR                 00065900
+066000             (W-DIVISA EQUAL 'EUR'        AND                     00066000
+066100             (BQVFB21-DATA-BONIF > '20011231' OR                  00066100
+066200              W-IMP-PAGAM1-02 EQUAL ZERO))                        00066200
+066300             GO TO D1-010-PAGA-EX                                 00066300
+066400          ELSE                                                    00066400
+066500             GO TO D1-090                                         00066500
+066600          END-IF                                                  00066600
+066700     END-IF.                                                      00066700
+066800             GO TO D1-010-PAGA-EX.                                00066800
+066900*CB 30/11/2001                                                    00066900
+067000*FINE   MODIFICA EURO                                             00067000
+067100 D1-090.                                                          00067100
+067200*---   ERRORE BLOCCANTE                                           00067200
+067300     ADD 1                        TO W-CTR2.                      00067300
+067400     MOVE 96                      TO W-ERR-IMP-PAGAM.             00067400
+067500     MOVE 'E'                     TO W-SEGNAL-IMP-PAGAM.          00067500
+067600 D1-010-PAGA-EX.                                                  00067600
+067700     EXIT.                                                        00067700
+067800*                                                                 00067800
+067900*---                                                              00067900
+068000*---   INTERNET                                                   00068000
+068100*---                                                              00068100
+068200*---   PERFORM DI CONTROLLO ESITO PAGAMENTO ED ESISTENZA          00068200
+068300*---   PAGAMENTO INTERNET                                         00068300
+068400*---                                                              00068400
+068500 E1-010-INTERNET.                                                 00068500
+068600*---                                                              00068600
+068700*--- SI CONTROLLA L'ESITO DELL'ADDEBITO IN CONTO DEL CONTRI-      00068700
+068800*--- BUENTE SOLO SE SETTORE = '3' (= INTERNET)                    00068800
+068900*---        OPPURE SE IL SETTORE = '5' (=NOTAI)                   00068900
+069000*---        OPPURE SE IL SETTORE = '6' (=LOCAZIONI)               00069000
+069100*---        OPPURE SE IL SETTORE = '4' CON PRIMA CIFRA = 8        00069100
+069200*---                                    (=CONTRIBUTO UNIFICATO)   00069200
+069300*--- E SE IL NUMERO DI RIFERIMENTO (CODICE ATTO) E' CORRETTO      00069300
+069400*---                                                              00069400
+069500     IF W-ERR-NUM-RIFER NOT = ZERO                                00069500
+069600        GO TO E1-010-INTERNET-EX.                                 00069600
+069700 E1-020.                                                          00069700
+069800     IF   W-ESITO = '0'                                           00069800
+069900        OR                                                        00069900
+070000           ( (W-ESITO = '1' OR '2' OR '3' OR '9')                 00070000
+070100             AND                                                  00070100
+070200*AN INIZIO MODIFICA 26/05/2004                                    00070200
+070300*            ((W-APPO-SETTORE = '3' OR '5' OR '6') OR             00070300
+070400             ((W-APPO-SETTORE =        '5' OR '6') OR             00070400
+070500              (W-APPO-SETTORE = '3' AND W-APPO-PRIMA-CIFRA < 8) OR00070500
+070600*F MODIFICA 31/01/2005 - BOLLO AUTO                               00070600
+070700*F            (W-APPO-SETTORE = '4' AND W-APPO-PRIMA-CIFRA = 8))) 00070700
+070800              (W-APPO-SETTORE = '4' AND                           00070800
+070900               W-APPO-PRIMA-CIFRA NOT LESS 8)  OR                 00070900
+071000          (W-APPO-SETTORE = '9' AND W-APPO-PRIMA-CIFRA < 7)  OR   00071000
+071010          (W-APPO-SETTORE = '7' AND W-APPO-NONA-CIFRA = 6)) )     00071010
+071100*AN FINE   MODIFICA 26/05/2004                                    00071100
+071200        GO TO E1-010-INTERNET-EX.                                 00071200
+071300*                                                                 00071300
+071400 E1-030.                                                          00071400
+071500     MOVE 55  TO W-ERR-ESITO.                                     00071500
+071600     MOVE 'E' TO W-SEGNAL-ESITO.                                  00071600
+071700     ADD 1 TO W-CTR2.                                             00071700
+071800*                                                                 00071800
+071900 E1-010-INTERNET-EX.                                              00071900
+072000     EXIT.                                                        00072000

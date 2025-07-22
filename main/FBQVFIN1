@@ -1,0 +1,26 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFIN1.COBOL2                      *
+000300*                                                      *
+000400* A.D'URSO - NETSIEL - 10/11/98                        *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*                       INAIL                          *
+000800* LUNGHEZZA RECORD: 73 BYTES                           *
+000900*                                                      *
+001000*                                                      *
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001200* BARG.BQVX20                                          *
+001300********************************************************
+001400 01 BQVFIN1.
+001500*      CHIAVE
+001600    03 BQVFIN1-KEY.
+001700*      CODICE ENTE
+001800       05 BQVFIN1-COD         PIC 9(005).
+001900*      DATA INIZIO VALIDITA'
+002000       05 BQVFIN1-INIZ-VAL    PIC X(008).
+002100*      DATA FINE VALIDITA'
+002200    03 BQVFIN1-FINE-VAL       PIC X(008).
+002300*      NOME SEDE
+002400    03 BQVFIN1-NOME-SEDE      PIC X(050).
+002500*      SIGLA PROVINCIA
+002600    03 BQVFIN1-SIGLA-PROV     PIC X(002).

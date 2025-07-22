@@ -1,0 +1,1383 @@
+000010***************************************************************** 00000100
+000020 IDENTIFICATION DIVISION.                                         00000200
+000030 PROGRAM-ID. BQVFBS.                                              00000300
+000040 AUTHOR. N9219 - F.P.PISANI.                                      00000400
+000050 DATE-WRITTEN. 13/11/98.                                          00000500
+000060***************************************************************** 00000600
+000070*$1 TITOLO: VERSAMENTI UNIFICATI                                  00000700
+000080*           STAMPA ESITI                                          00000800
+000090***************************************************************** 00000900
+000100*                                                                 00001000
+000110*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00001100
+000120*                                                                 00001200
+000130*   IL PROGRAMMA SI INSERISCE NEL PACCHETTO DI CONTROLLO DATI     00001300
+000140*   'F24' PER MAINFRAME UTENTE.                                   00001400
+000150*   I DATI DEI FLUSSI F24 SONO REGISTRATI NEL FILE BQVFB1.        00001500
+000160*   IL PGM BQVFB0 EFFETTUA IL CONTROLLO DI TALI DATI, RIPORTANDO  00001600
+000170*   NEL FILE BQVFB2 I DATI CONTROLLATI CON I FLAG DI ERRORE E     00001700
+000180*   NEL FILE BQVFB3 I DATI RIEPILOGATIVI DEL CONTROLLO.           00001800
+000190*   IL PGM BQVFBE SCORRE QUESTI ULTIMI DUE FILE E RIPORTA         00001900
+000200*   GLI ERRORI REGISTRATI NEL FILE BQVFB4 (FILE ESITO), IN        00002000
+000210*   FORMATO UTILE AL PRESENTE PGM, CHE SCORRE DI SEGUITO          00002100
+000220*   TALE FILE E PRODUCE UNA STAMPA RIEPILOGATIVA DEGLI            00002200
+000230*   ERRORI RISCONTRATI.                                           00002300
+000240*                                                                 00002400
+000250*   IL PACCHETTO DI CONTROLLO DATI PER MAINFRAME UTENTE           00002500
+000260*   UTILIZZA LA STESSA LOGICA SEGUITA DALLE PROCEDURE DI          00002600
+000270*   ACQUISIZIONE DATI E DEGLI ESITI PRESSO LA ANAGRAFE            00002700
+000280*   TRIBUTARIA.                                                   00002800
+000290*   IL PACCHETTO CONSENTE ALL'UTENTE DI EFFETTUARE PRESSO         00002900
+000300*   IL PROPRIO SISTEMA GLI STESSI CONTROLLI CHE VERRANNO          00003000
+000310*   SVOLTI DALLA ANAGRAFE TRIBUTARIA DOPO L'INVIO DEI DATI,       00003100
+000320*   ANTICIPANDO QUINDI L'INDIVIDUAZIONE DEGLI EVENTUALI           00003200
+000330*   ERRORI.                                                       00003300
+000340*                                                                 00003400
+000350*     ARCHIVI  GESTITI                                            00003500
+000360*                                                                 00003600
+000370*     NOME       DESCRIZIONE                         ACCESSO      00003700
+000380*                                                                 00003800
+000390*   * BQVFB4 * ESITI                                 * IN * SEQ  *00003900
+000400*              ARCHIVIO CONTENENTE GLI EVENTUALI ERRORI,          00004000
+000410*              FORMALI E DI QUADRATURA, CONTENUTI NEI             00004100
+000420*              FLUSSI                                             00004200
+000430*                                                                 00004300
+000440*   * BQVFFL * DECODIFICA SEGNALAZIONI DI ERRORE     * IN * SEQ  *00004400
+000450*              ARCHIVIO CONTENENTE CODICE E DESCRIZIONE DELLE     00004500
+000460*              SEGNALAZIONI DI ERRORE                             00004600
+000470*                                                                 00004700
+000480*   * BQVFBT * DECODIFICA TRACCIATO RECORD           * IN * SEQ  *00004800
+000490*              ARCHIVIO CONTENENTE DISPLACEMENT E DESCRIZIONE     00004900
+000500*              DEI CAMPI DEL TRACCIATO RECORD                     00005000
+000510*                                                                 00005100
+000520*   * BQVFAZ * ARCHIVIO 'AZIENDE' CONTENENTE LA      * IN * SEQ  *00005200
+000530*            * DECODIFICA MITTENTE E ABI                          00005300
+000540*                                                                 00005400
+000550*   * BQVFPR * ARCHIVIO 'PROVINCE'                   * IN * SEQ  *00005500
+000560*                                                                 00005600
+000570*     ROUTINE  RICHIAMATE                                         00005700
+000580*                                                                 00005800
+000590*     BQVFSR   INTERROMPE L'ELABORAZIONE                          00005900
+000600*                                                                 00006000
+000610***************************************************************** 00006100
+000620     EJECT                                                        00006200
+000630***************************************************************** 00006300
+000640*                ENVIRONMENT DIVISION                             00006400
+000650***************************************************************** 00006500
+000660 ENVIRONMENT DIVISION.                                            00006600
+000670 CONFIGURATION SECTION.                                           00006700
+000680 SPECIAL-NAMES.                                                   00006800
+000690     DECIMAL-POINT IS COMMA.                                      00006900
+000700 INPUT-OUTPUT SECTION.                                            00007000
+000710 FILE-CONTROL.                                                    00007100
+000720**   ESITI                                                        00007200
+000730     SELECT BQVFB4                                                00007300
+000740            ASSIGN TO UT-S-BQVFB4.                                00007400
+000750     EJECT                                                        00007500
+000760**   STAMPA                                                       00007600
+000770     SELECT BQVFBP                                                00007700
+000780            ASSIGN TO UT-S-BQVFBP.                                00007800
+000790     EJECT                                                        00007900
+000800**   DECODIFICA SEGNALAZIONI DI ERRORE                            00008000
+000810     SELECT BQVFFL                                                00008100
+000820            ASSIGN TO UT-S-BQVFFL.                                00008200
+000830     EJECT                                                        00008300
+000840**   DECODIFICA TRACCIATO RECORD                                  00008400
+000850     SELECT BQVFBT                                                00008500
+000860            ASSIGN TO UT-S-BQVFBT.                                00008600
+000870     EJECT                                                        00008700
+000880**   DECODIFICA MITTENTE E ABI (FILE AZIENDE)                     00008800
+000890*    SELECT BQVFAZ                                                00008900
+000900*           ASSIGN TO UT-S-BQVFAZ.                                00009000
+000910*    EJECT                                                        00009100
+000920**   DECODIFICA PROVINCIA (FILE PROVINCE)                         00009200
+000930     SELECT BQVFPR                                                00009300
+000940            ASSIGN TO UT-S-BQVFPR.                                00009400
+000950     EJECT                                                        00009500
+000960***************************************************************** 00009600
+000970*                DATA DIVISION                                  * 00009700
+000980***************************************************************** 00009800
+000990 DATA DIVISION.                                                   00009900
+001000 FILE SECTION.                                                    00010000
+001010**   ESITI                                                        00010100
+001020 FD  BQVFB4                                                       00010200
+001030     LABEL RECORD IS OMITTED                                      00010300
+001040     BLOCK CONTAINS 0 RECORDS.                                    00010400
+001050 01  BQVFB42                     PIC X(256).                      00010500
+001060**   STAMPA                                                       00010600
+001070 FD  BQVFBP                                                       00010700
+001080     LABEL RECORD IS OMITTED                                      00010800
+001090     BLOCK CONTAINS 0 RECORDS.                                    00010900
+001100 01  W-REC-STAMPA                PIC X(080).                      00011000
+001110**   DECODIFICA SEGNALAZIONI DI ERRORE                            00011100
+001120 FD  BQVFFL                                                       00011200
+001130     LABEL RECORD IS OMITTED                                      00011300
+001140     BLOCK CONTAINS 0 RECORDS.                                    00011400
+001150 01  BQVFFL2                     PIC X(084).                      00011500
+001160**   DECODIFICA TRACCIATO RECORD                                  00011600
+001170 FD  BQVFBT                                                       00011700
+001180     LABEL RECORD IS OMITTED                                      00011800
+001190     BLOCK CONTAINS 0 RECORDS.                                    00011900
+001200 01  BQVFBT2                     PIC X(059).                      00012000
+001210**   DECODIFICA MITTENTE E ABI                                    00012100
+001220*FD  BQVFAZ                                                       00012200
+001230*    LABEL RECORD IS STANDARD                                     00012300
+001240*    BLOCK CONTAINS 0 RECORDS.                                    00012400
+001250*01  BQVFAZ2                     PIC X(071).                      00012500
+001260**   DECODIFICA PROVINCIA                                         00012600
+001270 FD  BQVFPR                                                       00012700
+001280     LABEL RECORD IS STANDARD                                     00012800
+001290     BLOCK CONTAINS 0 RECORDS.                                    00012900
+001300 01  BQVFPR2                     PIC X(042).                      00013000
+001310***************************************************************** 00013100
+001320*                WORKING-STORAGE SECTION                        * 00013200
+001330***************************************************************** 00013300
+001340 WORKING-STORAGE SECTION.                                         00013400
+001350     SKIP2                                                        00013500
+001360 77  FILLER                      PIC X(017) VALUE                 00013600
+001370                                 'INIZIO W-S BQVFBS'.             00013700
+001380**   CODICE USER ABEND                                            00013800
+001390 77  ABEND-CODE                  PIC X(004) VALUE ZERO.           00013900
+001400**   CAMPI DI COMODO PER IL TEST DI FINE FILE                     00014000
+001410 77  W-EOF-BQVFB4                PIC X(001).                      00014100
+001420 77  W-EOF-BQVFFL                PIC X(001).                      00014200
+001430 77  W-EOF-BQVFBT                PIC X(001).                      00014300
+001440*77  W-EOF-BQVFAZ                PIC X(001).                      00014400
+001450 77  W-EOF-BQVFPR                PIC X(001).                      00014500
+001460**   CONTATORI STATISTICI:                                        00014600
+001470**   RECORD LETTI DA 'ESITO'                                      00014700
+001480 77  CTR-LETTI-BQVFB4            PIC 9(007).                      00014800
+001490**   RECORD SCRITTI IN STAMPA                                     00014900
+001500 77  CTR-SCRITTI-STAMPA          PIC 9(007).                      00015000
+001510**   INDICE DECODIFICA ERRORI                                     00015100
+001520 77  IND-RECORD-DECOD            PIC 9(003).                      00015200
+001530**   INDICE DECODIFICA DISPLACEMENT                               00015300
+001540 77  IND-RECORD-DISPL            PIC 9(003).                      00015400
+001550*    FLAG INDICANTE SE E' STATO TROVATO UN RECORD SU UN ARCHIVIO  00015500
+001560*    W-FLG-TROVATO = 1 ===> TROVATO                               00015600
+001570*    W-FLG-TROVATO = 0 ===> NON TROVATO                           00015700
+001580 77  W-FLG-TROVATO               PIC 9(001).                      00015800
+001590**   INDICE ERRORI PER TIPO RECORD                                00015900
+001600 77  W-IND                       PIC 9(001).                      00016000
+001610**   INDICATORE FINE CICLO                                        00016100
+001620 77  W-CICLO                     PIC 9(001).                      00016200
+001630**   TOTALE FLUSSI LOGICI ELABORATI                               00016300
+001640 77  CTR-FLUSSI                  PIC 9(007).                      00016400
+001650**   CAMPO SI APPOGGIO PER MEMORIZZARE L'ESITO DEL FLUSSO LOGICO  00016500
+001660 77  W-APPO-ESITO                PIC X(001).                      00016600
+001670**   TABELLA PER LA DECODIFICA DEL CODICE ABI.                    00016700
+001680*    CARICATA A PARTIRE DAL FILE BQVFAZ                           00016800
+001690*01  W-TAB-AZIENDE.                                               00016900
+001700*    03 W-TAB-AZIENDE-NUM-MAX    PIC 9(004) VALUE 1500.           00017000
+001710*    03 W-TAB-AZIENDE-OCC.                                        00017100
+001720*       05 W-TAB-AZIENDE-EL      OCCURS 1500 TIMES                00017200
+001730*                                ASCENDING W-TAB-AZIENDE-COD-ALF  00017300
+001740*                                INDEXED BY W-PUNT-AZIENDE.       00017400
+001750*          07 W-TAB-AZIENDE-COD-ALF PIC X(005).                   00017500
+001760*          07 W-TAB-AZIENDE-COD-NUM REDEFINES                     00017600
+001770*             W-TAB-AZIENDE-COD-ALF PIC 9(005).                   00017700
+001780*          07 W-TAB-AZIENDE-DESCR   PIC X(050).                   00017800
+001790*---                                                              00017900
+001800**TABELLA CONTENETE I CODICI PROVINCE PRELEVATI DAL FILE BQVFPR   00018000
+001810*---                                                              00018100
+001820 01  W-TAB-PROV.                                                  00018200
+001830     03 W-TAB-PROV-NUM-MAX        PIC 9(003) VALUE 150.           00018300
+001840     03 W-TAB-PROV-OCC.                                           00018400
+001850        05 W-TAB-PROV-EL OCCURS   150 TIMES                       00018500
+001860                                    ASCENDING W-TAB-PROV-COD      00018600
+001870                                    INDEXED BY W-PUNT-PROV.       00018700
+001880           07 W-TAB-PROV-COD      PIC X(002).                     00018800
+001890           07 W-TAB-PROV-DESCR    PIC X(020).                     00018900
+001900**   TABELLA DECODIFICA ERRORI                                    00019000
+001910 01  W-DECOD.                                                     00019100
+001920     03  W-TAB-DECOD OCCURS 200 TIMES                             00019200
+001930                     ASCENDING W-TAB-COD                          00019300
+001940                     INDEXED BY W-PUNT-DECOD.                     00019400
+001950         05  W-TAB-COD           PIC X(003).                      00019500
+001960         05  W-TAB-DES.                                           00019600
+001970             07  W-TAB-DES1      PIC X(040).                      00019700
+001980             07  FILLER          PIC X(001).                      00019800
+001990             07  W-TAB-DES2      PIC X(040).                      00019900
+002000**   TABELLA DISPLACEMENT TRACCIATO RECORD FILE DA CONTROLLARE    00020000
+002010 01  W-TAB-TRAC-NUM-MAX          PIC 9(003) VALUE 650.            00020100
+002020 01  W-TRACCIATO.                                                 00020200
+002030     03  W-TAB-TRAC  OCCURS 650 TIMES                             00020300
+002040                     ASCENDING W-TAB-KEY                          00020400
+002050                     INDEXED BY W-PUNT-TRAC.                      00020500
+002060         05  W-TAB-KEY.                                           00020600
+002070             07  W-TAB-TIPO-REC  PIC X(003).                      00020700
+002080             07  W-TAB-DISPL     PIC X(003).                      00020800
+002090         05  W-TAB-DESCR         PIC X(050).                      00020900
+002100 01  W-SER-KEY.                                                   00021000
+002110**   APPOGGIO PER LA SEARCH                                       00021100
+002120     03  W-SER-TIPO-REC          PIC X(003).                      00021200
+002130     03  W-SER-DISPL             PIC X(003).                      00021300
+002140**  TESTATE DI STAMPA                                             00021400
+002150**  RIGA BIANCA                                                   00021500
+002160 01  W-BIANCA                    PIC X(080) VALUE SPACES.         00021600
+002170**  RIGA 1                                                        00021700
+002180 01  W-TEST-1.                                                    00021800
+002190     03 FILLER                   PIC X(002) VALUE SPACES.         00021900
+002200     03 FILLER                   PIC X(023)                       00022000
+002210               VALUE 'MINISTERO DELLE FINANZE'.                   00022100
+002220     03 FILLER                   PIC X(032) VALUE SPACES.         00022200
+002230     03 FILLER                   PIC X(021)                       00022300
+002240               VALUE 'AGENZIA DELLE ENTRATE'.                     00022400
+002250     03 FILLER                   PIC X(002) VALUE SPACES.         00022500
+002260**  RIGA 2                                                        00022600
+002270 01  W-TEST-2.                                                    00022700
+002280     03 FILLER                   PIC X(002) VALUE SPACES.         00022800
+002290     03 FILLER                   PIC X(018) VALUE SPACES.         00022900
+002300     03 FILLER                   PIC X(020)                       00023000
+002310               VALUE 'VERSAMENTI UNIFICATI'.                      00023100
+002320     03 FILLER                   PIC X(020)                       00023200
+002330               VALUE ' (mod. F24)         '.                      00023300
+002340     03 FILLER                   PIC X(018) VALUE SPACES.         00023400
+002350     03 FILLER                   PIC X(002) VALUE SPACES.         00023500
+002360**  RIGA 3                                                        00023600
+002370 01  W-TEST-3.                                                    00023700
+002380     03 FILLER                   PIC X(002) VALUE SPACES.         00023800
+002390     03 FILLER                   PIC X(015) VALUE SPACES.         00023900
+002400     03 FILLER                   PIC X(045) VALUE                 00024000
+002410                'STAMPA COMPLETA DEI RISULTATI'.                  00024100
+002420     03 FILLER                   PIC X(016) VALUE SPACES.         00024200
+002430     03 FILLER                   PIC X(002) VALUE SPACES.         00024300
+002440**  RIGA 4                                                        00024400
+002450 01  W-TEST-4.                                                    00024500
+002460     03 FILLER                   PIC X(002) VALUE SPACES.         00024600
+002470**  DATA DI ELABORAZIONE (DATA DI SISTEMA)                        00024700
+002480     03 FILLER                   PIC X(022) VALUE                 00024800
+002490                     'DATA DI ELABORAZIONE: '.                    00024900
+002500     03 W-TEST-DATA-ELAB-GG      PIC X(002) VALUE SPACES.         00025000
+002510     03 FILLER                   PIC X(001) VALUE '/'.            00025100
+002520     03 W-TEST-DATA-ELAB-MM      PIC X(002) VALUE SPACES.         00025200
+002530     03 FILLER                   PIC X(001) VALUE '/'.            00025300
+002540     03 W-TEST-DATA-ELAB-AA      PIC X(004) VALUE SPACES.         00025400
+002550     03 FILLER                   PIC X(044) VALUE SPACES.         00025500
+002560     03 FILLER                   PIC X(002) VALUE SPACES.         00025600
+002570**  RIGA 5                                                        00025700
+002580 01  W-TEST-5.                                                    00025800
+002590     03 FILLER                   PIC X(002) VALUE SPACES.         00025900
+002600     03 FILLER                   PIC X(032)                       00026000
+002610               VALUE 'DATI DEL FILE LOGICO CONTROLLATO'.          00026100
+002620     03 FILLER                   PIC X(044) VALUE SPACES.         00026200
+002630     03 FILLER                   PIC X(002) VALUE SPACES.         00026300
+002640**  RIGA 6                                                        00026400
+002650 01  W-TEST-6.                                                    00026500
+002660     03 FILLER                   PIC X(002) VALUE SPACES.         00026600
+002670     03 FILLER                   PIC X(022)                       00026700
+002680               VALUE 'ORDINANTE           : '.                    00026800
+002690     03 W-TEST-ABI               PIC X(005) VALUE SPACES.         00026900
+002700     03 FILLER                   PIC X(001) VALUE SPACES.         00027000
+002710     03 W-TEST-DESCR-ABI         PIC X(050) VALUE SPACES.         00027100
+002720**  RIGA 7                                                        00027200
+002730 01  W-TEST-7.                                                    00027300
+002740     03 FILLER                   PIC X(002) VALUE SPACES.         00027400
+002750     03 FILLER                   PIC X(022)                       00027500
+002760               VALUE 'DATA BONIFICO       : '.                    00027600
+002770     03 W-TEST-DATA-BONI-GG      PIC X(002) VALUE SPACES.         00027700
+002780     03 FILLER                   PIC X(001) VALUE '/'.            00027800
+002790     03 W-TEST-DATA-BONI-MM      PIC X(002) VALUE SPACES.         00027900
+002800     03 FILLER                   PIC X(001) VALUE '/'.            00028000
+002810     03 W-TEST-DATA-BONI-AA      PIC X(004) VALUE SPACES.         00028100
+002820     03 FILLER                   PIC X(044) VALUE SPACES.         00028200
+002830     03 FILLER                   PIC X(002) VALUE SPACES.         00028300
+002840**  RIGA 8                                                        00028400
+002850 01  W-TEST-8.                                                    00028500
+002860     03 FILLER                   PIC X(002) VALUE SPACES.         00028600
+002870     03 FILLER                   PIC X(022)                       00028700
+002880               VALUE 'PROGR. TRASMISSIONE : '.                    00028800
+002890     03 W-TEST-PRG-TRASM         PIC X(002) VALUE SPACES.         00028900
+002900     03 FILLER                   PIC X(052) VALUE SPACES.         00029000
+002910     03 FILLER                   PIC X(002) VALUE SPACES.         00029100
+002920**  RIGA 9                                                        00029200
+002930 01  W-TEST-9.                                                    00029300
+002940     03 FILLER                   PIC X(002) VALUE SPACES.         00029400
+002950     03 FILLER                   PIC X(022)                       00029500
+002960               VALUE 'TIPO INVIO          : '.                    00029600
+002970     03 W-TEST-TIPO-INVIO        PIC X(012) VALUE SPACES.         00029700
+002980     03 FILLER                   PIC X(042) VALUE SPACES.         00029800
+002990     03 FILLER                   PIC X(002) VALUE SPACES.         00029900
+003000**  RIGA 10                                                       00030000
+003010 01  W-TEST-10.                                                   00030100
+003020     03 FILLER                   PIC X(002) VALUE SPACES.         00030200
+003030     03 FILLER                   PIC X(022)                       00030300
+003040               VALUE 'PROGRESSIVO INVIO   : '.                    00030400
+003050     03 W-TEST-PROG-INVIO        PIC X(002) VALUE SPACES.         00030500
+003060     03 FILLER                   PIC X(052) VALUE SPACES.         00030600
+003070     03 FILLER                   PIC X(002) VALUE SPACES.         00030700
+003080**  RIGA 11                                                       00030800
+003090 01  W-TEST-11.                                                   00030900
+003100     03 FILLER                   PIC X(002) VALUE SPACES.         00031000
+003110     03 FILLER                   PIC X(022)                       00031100
+003120               VALUE 'PROGR. FILE LOGICO  : '.                    00031200
+003130     03 W-TEST-FILE-LOGICO       PIC X(004) VALUE ZERO.           00031300
+003140     03 FILLER                   PIC X(050) VALUE SPACES.         00031400
+003150     03 FILLER                   PIC X(002) VALUE SPACES.         00031500
+003160**  RIGA 12                                                       00031600
+003170 01  W-TEST-12.                                                   00031700
+003180     03 FILLER                   PIC X(002) VALUE SPACES.         00031800
+003190**  DATA IN CUI E' STATO EFFETTUATO IL CONTROLLO,                 00031900
+003200**  REGISTRATA  IN BQVxB31-DATA-ESITO                             00032000
+003210**  E RIPORTATA IN BQVxB41-EV0-DATA-ESITO                         00032100
+003220**  (SU MAINFRAME, COINCIDE CON LA DATA DI ELABORAZIONE           00032200
+003230**                 DELLA STAMPA, RIPORTATA IN RIGA 4)             00032300
+003240**  (SU PC, E' LA DATA IN CUI E' STATO RICHIESTO IL CONTROLLO)    00032400
+003250     03 FILLER                   PIC X(022)                       00032500
+003260               VALUE 'DATA CONTROLLO FILE : '.                    00032600
+003270     03 W-TEST-DATA-CREA-GG      PIC X(002) VALUE SPACES.         00032700
+003280     03 FILLER                   PIC X(001) VALUE '/'.            00032800
+003290     03 W-TEST-DATA-CREA-MM      PIC X(002) VALUE SPACES.         00032900
+003300     03 FILLER                   PIC X(001) VALUE '/'.            00033000
+003310     03 W-TEST-DATA-CREA-AA      PIC X(004) VALUE SPACES.         00033100
+003320     03 FILLER                   PIC X(044) VALUE SPACES.         00033200
+003330     03 FILLER                   PIC X(002) VALUE SPACES.         00033300
+003340**  RIGA 13                                                       00033400
+003350 01  W-TEST-13.                                                   00033500
+003360     03 FILLER                   PIC X(002) VALUE SPACES.         00033600
+003370     03 FILLER                   PIC X(032)                       00033700
+003380               VALUE 'ESITO DEL CONTROLLO: ********** '.          00033800
+003390     03 W-TEST-ESITO             PIC X(008) VALUE SPACES.         00033900
+003400     03 FILLER                   PIC X(011)                       00034000
+003410               VALUE ' **********'.                               00034100
+003420     03 FILLER                   PIC X(025) VALUE SPACES.         00034200
+003430     03 FILLER                   PIC X(002) VALUE SPACES.         00034300
+003440**  RIGA 13 BIS                                                   00034400
+003450 01  W-TEST-13-BIS.                                               00034500
+003460     03 FILLER                   PIC X(002) VALUE SPACES.         00034600
+003470     03 FILLER                   PIC X(032)                       00034700
+003480               VALUE '* IL FILE ESAMINATO PRESENTA ALC'.          00034800
+003490     03 FILLER                   PIC X(020)                       00034900
+003500               VALUE 'UNI DATI SQUADRATI *'.                      00035000
+003510     03 FILLER                   PIC X(024) VALUE SPACES.         00035100
+003520     03 FILLER                   PIC X(002) VALUE SPACES.         00035200
+003530**  RIGA 14                                                       00035300
+003540 01  W-TEST-14.                                                   00035400
+003550     03 FILLER                   PIC X(002) VALUE SPACES.         00035500
+003560     03 FILLER                   PIC X(044)                       00035600
+003570          VALUE 'NUMERO TOTALE DI RECORDS PRESENTI NEL FILE: '.   00035700
+003580     03 W-TEST-REC-TOT           PIC Z.ZZZ.ZZZ.ZZ9.               00035800
+003590     03 FILLER                   PIC X(019) VALUE SPACES.         00035900
+003600     03 FILLER                   PIC X(002) VALUE SPACES.         00036000
+003610**  RIGA 15                                                       00036100
+003620 01  W-TEST-15.                                                   00036200
+003630     03 FILLER                   PIC X(002) VALUE SPACES.         00036300
+003640     03 FILLER                   PIC X(044)                       00036400
+003650          VALUE 'DI CUI:                                     '.   00036500
+003660     03 FILLER                   PIC X(032) VALUE SPACES.         00036600
+003670     03 FILLER                   PIC X(002) VALUE SPACES.         00036700
+003680**  RECORD V01                                                    00036800
+003690 01  W-TEST-V01.                                                  00036900
+003700     03 FILLER                   PIC X(002) VALUE SPACES.         00037000
+003710     03 W-TEST-REC-V01           PIC Z.ZZZ.ZZZ.ZZ9.               00037100
+003720     03 FILLER                   PIC X(045) VALUE                 00037200
+003730          ' DI RISCOSSIONE-ERARIO                       '.        00037300
+003740     03 FILLER                   PIC X(017) VALUE                 00037400
+003750          '(TIPO RECORD V01)'.                                    00037500
+003760     03 FILLER                   PIC X(003) VALUE SPACES.         00037600
+003770**  RECORD V02                                                    00037700
+003780 01  W-TEST-V02.                                                  00037800
+003790     03 FILLER                   PIC X(002) VALUE SPACES.         00037900
+003800     03 W-TEST-REC-V02           PIC Z.ZZZ.ZZZ.ZZ9.               00038000
+003810     03 FILLER                   PIC X(045) VALUE                 00038100
+003820          ' DI RISCOSSIONE-INPS                         '.        00038200
+003830     03 FILLER                   PIC X(017) VALUE                 00038300
+003840          '(TIPO RECORD V02)'.                                    00038400
+003850     03 FILLER                   PIC X(003) VALUE SPACES.         00038500
+003860**  RECORD V03                                                    00038600
+003870 01  W-TEST-V03.                                                  00038700
+003880     03 FILLER                   PIC X(002) VALUE SPACES.         00038800
+003890     03 W-TEST-REC-V03           PIC Z.ZZZ.ZZZ.ZZ9.               00038900
+003900     03 FILLER                   PIC X(045) VALUE                 00039000
+003910          ' DI RISCOSSIONE-REGIONI                      '.        00039100
+003920     03 FILLER                   PIC X(017) VALUE                 00039200
+003930          '(TIPO RECORD V03)'.                                    00039300
+003940     03 FILLER                   PIC X(003) VALUE SPACES.         00039400
+003950**  RECORD V04                                                    00039500
+003960 01  W-TEST-V04.                                                  00039600
+003970     03 FILLER                   PIC X(002) VALUE SPACES.         00039700
+003980     03 W-TEST-REC-V04           PIC Z.ZZZ.ZZZ.ZZ9.               00039800
+003990     03 FILLER                   PIC X(045) VALUE                 00039900
+004000          ' DI RISCOSSIONE-ENTI LOCALI                  '.        00040000
+004010     03 FILLER                   PIC X(017) VALUE                 00040100
+004020          '(TIPO RECORD V04)'.                                    00040200
+004030     03 FILLER                   PIC X(003) VALUE SPACES.         00040300
+004040**  RECORD V05                                                    00040400
+004050 01  W-TEST-V05.                                                  00040500
+004060     03 FILLER                   PIC X(002) VALUE SPACES.         00040600
+004070     03 W-TEST-REC-V05           PIC Z.ZZZ.ZZZ.ZZ9.               00040700
+004080     03 FILLER                   PIC X(041) VALUE                 00040800
+004090          ' DI RISCOSSIONE-INAIL                    '.            00040900
+004100     03 FILLER                   PIC X(004) VALUE SPACES.         00041000
+004110     03 FILLER                   PIC X(017) VALUE                 00041100
+004120          '(TIPO RECORD V05)'.                                    00041200
+004130     03 FILLER                   PIC X(003) VALUE SPACES.         00041300
+004140**  RECORD V06                                                    00041400
+004150 01  W-TEST-V06.                                                  00041500
+004160     03 FILLER                   PIC X(002) VALUE SPACES.         00041600
+004170     03 W-TEST-REC-V06           PIC Z.ZZZ.ZZZ.ZZ9.               00041700
+004180     03 FILLER                   PIC X(045) VALUE                 00041800
+004190          ' DI RISCOSSIONE-ALTRI ENTI PREVIDENZIALI     '.        00041900
+004200     03 FILLER                   PIC X(017) VALUE                 00042000
+004210          '(TIPO RECORD V06)'.                                    00042100
+004220     03 FILLER                   PIC X(003) VALUE SPACES.         00042200
+004230**  RECORD V07                                                    00042300
+004240 01  W-TEST-V07.                                                  00042400
+004250     03 FILLER                   PIC X(002) VALUE SPACES.         00042500
+004260     03 W-TEST-REC-V07           PIC Z.ZZZ.ZZZ.ZZ9.               00042600
+004270     03 FILLER                   PIC X(045) VALUE                 00042700
+004280          ' DI RISCOSSIONE-ACCISE                       '.        00042800
+004290     03 FILLER                   PIC X(017) VALUE                 00042900
+004300          '(TIPO RECORD V07)'.                                    00043000
+004310     03 FILLER                   PIC X(003) VALUE SPACES.         00043100
+004320 01  W-TEST-V12.                                                  00043200
+004330     03 FILLER                   PIC X(002) VALUE SPACES.         00043300
+004340     03 W-TEST-REC-V12           PIC Z.ZZZ.ZZZ.ZZ9.               00043400
+004350     03 FILLER                   PIC X(045) VALUE                 00043500
+004351          ' DI RISCOSSIONE-ELEMENTI-IDENTIFICATIVI      '.        00043600
+004370     03 FILLER                   PIC X(017) VALUE                 00043700
+004380          '(TIPO RECORD V12)'.                                    00043800
+004390     03 FILLER                   PIC X(003) VALUE SPACES.         00043900
+004400**  RECORD V14                                                    00044000
+004410 01  W-TEST-V14.                                                  00044100
+004420     03 FILLER                   PIC X(002) VALUE SPACES.         00044200
+004430     03 W-TEST-REC-V14           PIC Z.ZZZ.ZZZ.ZZ9.               00044300
+004440     03 FILLER                   PIC X(045) VALUE                 00044400
+004450          ' DI RISCOSSIONE-ANAGRAFICO DI PERSONA FISICA '.        00044500
+004460     03 FILLER                   PIC X(017) VALUE                 00044600
+004470          '(TIPO RECORD V14)'.                                    00044700
+004480     03 FILLER                   PIC X(003) VALUE SPACES.         00044800
+004490**  RECORD V15                                                    00044900
+004500 01  W-TEST-V15.                                                  00045000
+004510     03 FILLER                   PIC X(002) VALUE SPACES.         00045100
+004520     03 W-TEST-REC-V15           PIC Z.ZZZ.ZZZ.ZZ9.               00045200
+004530     03 FILLER                   PIC X(041) VALUE                 00045300
+004540          ' DI RISCOSSIONE-IDENTIFICATIVO DI SOCIETA'.            00045400
+004550     03 FILLER                   PIC X(001) VALUE QUOTE.          00045500
+004560     03 FILLER                   PIC X(003) VALUE SPACES.         00045600
+004570     03 FILLER                   PIC X(017) VALUE                 00045700
+004580          '(TIPO RECORD V15)'.                                    00045800
+004590     03 FILLER                   PIC X(003) VALUE SPACES.         00045900
+004600**  RECORD V20                                                    00046000
+004610 01  W-TEST-V20.                                                  00046100
+004620     03 FILLER                   PIC X(002) VALUE SPACES.         00046200
+004630     03 W-TEST-REC-V20           PIC Z.ZZZ.ZZZ.ZZ9.               00046300
+004640     03 FILLER                   PIC X(041) VALUE                 00046400
+004641          ' DI RISCOSSIONE-DELEGA-VIRTUALE          '.            00046500
+004660     03 FILLER                   PIC X(004) VALUE SPACES.         00046600
+004670     03 FILLER                   PIC X(017) VALUE                 00046700
+004680          '(TIPO RECORD V20)'.                                    00046800
+004690     03 FILLER                   PIC X(003) VALUE SPACES.         00046900
+004700**  RECORD V36                                                    00047000
+004710 01  W-TEST-V36.                                                  00047100
+004720     03 FILLER                   PIC X(002) VALUE SPACES.         00047200
+004730     03 W-TEST-REC-V36           PIC Z.ZZZ.ZZZ.ZZ9.               00047300
+004740     03 FILLER                   PIC X(045) VALUE                 00047400
+004750          ' DI RISCOSSIONE-RIEPILOGATIVO                '.        00047500
+004760     03 FILLER                   PIC X(017) VALUE                 00047600
+004770          '(TIPO RECORD V36)'.                                    00047700
+004780     03 FILLER                   PIC X(003) VALUE SPACES.         00047800
+004790**  RECORD V37                                                    00047900
+004800 01  W-TEST-V37.                                                  00048000
+004810     03 FILLER                   PIC X(002) VALUE SPACES.         00048100
+004820     03 W-TEST-REC-V37           PIC Z.ZZZ.ZZZ.ZZ9.               00048200
+004830     03 FILLER                   PIC X(045) VALUE                 00048300
+004840          ' DI SPETTANZE PER PROVINCIA                  '.        00048400
+004850     03 FILLER                   PIC X(017) VALUE                 00048500
+004860          '(TIPO RECORD V37)'.                                    00048600
+004870     03 FILLER                   PIC X(003) VALUE SPACES.         00048700
+004880**  RECORD V38                                                    00048800
+004890 01  W-TEST-V38.                                                  00048900
+004900     03 FILLER                   PIC X(002) VALUE SPACES.         00049000
+004910     03 W-TEST-REC-V38           PIC Z.ZZZ.ZZZ.ZZ9.               00049100
+004920     03 FILLER                   PIC X(020) VALUE                 00049200
+004930          ' DI BONIFICO BANCA D'.                                 00049300
+004940     03 FILLER                   PIC X(001) VALUE QUOTE.          00049400
+004950     03 FILLER                   PIC X(024) VALUE                 00049500
+004960          'ITALIA                  '.                             00049600
+004970     03 FILLER                   PIC X(017) VALUE                 00049700
+004980          '(TIPO RECORD V38)'.                                    00049800
+004990     03 FILLER                   PIC X(003) VALUE SPACES.         00049900
+005000**  RECORD V49                                                    00050000
+005010 01  W-TEST-V49.                                                  00050100
+005020     03 FILLER                   PIC X(002) VALUE SPACES.         00050200
+005030     03 W-TEST-REC-V49           PIC Z.ZZZ.ZZZ.ZZ9.               00050300
+005040     03 FILLER                   PIC X(045) VALUE                 00050400
+005050          ' DI SEGNALAZIONE ASSEGNO IMP./DELEGA DOPPIA  '.        00050500
+005060     03 FILLER                   PIC X(017) VALUE                 00050600
+005070          '(TIPO RECORD V49)'.                                    00050700
+005080     03 FILLER                   PIC X(003) VALUE SPACES.         00050800
+005090**  RIGA 16                                                       00050900
+005100 01  W-TEST-16.                                                   00051000
+005110     03 FILLER                   PIC X(002) VALUE SPACES.         00051100
+005120     03 FILLER                   PIC X(037)                       00051200
+005130          VALUE 'NUMERO TOTALE DI ERRORI RILEVATI:    '.          00051300
+005140     03 W-TEST-ERR-TOT           PIC Z.ZZZ.ZZZ.ZZ9.               00051400
+005150     03 FILLER                   PIC X(026) VALUE SPACES.         00051500
+005160     03 FILLER                   PIC X(002) VALUE SPACES.         00051600
+005170**  RIGA 17                                                       00051700
+005180 01  W-TEST-17.                                                   00051800
+005190     03 FILLER                   PIC X(002) VALUE SPACES.         00051900
+005200     03 FILLER                   PIC X(037)                       00052000
+005210          VALUE '                DI CUI BLOCCANTI:    '.          00052100
+005220     03 W-TEST-ERR-BLO           PIC Z.ZZZ.ZZZ.ZZ9.               00052200
+005230     03 FILLER                   PIC X(026) VALUE SPACES.         00052300
+005240     03 FILLER                   PIC X(002) VALUE SPACES.         00052400
+005250**  RIGA 18                                                       00052500
+005260 01  W-TEST-18.                                                   00052600
+005270     03 FILLER                   PIC X(002) VALUE SPACES.         00052700
+005280     03 FILLER                   PIC X(001) VALUE SPACES.         00052800
+005290     03 FILLER                   PIC X(033)                       00052900
+005300          VALUE 'NUMERO TOTALE DI RECORDS ERRATI: '.              00053000
+005310     03 FILLER                   PIC X(003) VALUE SPACES.         00053100
+005320     03 W-TEST-REC-ERR           PIC Z.ZZZ.ZZZ.ZZ9.               00053200
+005330     03 FILLER                   PIC X(026) VALUE SPACES.         00053300
+005340     03 FILLER                   PIC X(002) VALUE SPACES.         00053400
+005350**  RIGA 19                                                       00053500
+005360 01  W-TEST-19.                                                   00053600
+005370     03 FILLER                   PIC X(002) VALUE SPACES.         00053700
+005380     03 FILLER                   PIC X(001) VALUE SPACES.         00053800
+005390     03 FILLER                   PIC X(033)                       00053900
+005400          VALUE '    DI CUI CON ERRORI BLOCCANTI: '.              00054000
+005410     03 FILLER                   PIC X(003) VALUE SPACES.         00054100
+005420     03 W-TEST-REC-BLO           PIC Z.ZZZ.ZZZ.ZZ9.               00054200
+005430     03 FILLER                   PIC X(026) VALUE SPACES.         00054300
+005440     03 FILLER                   PIC X(002) VALUE SPACES.         00054400
+005450**  RIGA 20                                                       00054500
+005460 01  W-TEST-20.                                                   00054600
+005470     03 FILLER                   PIC X(002) VALUE SPACES.         00054700
+005480     03 FILLER                   PIC X(005) VALUE SPACES.         00054800
+005490     03 FILLER                   PIC X(014)                       00054900
+005500          VALUE '**************'.                                 00055000
+005510     03 FILLER                   PIC X(036)                       00055100
+005520          VALUE ' DETTAGLIO ERRORI PER SINGOLO RECORD'.           00055200
+005530     03 FILLER                   PIC X(016)                       00055300
+005540          VALUE ' ***************'.                               00055400
+005550     03 FILLER                   PIC X(005) VALUE SPACES.         00055500
+005560     03 FILLER                   PIC X(002) VALUE SPACES.         00055600
+005570**  RIGA 21                                                       00055700
+005580 01  W-TEST-21.                                                   00055800
+005590     03 FILLER                   PIC X(002) VALUE SPACES.         00055900
+005600     03 FILLER                   PIC X(018) VALUE                 00056000
+005610                'RECORD NUMERO   : '.                             00056100
+005620     03 W-TEST-PRG-REC           PIC 9(007) VALUE ZERO.           00056200
+005630     03 FILLER                   PIC X(019)                       00056300
+005640          VALUE '  TIPO RECORD    : '.                            00056400
+005650     03 W-TEST-TIP-REC           PIC X(003) VALUE SPACES.         00056500
+005660     03 FILLER                   PIC X(022)                       00056600
+005670          VALUE '  PROGRESSIVO DELEGA: '.                         00056700
+005680     03 W-TEST-PRG-DEL           PIC X(006) VALUE SPACES.         00056800
+005690     03 FILLER                   PIC X(001) VALUE SPACES.         00056900
+005700     03 FILLER                   PIC X(002) VALUE SPACES.         00057000
+005710**  RIGA 22                                                       00057100
+005720 01  W-TEST-22.                                                   00057200
+005730     03 FILLER                   PIC X(002) VALUE SPACES.         00057300
+005740     03 FILLER                   PIC X(018) VALUE                 00057400
+005750                'PROGRESSIVO RIGA: '.                             00057500
+005760     03 W-TEST-PRG-RIG           PIC X(003) VALUE ZERO.           00057600
+005770     03 FILLER                   PIC X(004) VALUE SPACES.         00057700
+005780     03 FILLER                   PIC X(019)                       00057800
+005790          VALUE '  SIGLA PROVINCIA: '.                            00057900
+005800     03 W-TEST-SIG-PRO           PIC X(002) VALUE SPACES.         00058000
+005810     03 FILLER                   PIC X(001) VALUE SPACES.         00058100
+005820     03 FILLER                   PIC X(022)                       00058200
+005830          VALUE '  PROGRESSIVO A./B. : '.                         00058300
+005840     03 W-TEST-PRG-A-B           PIC X(002) VALUE SPACES.         00058400
+005850     03 FILLER                   PIC X(004) VALUE SPACES.         00058500
+005860     03 FILLER                   PIC X(001) VALUE SPACES.         00058600
+005870     03 FILLER                   PIC X(002) VALUE SPACES.         00058700
+005880**  RIGA 23                                                       00058800
+005890 01  W-TEST-23.                                                   00058900
+005900     03 FILLER                   PIC X(002) VALUE SPACES.         00059000
+005910     03 FILLER                   PIC X(007) VALUE SPACES.         00059100
+005920     03 FILLER                   PIC X(011)                       00059200
+005930          VALUE 'CAMPO    : '.                                    00059300
+005940     03 W-TEST-CAM-DES           PIC X(050) VALUE SPACES.         00059400
+005950     03 FILLER                   PIC X(008) VALUE SPACES.         00059500
+005960     03 FILLER                   PIC X(002) VALUE SPACES.         00059600
+005970**  RIGA 24                                                       00059700
+005980 01  W-TEST-24.                                                   00059800
+005990     03 FILLER                   PIC X(002) VALUE SPACES.         00059900
+006000     03 FILLER                   PIC X(007) VALUE SPACES.         00060000
+006010     03 FILLER                   PIC X(011)                       00060100
+006020          VALUE 'POSIZIONE: '.                                    00060200
+006030     03 W-TEST-ERR-DIS           PIC X(003).                      00060300
+006040     03 W-TEST-ERR-DIS-NUM                                        00060400
+006050        REDEFINES W-TEST-ERR-DIS PIC 9(003).                      00060500
+006060     03 FILLER                   PIC X(013)                       00060600
+006070          VALUE '  CONTENUTO: '.                                  00060700
+006080     03 W-TEST-ERR-VAL           PIC X(020) VALUE SPACES.         00060800
+006090     03 FILLER                   PIC X(014) VALUE SPACES.         00060900
+006100     03 FILLER                   PIC X(008) VALUE SPACES.         00061000
+006110     03 FILLER                   PIC X(002) VALUE SPACES.         00061100
+006120**  RIGA 25                                                       00061200
+006130 01  W-TEST-25.                                                   00061300
+006140     03 FILLER                   PIC X(002) VALUE SPACES.         00061400
+006150     03 FILLER                   PIC X(007) VALUE SPACES.         00061500
+006160     03 FILLER                   PIC X(011)                       00061600
+006170          VALUE 'ERRORE   : '.                                    00061700
+006180     03 W-TEST-ERR-COD           PIC X(003) VALUE SPACES.         00061800
+006190     03 FILLER                   PIC X(001) VALUE '/'.            00061900
+006200     03 W-TEST-ERR-TIP           PIC X(001) VALUE SPACES.         00062000
+006210     03 FILLER                   PIC X(002) VALUE SPACES.         00062100
+006220     03 W-TEST-ERR-DES1          PIC X(040) VALUE SPACES.         00062200
+006230     03 FILLER                   PIC X(011) VALUE SPACES.         00062300
+006240     03 FILLER                   PIC X(002) VALUE SPACES.         00062400
+006250**  RIGA 26                                                       00062500
+006260 01  W-TEST-26.                                                   00062600
+006270     03 FILLER                   PIC X(002) VALUE SPACES.         00062700
+006280     03 FILLER                   PIC X(025) VALUE SPACES.         00062800
+006290     03 W-TEST-ERR-DES2          PIC X(040) VALUE SPACES.         00062900
+006300     03 FILLER                   PIC X(011) VALUE SPACES.         00063000
+006310     03 FILLER                   PIC X(002) VALUE SPACES.         00063100
+006320**  RIGA 27                                                       00063200
+006330 01  W-TEST-27.                                                   00063300
+006340     03 FILLER                   PIC X(002) VALUE SPACES.         00063400
+006350     03 FILLER                   PIC X(012) VALUE SPACES.         00063500
+006360     03 FILLER                   PIC X(022) VALUE                 00063600
+006370        '    IL CONTROLLO NON E'.                                 00063700
+006380     03 FILLER                   PIC X(001) VALUE QUOTE.          00063800
+006390     03 FILLER                   PIC X(028) VALUE                 00063900
+006400        ' STATO ULTIMATO A CAUSA     '.                           00064000
+006410     03 FILLER                   PIC X(013) VALUE SPACES.         00064100
+006420     03 FILLER                   PIC X(002) VALUE SPACES.         00064200
+006430**  RIGA 28                                                       00064300
+006440 01  W-TEST-28.                                                   00064400
+006450     03 FILLER                   PIC X(002) VALUE SPACES.         00064500
+006460     03 FILLER                   PIC X(012) VALUE SPACES.         00064600
+006470     03 FILLER                   PIC X(051) VALUE                 00064700
+006480        '    DEL SEGUENTE ERRORE RISCONTRATO NEL FILE :     '.    00064800
+006490     03 FILLER                   PIC X(013) VALUE SPACES.         00064900
+006500     03 FILLER                   PIC X(002) VALUE SPACES.         00065000
+006510**  RIGA 29                                                       00065100
+006520 01  W-TEST-29.                                                   00065200
+006530     03 FILLER                   PIC X(002) VALUE SPACES.         00065300
+006540     03 FILLER                   PIC X(012) VALUE SPACES.         00065400
+006550     03 W-TEST-DES1-RIF          PIC X(051) VALUE SPACES.         00065500
+006560     03 FILLER                   PIC X(013) VALUE SPACES.         00065600
+006570     03 FILLER                   PIC X(002) VALUE SPACES.         00065700
+006580**  RIGA 30                                                       00065800
+006590 01  W-TEST-30.                                                   00065900
+006600     03 FILLER                   PIC X(002) VALUE SPACES.         00066000
+006610     03 FILLER                   PIC X(012) VALUE SPACES.         00066100
+006620     03 W-TEST-DES2-RIF          PIC X(051) VALUE SPACES.         00066200
+006630     03 FILLER                   PIC X(013) VALUE SPACES.         00066300
+006640     03 FILLER                   PIC X(002) VALUE SPACES.         00066400
+006650**  RIGA 31                                                       00066500
+006660 01  W-TEST-31.                                                   00066600
+006670     03 FILLER                   PIC X(002) VALUE SPACES.         00066700
+006680     03 FILLER                   PIC X(012) VALUE SPACES.         00066800
+006690     03 W-TEST-DES3-RIF          PIC X(051) VALUE SPACES.         00066900
+006700     03 FILLER                   PIC X(013) VALUE SPACES.         00067000
+006710     03 FILLER                   PIC X(002) VALUE SPACES.         00067100
+006720**   CAMPI DI COMODO PER LE DATE                                  00067200
+006730 01  COMODO-DATA.                                                 00067300
+006740     03 DATAAA                   PIC X(002).                      00067400
+006750     03 DATAMM                   PIC X(002).                      00067500
+006760     03 DATAGG                   PIC X(002).                      00067600
+006770 01  DATA-SYS.                                                    00067700
+006780     03 DATA-SYS-AAAA.                                            00067800
+006790        05 DATA-SYS-SEC          PIC X(002).                      00067900
+006800        05 DATA-SYS-AA           PIC X(002).                      00068000
+006810     03 DATA-SYS-MM              PIC X(002).                      00068100
+006820     03 DATA-SYS-GG              PIC X(002).                      00068200
+006830 01  W-DATA.                                                      00068300
+006840     03  W-AAAA                  PIC X(4).                        00068400
+006850     03  W-MM                    PIC X(2).                        00068500
+006860     03  W-GG                    PIC X(2).                        00068600
+006870***************************************************************** 00068700
+006880*                  TRACCIATO RECORD ARCHIVI                     * 00068800
+006890***************************************************************** 00068900
+006900**   DECODIFICA SEGNALAZIONI                                      00069000
+006910     EJECT                                                        00069100
+006920 COPY FBQVFFL1.                                                   00069200
+006930**   ESITI                                                        00069300
+006940 COPY FBQVFB41.                                                   00069400
+006950**   AZIENDE                                                      00069500
+006960 COPY FBQVFAZ1.                                                   00069600
+006970**   PROVINCE                                                     00069700
+006980 COPY FBQVFPR1.                                                   00069800
+006990**   TRACCIATO RECORD                                             00069900
+007000 COPY FBQVFBT1.                                                   00070000
+007010     EJECT                                                        00070100
+007020***************************************************************** 00070200
+007030*                  LINKAGE SECTION                              * 00070300
+007040***************************************************************** 00070400
+007050 LINKAGE SECTION.                                                 00070500
+007060     EJECT                                                        00070600
+007070 PROCEDURE DIVISION.                                              00070700
+007080***************************************************************** 00070800
+007090*                PROCEDURE  DIVISION                            * 00070900
+007100***************************************************************** 00071000
+007110 ML-010.                                                          00071100
+007120*****DISPLAY DI INIZIO PROGRAMMA                                  00071200
+007130     DISPLAY '************************************************'   00071300
+007140     DISPLAY '*                                              *'   00071400
+007150     DISPLAY '*         -    VERSAMENTI UNIFICATI   -        *'   00071500
+007160     DISPLAY '*                                              *'   00071600
+007170     DISPLAY '*                  STAMPA  ESITI               *'   00071700
+007180     DISPLAY '*                       F24                    *'   00071800
+007190     DISPLAY '*                                              *'   00071900
+007200     DISPLAY '************************************************'   00072000
+007210     DISPLAY '*            INIZIO PROGRAMMA BQVFBS           *'   00072100
+007220     DISPLAY '************************************************'.  00072200
+007230*****INIZIALIZZAZIONE                                             00072300
+007240     MOVE ZERO TO CTR-FLUSSI                                      00072400
+007250                  IND-RECORD-DECOD                                00072500
+007260                  IND-RECORD-DISPL.                               00072600
+007270*****ACQUISIZIONE DATA DI SISTEMA                                 00072700
+007280     ACCEPT COMODO-DATA FROM DATE.                                00072800
+007290*****FINO AL 2096 NON CI SONO PROBLEMI....                        00072900
+007300     IF DATAAA LESS 97                                            00073000
+007310        GO TO ML-030.                                             00073100
+007320 ML-020.                                                          00073200
+007330     MOVE 19 TO DATA-SYS-SEC.                                     00073300
+007340     GO TO ML-040.                                                00073400
+007350 ML-030.                                                          00073500
+007360     MOVE 20 TO DATA-SYS-SEC.                                     00073600
+007370 ML-040.                                                          00073700
+007380     MOVE DATAAA TO DATA-SYS-AA.                                  00073800
+007390     MOVE DATAMM TO DATA-SYS-MM.                                  00073900
+007400     MOVE DATAGG TO DATA-SYS-GG.                                  00074000
+007410*****APERTURA ARCHIVI                                             00074100
+007420     PERFORM A1-010-OPEN  THRU A1-990-OPEN-EX.                    00074200
+007430*****CICLO ELABORATIVO                                            00074300
+007440     PERFORM B1-010-ESITO THRU B1-990-ESITO-EX.                   00074400
+007450 ML-990.                                                          00074500
+007460     STOP RUN.                                                    00074600
+007470     EJECT                                                        00074700
+007480***************************************************************** 00074800
+007490*                APERTURA ARCHIVI                               * 00074900
+007500***************************************************************** 00075000
+007510 A1-010-OPEN.                                                     00075100
+007520*    APERTURA ESITI                                               00075200
+007530     MOVE ZERO TO CTR-LETTI-BQVFB4.                               00075300
+007540     OPEN INPUT BQVFB4.                                           00075400
+007550*    APERTURA STAMPA                                              00075500
+007560     OPEN OUTPUT BQVFBP.                                          00075600
+007570*    IMPOSTO 'UNA-TANTUM' LA TESTATA                              00075700
+007580     WRITE W-REC-STAMPA FROM W-BIANCA                             00075800
+007590     WRITE W-REC-STAMPA FROM W-TEST-1                             00075900
+007600     WRITE W-REC-STAMPA FROM W-BIANCA                             00076000
+007610     WRITE W-REC-STAMPA FROM W-TEST-2                             00076100
+007620     WRITE W-REC-STAMPA FROM W-BIANCA                             00076200
+007630     WRITE W-REC-STAMPA FROM W-TEST-3                             00076300
+007640     WRITE W-REC-STAMPA FROM W-BIANCA                             00076400
+007650*    DATA DI ELABORAZIONE                                         00076500
+007660     MOVE DATA-SYS-AAAA       TO W-TEST-DATA-ELAB-AA              00076600
+007670     MOVE DATA-SYS-MM         TO W-TEST-DATA-ELAB-MM              00076700
+007680     MOVE DATA-SYS-GG         TO W-TEST-DATA-ELAB-GG              00076800
+007690     WRITE W-REC-STAMPA FROM W-TEST-4                             00076900
+007700     WRITE W-REC-STAMPA FROM W-BIANCA                             00077000
+007710     MOVE  9 TO CTR-SCRITTI-STAMPA.                               00077100
+007720*    EFFETTUO IL CARICAMENTO DELLA TABELLA DI WORKING AZIENDE     00077200
+007730*    PERFORM E2-010-CAR-AZIENDE THRU E2-990-CAR-AZIENDE-EX.       00077300
+007740 A1-990-OPEN-EX.                                                  00077400
+007750     EXIT.                                                        00077500
+007760     EJECT                                                        00077600
+007770***************************************************************** 00077700
+007780* SI SCORRE IL FILE ESITO PRECEDENTEMENTE RIEMPITO DAL BQVFBE.  * 00077800
+007790*                                                               * 00077900
+007800* PER OGNI FILE LOGICO CONTROLLATO, NEL FILE ESITO E' PRESENTE: * 00078000
+007810* - UN  RECORD DI TESTA ('EV0')                                 * 00078100
+007820* - EVENTUALMENTE 'N' RECORD DI DETTAGLIO ERRORI ('EV1')        * 00078200
+007830* - UN RECORD DI CODA   ('EV9')                                 * 00078300
+007840***************************************************************** 00078400
+007850 B1-010-ESITO.                                                    00078500
+007860**  INIZIO CICLO                                                  00078600
+007870 B1-015.                                                          00078700
+007880     MOVE ZERO TO W-CICLO.                                        00078800
+007890 B1-020.                                                          00078900
+007900*    LETTURA ARCHIVIO ESITO                                       00079000
+007910     MOVE LOW-VALUE TO W-EOF-BQVFB4.                              00079100
+007920     READ BQVFB4 INTO BQVFB41 AT END                              00079200
+007930           MOVE HIGH-VALUE TO W-EOF-BQVFB4.                       00079300
+007940     IF W-EOF-BQVFB4 EQUAL HIGH-VALUE AND                         00079400
+007950        CTR-LETTI-BQVFB4 EQUAL ZERO                               00079500
+007960*       ARCHIVIO ESITO VUOTO                                      00079600
+007970        DISPLAY 'BQVFBS-B1-020-01: ARCHIVIO BQVFB4 VUOTO'         00079700
+007980        MOVE '0001' TO ABEND-CODE                                 00079800
+007990        CALL 'BQVFSR' USING ABEND-CODE.                           00079900
+008000     IF W-EOF-BQVFB4 EQUAL HIGH-VALUE                             00080000
+008010*      FINE ELABORAZIONE ARCHIVIO ESITO                           00080100
+008020       GO TO B1-070.                                              00080200
+008030 B1-030.                                                          00080300
+008040     ADD 1 TO CTR-LETTI-BQVFB4.                                   00080400
+008050     IF BQVFB41-TIPO-REC NOT EQUAL 'EV0'                          00080500
+008060*      IL PRIMO RECORD DI OGNI FILE LOGICO DEVE ESSERE QUELLO     00080600
+008070*      DI TESTA (EV0)                                             00080700
+008080       DISPLAY 'BQVFBS-B1-030-01: ARCHIVIO BQVFB4: RECORD DI'     00080800
+008090       DISPLAY 'BQVFBS-B1-030-01: TESTA -EV0- NON TROVATO'        00080900
+008100       MOVE '0002' TO ABEND-CODE                                  00081000
+008110       CALL 'BQVFSR' USING ABEND-CODE.                            00081100
+008120*    AVER LETTO IL RECORD DI TESTA (EV0) DETERMINA                00081200
+008130*    LA STAMPA DELLA INTESTAZIONE                                 00081300
+008140     ADD 1 TO CTR-FLUSSI                                          00081400
+008150     MOVE BQVFB41-EV0-ESITO TO W-APPO-ESITO                       00081500
+008160     PERFORM A2-010-SCRIVI-TESTA THRU A2-990-SCRIVI-TESTA-EX.     00081600
+008170 B1-040.                                                          00081700
+008180*    INIZIO CICLO FILE LOGICO                                     00081800
+008190*    LETTURA SUCCESSIVO RECORD ARCHIVIO ESITO                     00081900
+008200     MOVE LOW-VALUE TO W-EOF-BQVFB4.                              00082000
+008210     READ BQVFB4 INTO BQVFB41 AT END                              00082100
+008220           MOVE HIGH-VALUE TO W-EOF-BQVFB4.                       00082200
+008230     IF W-EOF-BQVFB4 EQUAL HIGH-VALUE                             00082300
+008240*      IMPREVISTA FINE FILE ARCHIVIO ESITO                        00082400
+008250       DISPLAY 'BQVFBS-B1-040-01: ARCHIVIO BQVFB4: RECORD DI'     00082500
+008260       DISPLAY 'BQVFBS-B1-040-01: CODA -EV9- NON TROVATO'         00082600
+008270       MOVE '0003' TO ABEND-CODE                                  00082700
+008280       CALL 'BQVFSR' USING ABEND-CODE.                            00082800
+008290     ADD 1 TO CTR-LETTI-BQVFB4.                                   00082900
+008300     IF BQVFB41-TIPO-REC EQUAL 'EV9'                              00083000
+008310       GO TO B1-046.                                              00083100
+008320 B1-043.                                                          00083200
+008330*    IL GENERICO RECORD LOGICO DELL'ARCHIVIO ESITO                00083300
+008340*    VIENE STAMPATO                                               00083400
+008350     PERFORM C2-010-SCRIVI-GEN THRU C2-990-SCRIVI-GEN-EX.         00083500
+008360     GO TO B1-050.                                                00083600
+008370 B1-046.                                                          00083700
+008380*    MEMORIZZO LA FINE DEL FILE LOGICO                            00083800
+008390     MOVE 1 TO W-CICLO.                                           00083900
+008400 B1-050.                                                          00084000
+008410     IF W-CICLO EQUAL ZERO                                        00084100
+008420*      CICLO FINO ALLA FINE DEL FILE LOGICO                       00084200
+008430       GO TO B1-040.                                              00084300
+008440 B1-060.                                                          00084400
+008450     MOVE ZERO TO W-CICLO.                                        00084500
+008460     GO TO B1-080.                                                00084600
+008470 B1-070.                                                          00084700
+008480*    FINE ELABORAZIONE:                                           00084800
+008490*    ...CHIUDO GLI ARCHIVI....                                    00084900
+008500     PERFORM B2-010-CLOSE THRU B2-990-CLOSE-EX.                   00085000
+008510*    ...ED EMETTO I DISPLAY STATISTICI                            00085100
+008520     PERFORM D2-010-DISPL THRU D2-990-DISPL-EX.                   00085200
+008530*    MEMORIZZO LA FINE DEL FILE FISICO                            00085300
+008540     MOVE 1 TO W-CICLO.                                           00085400
+008550 B1-080.                                                          00085500
+008560     IF W-CICLO EQUAL ZERO                                        00085600
+008570*      CICLO FINO ALLA FINE DEL FILE FISICO                       00085700
+008580       GO TO B1-015.                                              00085800
+008590 B1-990-ESITO-EX.                                                 00085900
+008600     EXIT.                                                        00086000
+008610     EJECT                                                        00086100
+008620***************************************************************** 00086200
+008630*                                                               * 00086300
+008640*             RECORD DI TESTA ARCHIVIO ESITI                    * 00086400
+008650***************************************************************** 00086500
+008660 A2-010-SCRIVI-TESTA.                                             00086600
+008670**** IMPOSTO NEI CAMPI DI STAMPA I                                00086700
+008680**** DATI DEL FILE LOGICO E LA DATA IN CUI IL FILE E' STATO       00086800
+008690**** CONTROLLATO                                                  00086900
+008700*                                                                 00087000
+008710*    CODICE ABI                                                   00087100
+008720     MOVE BQVFB41-EV0-COD-ABI            TO W-TEST-ABI            00087200
+008730*    DESCRIZIONE ABI                                              00087300
+008740*    abblencamento descrizione abi per indisponibilita'           00087400
+008750*    del campo relativo sulla tabella                             00087500
+008760     MOVE SPACES                         TO  W-TEST-DESCR-ABI     00087600
+008770*    PERFORM C3-010-DECOD-AZIENDA THRU C3-990-DECOD-AZIENDA-EX    00087700
+008780*    DATA BONIFICO                                                00087800
+008790     MOVE BQVFB41-EV0-DATA-BONIF         TO W-DATA                00087900
+008800     MOVE W-AAAA                         TO W-TEST-DATA-BONI-AA   00088000
+008810     MOVE W-MM                           TO W-TEST-DATA-BONI-MM   00088100
+008820     MOVE W-GG                           TO W-TEST-DATA-BONI-GG   00088200
+008830*    PROGRESSIVO TRASMISSIONE                                     00088300
+008840     MOVE BQVFB41-EV0-PROG-TRASM         TO W-TEST-PRG-TRASM      00088400
+008850*    TIPO INVIO                                                   00088500
+008860     MOVE BQVFB41-EV0-TIPO-INVIO         TO W-TEST-TIPO-INVIO     00088600
+008870     IF BQVFB41-EV0-TIPO-INVIO EQUAL 'O'                          00088700
+008880       MOVE 'ORDINARIO'                  TO W-TEST-TIPO-INVIO.    00088800
+008890     IF BQVFB41-EV0-TIPO-INVIO EQUAL 'C'                          00088900
+008900       MOVE 'CORRETTIVO'                 TO W-TEST-TIPO-INVIO.    00089000
+008910     IF BQVFB41-EV0-TIPO-INVIO EQUAL 'A'                          00089100
+008920       MOVE 'ANNULLAMENTO'               TO W-TEST-TIPO-INVIO.    00089200
+008930*    PROGRESSIVO INVIO                                            00089300
+008940     MOVE BQVFB41-EV0-PROG-INVIO         TO W-TEST-PROG-INVIO     00089400
+008950*    PROGRESSIVO FILE LOGICO NELL'AMBITO DEL FILE FISICO          00089500
+008960     MOVE BQVFB41-EV0-PROG-FLUSSO-TRASM  TO W-TEST-FILE-LOGICO    00089600
+008970*    DATA CONTROLLO FILE                                          00089700
+008980     MOVE BQVFB41-EV0-DATA-ESITO         TO W-DATA                00089800
+008990     MOVE W-AAAA                         TO W-TEST-DATA-CREA-AA   00089900
+009000     MOVE W-MM                           TO W-TEST-DATA-CREA-MM   00090000
+009010     MOVE W-GG                           TO W-TEST-DATA-CREA-GG   00090100
+009020*****SCRIVO LE RIGHE DI STAMPA PRECEDENTEMENTE PREPARATE          00090200
+009030     WRITE W-REC-STAMPA FROM W-TEST-5                             00090300
+009040     WRITE W-REC-STAMPA FROM W-BIANCA                             00090400
+009050     WRITE W-REC-STAMPA FROM W-TEST-6                             00090500
+009060     WRITE W-REC-STAMPA FROM W-TEST-7                             00090600
+009070     WRITE W-REC-STAMPA FROM W-TEST-8                             00090700
+009080     WRITE W-REC-STAMPA FROM W-TEST-9                             00090800
+009090     WRITE W-REC-STAMPA FROM W-TEST-10                            00090900
+009100     WRITE W-REC-STAMPA FROM W-TEST-11                            00091000
+009110     WRITE W-REC-STAMPA FROM W-BIANCA                             00091100
+009120     WRITE W-REC-STAMPA FROM W-TEST-12                            00091200
+009130     WRITE W-REC-STAMPA FROM W-BIANCA                             00091300
+009140     WRITE W-REC-STAMPA FROM W-BIANCA                             00091400
+009150     ADD 12 TO CTR-SCRITTI-STAMPA.                                00091500
+009160*****VERIFICO L'ESITO                                             00091600
+009170     IF BQVFB41-EV0-ESITO EQUAL '0'                               00091700
+009180*      ESITO POSITIVO                                             00091800
+009190       GO TO A2-030.                                              00091900
+009200 A2-020.                                                          00092000
+009210*    ESITO NEGATIVO                                               00092100
+009220     MOVE 'NEGATIVO' TO W-TEST-ESITO                              00092200
+009230     GO TO A2-040.                                                00092300
+009240 A2-030.                                                          00092400
+009250*    ESITO POSITIVO                                               00092500
+009260     MOVE 'POSITIVO' TO W-TEST-ESITO.                             00092600
+009270 A2-040.                                                          00092700
+009280*****STAMPO L'ESITO                                               00092800
+009290     WRITE W-REC-STAMPA FROM W-TEST-13                            00092900
+009300     WRITE W-REC-STAMPA FROM W-BIANCA                             00093000
+009310     ADD  2 TO CTR-SCRITTI-STAMPA.                                00093100
+009320     IF BQVFB41-EV0-ESITO EQUAL '4'                               00093200
+009330*      TRASMISSIONE SQUADRATA                                     00093300
+009340        WRITE W-REC-STAMPA FROM W-TEST-13-BIS                     00093400
+009350        WRITE W-REC-STAMPA FROM W-BIANCA                          00093500
+009360        ADD  2 TO CTR-SCRITTI-STAMPA.                             00093600
+009370     IF BQVFB41-EV0-ESITO NOT EQUAL '3'                           00093700
+009380*      TRASMISSIONE ACCETTATA                                     00093800
+009390       GO TO A2-060.                                              00093900
+009400 A2-050.                                                          00094000
+009410*    TRASMISSIONE RIFIUTATA                                       00094100
+009420     PERFORM B3-010-DECOD THRU B3-990-DECOD-EX.                   00094200
+009430     WRITE W-REC-STAMPA FROM W-TEST-27                            00094300
+009440     WRITE W-REC-STAMPA FROM W-TEST-28                            00094400
+009450     WRITE W-REC-STAMPA FROM W-TEST-29                            00094500
+009460     WRITE W-REC-STAMPA FROM W-TEST-30                            00094600
+009470     WRITE W-REC-STAMPA FROM W-TEST-31                            00094700
+009480     ADD  5 TO CTR-SCRITTI-STAMPA                                 00094800
+009490     GO TO A2-990-SCRIVI-TESTA-EX.                                00094900
+009500 A2-060.                                                          00095000
+009510*    TRASMISSIONE ACCETTATA                                       00095100
+009520     MOVE  BQVFB41-EV0-NUM-REC-TOT          TO W-TEST-REC-TOT     00095200
+009530     MOVE  BQVFB41-EV0-REC-FISCO            TO W-TEST-REC-V01     00095300
+009540     MOVE  BQVFB41-EV0-REC-INPS             TO W-TEST-REC-V02     00095400
+009550     MOVE  BQVFB41-EV0-REC-REG              TO W-TEST-REC-V03     00095500
+009560     MOVE  BQVFB41-EV0-REC-ENTI             TO W-TEST-REC-V04     00095600
+009570     MOVE  BQVFB41-EV0-REC-INAIL            TO W-TEST-REC-V05     00095700
+009580     MOVE  BQVFB41-EV0-REC-ALTRI            TO W-TEST-REC-V06     00095800
+009590     MOVE  BQVFB41-EV0-REC-ACCISE           TO W-TEST-REC-V07     00095900
+009600     MOVE  BQVFB41-EV0-REC-IVA-AUTO         TO W-TEST-REC-V12     00096000
+009610     MOVE  BQVFB41-EV0-REC-ANAG-PF          TO W-TEST-REC-V14     00096100
+009620     MOVE  BQVFB41-EV0-REC-ANAG-PNF         TO W-TEST-REC-V15     00096200
+009630     MOVE  BQVFB41-EV0-REC-ATM              TO W-TEST-REC-V20     00096300
+009640     MOVE  BQVFB41-EV0-REC-RIEPIL           TO W-TEST-REC-V36     00096400
+009650     MOVE  BQVFB41-EV0-REC-ACCRED           TO W-TEST-REC-V37     00096500
+009660     MOVE  BQVFB41-EV0-REC-BONIF            TO W-TEST-REC-V38     00096600
+009670     MOVE  BQVFB41-EV0-REC-ASS              TO W-TEST-REC-V49     00096700
+009680*    NUMERO DI RECORD CHE COMPONGONO IL FILE                      00096800
+009690     WRITE W-REC-STAMPA FROM W-TEST-14                            00096900
+009700     WRITE W-REC-STAMPA FROM W-TEST-15                            00097000
+009710     WRITE W-REC-STAMPA FROM W-TEST-V01                           00097100
+009720     WRITE W-REC-STAMPA FROM W-TEST-V02                           00097200
+009730     WRITE W-REC-STAMPA FROM W-TEST-V03                           00097300
+009740     WRITE W-REC-STAMPA FROM W-TEST-V04                           00097400
+009750     WRITE W-REC-STAMPA FROM W-TEST-V05                           00097500
+009760     WRITE W-REC-STAMPA FROM W-TEST-V06                           00097600
+009770     WRITE W-REC-STAMPA FROM W-TEST-V07                           00097700
+009780     WRITE W-REC-STAMPA FROM W-TEST-V12                           00097800
+009790     WRITE W-REC-STAMPA FROM W-TEST-V14                           00097900
+009800     WRITE W-REC-STAMPA FROM W-TEST-V15                           00098000
+009810     WRITE W-REC-STAMPA FROM W-TEST-V20                           00098100
+009820     WRITE W-REC-STAMPA FROM W-TEST-V36                           00098200
+009830     WRITE W-REC-STAMPA FROM W-TEST-V37                           00098300
+009840     WRITE W-REC-STAMPA FROM W-TEST-V38                           00098400
+009850     WRITE W-REC-STAMPA FROM W-TEST-V49                           00098500
+009860     WRITE W-REC-STAMPA FROM W-BIANCA                             00098600
+009870     ADD 12 TO CTR-SCRITTI-STAMPA.                                00098700
+009880     IF BQVFB41-EV0-ESITO EQUAL '0'                               00098800
+009890        GO TO A2-990-SCRIVI-TESTA-EX.                             00098900
+009900 A2-070.                                                          00099000
+009910*    SE L'ESITO E' NEGATIVO, SI RIPORTANO I CONTATORI             00099100
+009920*    DI ERRORE                                                    00099200
+009930     MOVE  BQVFB41-EV0-NUM-ERR-TOT        TO W-TEST-ERR-TOT       00099300
+009940     MOVE  BQVFB41-EV0-NUM-ERR-BLOC       TO W-TEST-ERR-BLO       00099400
+009950     MOVE  BQVFB41-EV0-TOT-REC-ERRATI     TO W-TEST-REC-ERR       00099500
+009960     MOVE  BQVFB41-EV0-TOT-REC-ERR-BLOC   TO W-TEST-REC-BLO       00099600
+009970     WRITE W-REC-STAMPA FROM W-TEST-16                            00099700
+009980     WRITE W-REC-STAMPA FROM W-TEST-17                            00099800
+009990     WRITE W-REC-STAMPA FROM W-BIANCA                             00099900
+010000     WRITE W-REC-STAMPA FROM W-TEST-18                            00100000
+010010     WRITE W-REC-STAMPA FROM W-TEST-19                            00100100
+010020     WRITE W-REC-STAMPA FROM W-BIANCA                             00100200
+010030     ADD  6 TO CTR-SCRITTI-STAMPA.                                00100300
+010040     WRITE W-REC-STAMPA FROM W-TEST-20                            00100400
+010050     WRITE W-REC-STAMPA FROM W-BIANCA                             00100500
+010060     ADD  2 TO CTR-SCRITTI-STAMPA.                                00100600
+010070 A2-990-SCRIVI-TESTA-EX.                                          00100700
+010080     EXIT.                                                        00100800
+010090     EJECT                                                        00100900
+010100***************************************************************** 00101000
+010110*                CHIUSURA ARCHIVI                               * 00101100
+010120***************************************************************** 00101200
+010130 B2-010-CLOSE.                                                    00101300
+010140*    CHIUSURA ESITI                                               00101400
+010150     CLOSE BQVFB4.                                                00101500
+010160*    CHIUSURA STAMPA                                              00101600
+010170     CLOSE BQVFBP.                                                00101700
+010180*                                                                 00101800
+010190 B2-990-CLOSE-EX.                                                 00101900
+010200     EXIT.                                                        00102000
+010210     EJECT                                                        00102100
+010220***************************************************************** 00102200
+010230*                                                               * 00102300
+010240*             GENERICO RECORD ARCHIVIO ESITI                    * 00102400
+010250***************************************************************** 00102500
+010260 C2-010-SCRIVI-GEN.                                               00102600
+010270     MOVE BQVFB41-EV1-TIPO-REC-ERR  TO W-TEST-TIP-REC.            00102700
+010280*                                                                 00102800
+010290*AN INIZIO MODIFICA MONOPOLI    4 MAGGIO 2004                     00102900
+010300     IF BQVFB41-EV1-TIPO-REC-ERR = 'V77'                          00103000
+010310        MOVE 'V07' TO W-TEST-TIP-REC.                             00103100
+010320*AN   FINE MODIFICA MONOPOLI    4 MAGGIO 2004                     00103200
+010330*                                                                 00103300
+010340     IF BQVFB41-EV1-TIPO-REC-ERR = 'V59'                          00103400
+010350        MOVE 'V49' TO W-TEST-TIP-REC.                             00103500
+010360*  MODIFICA 12/2004: CODICE A BARRE                               00103600
+010370     IF BQVFB41-EV1-TIPO-REC-ERR = 'V69'                          00103700
+010380        MOVE 'V49' TO W-TEST-TIP-REC.                             00103800
+010390*                                                                 00103900
+010391     IF BQVFB41-EV1-TIPO-REC-ERR = 'V98'                          00104000
+010392        MOVE 'V99' TO W-TEST-TIP-REC.                             00104100
+010393*                                                                 00104200
+010394     IF BQVFB41-EV1-PRG-REC-ERR EQUAL 1                           00104300
+010395*      RIPORTO I DATI RELATIVI AL RECORD SOLO SE IL               00104400
+010396*      RECORD E' CAMBIATO RISPETTO A QUELLO PRECEDENTE            00104500
+010397       MOVE BQVFB41-EV1-PRG-REC-FL    TO W-TEST-PRG-REC           00104600
+010398       MOVE BQVFB41-EV1-PRG-DELEGA    TO W-TEST-PRG-DEL           00104700
+010399       WRITE W-REC-STAMPA FROM W-TEST-21                          00104800
+010400       ADD  1     TO CTR-SCRITTI-STAMPA.                          00104900
+010401*    RIGA, PROVINCIA E PROGRESSIVO A/B NON SONO PRESENTI          00105000
+010402*    PER TIPO RECORD V00 E V99                                    00105100
+010403     IF BQVFB41-EV1-PRG-REC-ERR      EQUAL 1     AND              00105200
+010404        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V00' AND              00105300
+010405        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V99'                  00105400
+010406       MOVE BQVFB41-EV1-RIGA          TO W-TEST-PRG-RIG           00105500
+010407       MOVE BQVFB41-EV1-PROV          TO W-TEST-SIG-PRO           00105600
+010408       MOVE BQVFB41-EV1-PROGRESSIVO   TO W-TEST-PRG-A-B           00105700
+010409       WRITE W-REC-STAMPA FROM W-TEST-22                          00105800
+010410       ADD  1     TO CTR-SCRITTI-STAMPA.                          00105900
+010411*                                                                 00106000
+010412     IF BQVFB41-EV1-PRG-REC-ERR   EQUAL 1                         00106100
+010413       WRITE W-REC-STAMPA FROM W-BIANCA                           00106200
+010414       ADD  1     TO CTR-SCRITTI-STAMPA.                          00106300
+010415*                                                                 00106400
+010416     MOVE 1     TO W-IND.                                         00106500
+010417 C2-020.                                                          00106600
+010418*    IN CICLO, RIPORTO IL DETTAGLIO DI ERRORE PER                 00106700
+010419*    IL SINGOLO RECORD                                            00106800
+010420*         DISPLACEMENT DEL CAMPO                                  00106900
+010421     MOVE BQVFB41-EV1-ERR-POS (W-IND) TO W-TEST-ERR-DIS           00107000
+010422*         SE IL DISPLACEMENT CONTIENE UN VALORE MAGGIORE          00107100
+010423*         DELLA LUNGHEZZA DEL TRACCIATO, VUOL DIRE CHE            00107200
+010424*         E' STATO IMPOSTATO CON UN VALORE DI COMODO              00107300
+010425*         SOLO PER POTERNE RECUPERARE LA DESCRIZIONE:             00107400
+010426*         IL DISPLACEMENT NON DEVE ESSERE QUINDI VISUALIZZATO     00107500
+010427*         N.B. LA SITUAZIONE SI PRESENTA PER I FLAG DI ERRORE     00107600
+010428*         A QUALI NON E' ASSOCIATO ALCUN CAMPO DEL TRACCIATO      00107700
+010429     IF   BQVFB41-EV1-ERR-POS (W-IND) IS NUMERIC AND              00107800
+010430          BQVFB41-EV1-ERR-POS (W-IND) GREATER 255                 00107900
+010431       MOVE SPACES                    TO W-TEST-ERR-DIS.          00108000
+010432*         ATTUALMENTE A PARTIRE DA 1.....                         00108100
+010433     IF   W-TEST-ERR-DIS              IS NUMERIC                  00108200
+010434        ADD  1                        TO W-TEST-ERR-DIS-NUM.      00108300
+010435*         CONTENUTO DEL CAMPO ERRATO                              00108400
+010436     MOVE BQVFB41-EV1-ERR-VAL (W-IND) TO W-TEST-ERR-VAL           00108500
+010437*         VALORE DEL FLAG DI ERRORE ASSOCIATO AL CAMPO            00108600
+010438     MOVE BQVFB41-EV1-ERR-COD (W-IND) TO W-TEST-ERR-COD           00108700
+010439*         TIPOLOGIA FLAG DI ERRORE ASSOCIATO AL CAMPO             00108800
+010440     MOVE BQVFB41-EV1-ERR-TIP (W-IND) TO W-TEST-ERR-TIP           00108900
+010441*    DECODIFICA DEL FLAG DI ERRORE ASSOCIATO AL CAMPO             00109000
+010442     PERFORM A3-010-DECOD THRU A3-990-DECOD-EX                    00109100
+010443*    DECODIFICA DEL DISPLACEMENT                                  00109200
+010444     PERFORM D3-010-DISPL THRU D3-990-DISPL-EX                    00109300
+010445     WRITE W-REC-STAMPA FROM W-TEST-23                            00109400
+010446     WRITE W-REC-STAMPA FROM W-TEST-24                            00109500
+010447     WRITE W-REC-STAMPA FROM W-TEST-25                            00109600
+010448     WRITE W-REC-STAMPA FROM W-TEST-26                            00109700
+010449     WRITE W-REC-STAMPA FROM W-BIANCA                             00109800
+010450     ADD  5     TO CTR-SCRITTI-STAMPA.                            00109900
+010451 C2-030.                                                          00110000
+010452     ADD  1     TO W-IND.                                         00110100
+010453*    IL CICLO PROSEGUE FINO A SCORRERE I 7 ERRORI                 00110200
+010454*    PRESENTI NEL RECORD (SE PRESENTI)                            00110300
+010455     IF W-IND LESS 8 AND                                          00110400
+010456       BQVFB41-EV1-ERR-COD (W-IND) NOT EQUAL ZERO                 00110500
+010457       GO TO C2-020.                                              00110600
+010458 C2-990-SCRIVI-GEN-EX.                                            00110700
+010459     EXIT.                                                        00110800
+010460     EJECT                                                        00110900
+010461***************************************************************** 00111000
+010462*   EMISSIONE DISPLAY STATISTICI                                * 00111100
+010463***************************************************************** 00111200
+010464 D2-010-DISPL.                                                    00111300
+010465     DISPLAY '************************************************'   00111400
+010466     DISPLAY '* NUMERO FLUSSI LOGICI ELABORATI     : '            00111500
+010467             CTR-FLUSSI                                    ' *'   00111600
+010468     DISPLAY '*                                              *'   00111700
+010469     DISPLAY '* RIEPILOGO FINALE NUMERO RECORDS              *'   00111800
+010470     DISPLAY '* LETTI      DA -ESITI-              : '            00111900
+010471             CTR-LETTI-BQVFB4                              ' *'   00112000
+010472     DISPLAY '* SCRITTI    IN -STAMPA-             : '            00112100
+010473             CTR-SCRITTI-STAMPA                            ' *'   00112200
+010474     DISPLAY '************************************************'   00112300
+010475     DISPLAY '*             FINE PROGRAMMA BQVFBS            *'   00112400
+010476     DISPLAY '************************************************'.  00112500
+010477 D2-990-DISPL-EX.                                                 00112600
+010478     EXIT.                                                        00112700
+010479     EJECT                                                        00112800
+011320***************************************************************   00112900
+011321*CARICAMENTO DELLA TABELLA DI WORKING DELLE AZIENDE               00113000
+011322*PER LA DECODIFICA DEL CODICE ABI E DEL MITTENTE                  00113100
+011323***************************************************************   00113200
+011324*E2-010-CAR-AZIENDE.                                              00113300
+011325*    INIZIALIZZO LA TABELLA DI WORKING                            00113400
+011326*    SET  W-PUNT-AZIENDE    TO 1.                                 00113500
+011327*    MOVE HIGH-VALUE        TO W-TAB-AZIENDE-OCC.                 00113600
+011328*    MOVE LOW-VALUE         TO W-EOF-BQVFAZ.                      00113700
+011329*    APERTURA ARCHIVIO AZIENDE                                    00113800
+011330*    OPEN INPUT  BQVFAZ.                                          00113900
+011331*                                                                 00114000
+011332*E2-020.                                                          00114100
+011333*    READ BQVFAZ INTO BQVFAZ1  AT END                             00114200
+011334*              MOVE HIGH-VALUE TO W-EOF-BQVFAZ.                   00114300
+011335*    IF W-EOF-BQVFAZ EQUAL LOW-VALUE                              00114400
+011336*       GO TO E2-040.                                             00114500
+011337*E2-030.                                                          00114600
+011338*    ARCHIVIO TERMINATO, VERIFICO LA PRESENZA DI AZIENDE          00114700
+011339*    GO TO E2-050.                                                00114800
+011340*E2-040.                                                          00114900
+011341*    ESTRATTO UN CODICE: LO IMPOSTO IN TABELLA                    00115000
+011342*    MOVE BQVFAZ1-COD   TO W-TAB-AZIENDE-COD-NUM(W-PUNT-AZIENDE). 00115100
+011343*    MOVE BQVFAZ1-DESCR TO W-TAB-AZIENDE-DESCR  (W-PUNT-AZIENDE). 00115200
+011344*E2-050.                                                          00115300
+011345*    VERIFICO SE CONTINUARE AD ESTRARRE LE OCCORRENZE             00115400
+011346*    IF W-EOF-BQVFAZ EQUAL LOW-VALUE            AND               00115500
+011347*       W-PUNT-AZIENDE < W-TAB-AZIENDE-NUM-MAX                    00115600
+011348*       SET  W-PUNT-AZIENDE UP BY 1                               00115700
+011349*       GO TO  E2-020.                                            00115800
+011350*E2-060.                                                          00115900
+011351*    VERIFICA SFONDAMENTO TABELLA                                 00116000
+011352*    IF W-EOF-BQVFAZ EQUAL LOW-VALUE                              00116100
+011353*       SE NON SONO USCITO DAL CICLO PER FINE FILE,               00116200
+011354*       IL FILE DI INPUT NON E' FINITO:SI SEGNALA LO SFONDAMENTO  00116300
+011355*       DELLA TABELLA DI WORKING.                                 00116400
+011356*       DISPLAY 'BQVFBS-E2-060-01: SUPERATO IL NUMERO MASSIMO  '  00116500
+011357*       DISPLAY 'BQVFBS-E2-060-01: DI ELEMENTI PER LA TABELLA  '  00116600
+011358*       DISPLAY 'BQVFBS-E2-060-01: DI WORKING "W-TAB-AZIENDE"  '  00116700
+011359*       MOVE '0004'      TO ABEND-CODE                            00116800
+011360*       CALL 'BQVFSR' USING ABEND-CODE.                           00116900
+011361*    CHIUSURA ARCHIVIO                                            00117000
+011362*    CLOSE BQVFAZ.                                                00117100
+011363*E2-990-CAR-AZIENDE-EX.                                           00117200
+011364*    EXIT.                                                        00117300
+011365***************************************************************** 00117400
+011366* CARICAMENTO E RICERCA DECODIFICA FLAG SEGNALAZIONE ERRORI     * 00117500
+011367* LA TABELLA PREVEDE AL MASSIMO 200 OCCORRENZE, CONTRO GLI 82   * 00117600
+011368* VALORI AL MOMENTO PREVISTI.                                   * 00117700
+011369***************************************************************** 00117800
+011370 A3-010-DECOD.                                                    00117900
+011371*    VERIFICO SE LA TABELLA DI W-S E' GIA' STATA CARICATA         00118000
+011372     IF IND-RECORD-DECOD GREATER ZERO                             00118100
+011373       GO TO A3-090.                                              00118200
+011374 A3-020.                                                          00118300
+011375*    APERTURA DECODIFICA SEGNALAZIONI                             00118400
+011376     OPEN INPUT BQVFFL.                                           00118500
+011377*    INIZIALIZZO LA TABELLA DI W-S                                00118600
+011378     MOVE HIGH-VALUE TO W-DECOD.                                  00118700
+011379 A3-030.                                                          00118800
+011380     MOVE LOW-VALUE TO W-EOF-BQVFFL.                              00118900
+011381 A3-040.                                                          00119000
+011382*    LETTURA ARCHIVIO DECODIFICA                                  00119100
+011383     READ BQVFFL INTO BQVFFL1 AT END                              00119200
+011384           MOVE HIGH-VALUE TO W-EOF-BQVFFL.                       00119300
+011385     IF W-EOF-BQVFFL EQUAL HIGH-VALUE                             00119400
+011386       GO TO A3-060.                                              00119500
+011387 A3-050.                                                          00119600
+011388*    CARICAMENTO AREA DI W-S                                      00119700
+011389     ADD 1 TO IND-RECORD-DECOD                                    00119800
+011390     MOVE BQVFFL1-COD     TO W-TAB-COD  (IND-RECORD-DECOD)        00119900
+011391     MOVE BQVFFL1-DESCR-1 TO W-TAB-DES1 (IND-RECORD-DECOD)        00120000
+011392     MOVE BQVFFL1-DESCR-2 TO W-TAB-DES2 (IND-RECORD-DECOD)        00120100
+011393     GO TO A3-070.                                                00120200
+011394 A3-060.                                                          00120300
+011395*    FINE FILE                                                    00120400
+011396     IF IND-RECORD-DECOD EQUAL ZERO                               00120500
+011397*       FILE VUOTO                                                00120600
+011398        DISPLAY 'BQVFBS-A3-060-01: ARCHIVIO BQVFFL VUOTO'         00120700
+011399        MOVE '0005' TO ABEND-CODE                                 00120800
+011400        CALL 'BQVFSR' USING ABEND-CODE.                           00120900
+011401 A3-070.                                                          00121000
+011402*    CICLO FINO A FINE FILE OPPURE A FINE SPAZIO IN W-S           00121100
+011403     IF W-EOF-BQVFFL NOT EQUAL HIGH-VALUE AND                     00121200
+011404        IND-RECORD-DECOD LESS 200                                 00121300
+011405        GO TO A3-030.                                             00121400
+011406 A3-080.                                                          00121500
+011407*    CHIUSURA DECODIFICA SEGNALAZIONI                             00121600
+011408     CLOSE BQVFFL.                                                00121700
+011409 A3-090.                                                          00121800
+011410*    RICERCA DESCRIZIONE                                          00121900
+011411     SEARCH ALL W-TAB-DECOD                                       00122000
+011412        AT END MOVE ZERO TO W-FLG-TROVATO                         00122100
+011413     WHEN W-TAB-COD (W-PUNT-DECOD) EQUAL                          00122200
+011414                    BQVFB41-EV1-ERR-COD (W-IND)                   00122300
+011415        MOVE 1 TO W-FLG-TROVATO.                                  00122400
+011416 A3-100.                                                          00122500
+011417     IF W-FLG-TROVATO EQUAL ZERO                                  00122600
+011418          DISPLAY 'BQVFBS-A3-100-01: DECODIFICA NON TROVATA '     00122700
+011419                   BQVFB41-EV1-ERR-COD (W-IND)                    00122800
+011420          MOVE '0006' TO ABEND-CODE                               00122900
+011421          CALL 'BQVFSR' USING ABEND-CODE.                         00123000
+011422     MOVE W-TAB-DES1 (W-PUNT-DECOD) TO W-TEST-ERR-DES1            00123100
+011423     MOVE W-TAB-DES2 (W-PUNT-DECOD) TO W-TEST-ERR-DES2.           00123200
+011424 A3-990-DECOD-EX.                                                 00123300
+011425     EXIT.                                                        00123400
+011426     EJECT                                                        00123500
+011427***************************************************************** 00123600
+011428* VALORIZZAZIONE DECODIFICA MOTIVO RIFIUTO TRASMISSIONE         * 00123700
+011429***************************************************************** 00123800
+011430 B3-010-DECOD.                                                    00123900
+011431     MOVE  SPACES               TO W-TEST-DES1-RIF                00124000
+011432                                   W-TEST-DES2-RIF                00124100
+011433                                   W-TEST-DES3-RIF.               00124200
+011434     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '01'                      00124300
+011435     MOVE                                                         00124400
+011436      '*** RECORD DI INIZIO TRASMISSIONE NON ESISTENTE ***'       00124500
+011437                                TO W-TEST-DES1-RIF.               00124600
+011438     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '02'                      00124700
+011439     MOVE                                                         00124800
+011440      '***   BANCA O CONCESSIONARIO ORDINANTE ERRATO    ***'      00124900
+011441                                TO W-TEST-DES1-RIF.               00125000
+011442     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '03'                      00125100
+011443     MOVE                                                         00125200
+011444      '***           DATA DI BONIFICO ERRATA           ***'       00125300
+011445                                TO W-TEST-DES1-RIF.               00125400
+011446     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '04'                      00125500
+011447     MOVE                                                         00125600
+011448      '***       PROGRESSIVO TRASMISSIONE ERRATO       ***'       00125700
+011449                                TO W-TEST-DES1-RIF.               00125800
+011450     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '05'                      00125900
+011451     MOVE                                                         00126000
+011452      '***              TIPO INVIO ERRATO              ***'       00126100
+011453                                TO W-TEST-DES1-RIF.               00126200
+011454     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '06'                      00126300
+011455     MOVE                                                         00126400
+011456      '***          PROGRESSIVO INVIO ERRATO           ***'       00126500
+011457                                TO W-TEST-DES1-RIF.               00126600
+011458     IF BQVFB41-EV0-FLAG-TIPO-ERR EQUAL '07'                      00126700
+011459     MOVE                                                         00126800
+011460      '***               RELEASE ERRATA                ***'       00126900
+011461                                TO W-TEST-DES1-RIF.               00127000
+011462 B3-990-DECOD-EX.                                                 00127100
+011463     EXIT.                                                        00127200
+011464     EJECT                                                        00127300
+011465***************************************************************** 00127400
+011466*    RICERCA DEL CODICE AZIENDA                                 * 00127500
+011467***************************************************************** 00127600
+011468*C3-010-DECOD-AZIENDA.                                            00127700
+011469*    SEARCH ALL W-TAB-AZIENDE-EL                                  00127800
+011470*       AT END MOVE SPACES    TO  W-TEST-DESCR-ABI                00127900
+011471*    WHEN W-TAB-AZIENDE-COD-ALF  (W-PUNT-AZIENDE)                 00128000
+011472*                              EQUAL W-TEST-ABI                   00128100
+011473*       MOVE W-TAB-AZIENDE-DESCR (W-PUNT-AZIENDE)                 00128200
+011474*                             TO  W-TEST-DESCR-ABI.               00128300
+011475*C3-990-DECOD-AZIENDA-EX.                                         00128400
+011476*    EXIT.                                                        00128500
+011477*    EJECT                                                        00128600
+011478***************************************************************** 00128700
+011479* CARICAMENTO E RICERCA DECODIFICA DISPLACEMENT TRACCIATO RECORD* 00128800
+011480***************************************************************** 00128900
+011481 D3-010-DISPL.                                                    00129000
+011482*    VERIFICO SE LA TABELLA DI W-S E' GIA' STATA CARICATA         00129100
+011483     IF IND-RECORD-DISPL GREATER ZERO                             00129200
+011484       GO TO D3-090.                                              00129300
+011485 D3-020.                                                          00129400
+011486*    APERTURA DECODIFICA DISPLACEMENT                             00129500
+011487     OPEN INPUT BQVFBT.                                           00129600
+011488*    INIZIALIZZO LA TABELLA DI W-S                                00129700
+011489     MOVE HIGH-VALUE TO W-TRACCIATO.                              00129800
+011490 D3-030.                                                          00129900
+011491     MOVE LOW-VALUE TO W-EOF-BQVFBT.                              00130000
+011492 D3-040.                                                          00130100
+011493*    LETTURA ARCHIVIO DECODIFICA DISPLACEMENT                     00130200
+011494     READ BQVFBT INTO BQVFBT1 AT END                              00130300
+011495           MOVE HIGH-VALUE TO W-EOF-BQVFBT.                       00130400
+011496     IF W-EOF-BQVFBT EQUAL HIGH-VALUE                             00130500
+011497       GO TO D3-060.                                              00130600
+011498 D3-050.                                                          00130700
+011499*    CARICAMENTO AREA DI W-S                                      00130800
+011500     ADD 1 TO IND-RECORD-DISPL                                    00130900
+011501     MOVE BQVFBT1-TIPO-REC TO W-TAB-TIPO-REC (IND-RECORD-DISPL)   00131000
+011502     MOVE BQVFBT1-DISPL    TO W-TAB-DISPL    (IND-RECORD-DISPL)   00131100
+011503     MOVE BQVFBT1-DESCR    TO W-TAB-DESCR    (IND-RECORD-DISPL)   00131200
+011504     GO TO D3-070.                                                00131300
+011505 D3-060.                                                          00131400
+011506*    FINE FILE                                                    00131500
+011507     IF IND-RECORD-DISPL EQUAL ZERO                               00131600
+011508*       FILE VUOTO                                                00131700
+011509        DISPLAY 'BQVFBS-D3-060-01: ARCHIVIO BQVFBT VUOTO'         00131800
+011510        MOVE '0007' TO ABEND-CODE                                 00131900
+011511        CALL 'BQVFSR' USING ABEND-CODE.                           00132000
+011512 D3-070.                                                          00132100
+011513*    CICLO FINO A FINE FILE OPPURE A FINE SPAZIO IN W-S           00132200
+011514     IF W-EOF-BQVFBT NOT EQUAL HIGH-VALUE AND                     00132300
+011515        IND-RECORD-DISPL LESS W-TAB-TRAC-NUM-MAX                  00132400
+011516        GO TO D3-030.                                             00132500
+011517 D3-080.                                                          00132600
+011518*    CHIUSURA DECODIFICA DISPLACEMENT                             00132700
+011519     CLOSE BQVFBT.                                                00132800
+011520 D3-090.                                                          00132900
+011521*    RICERCA DESCRIZIONE                                          00133000
+011522     MOVE BQVFB41-EV1-TIPO-REC-ERR    TO W-SER-TIPO-REC.          00133100
+011523     IF BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V00' AND              00133200
+011524        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V01' AND              00133300
+011525        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V02' AND              00133400
+011526        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V03' AND              00133500
+011527        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V04' AND              00133600
+011528        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V05' AND              00133700
+011529        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V06' AND              00133800
+011530        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V07' AND              00133900
+011531        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V12' AND              00134000
+011532        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V14' AND              00134100
+011533        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V15' AND              00134200
+011534        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V20' AND              00134300
+011535        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V36' AND              00134400
+011536        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V37' AND              00134500
+011537        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V38' AND              00134600
+011538        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V49' AND              00134700
+011539*                                                                 00134800
+011540* IL TIPO RECORD 'V59' E' FITTIZIO, SERVE SOLO A DIFFERENZIARE    00134900
+011541* LE DUE DIVERSE REDEFINES DEL RECORD V49                         00135000
+011542*                                                                 00135100
+011543* MODIFICA 12/2004:                                               00135200
+011544*   LE REDEFINES DIVENTANO 3: RECORD 'V69' PER CODICE A BARRE     00135300
+011545*                                                                 00135400
+011546*AN  MODIFICA MONOPOLI  4 MAGGIO 2004                             00135500
+011547* IL TIPO RECORD 'V77' E' FITTIZIO, SERVE SOLO A DIFFERENZIARE    00135600
+011548* LE DUE DIVERSE REDEFINES DEL RECORD V07                         00135700
+011549*                                                                 00135800
+011550        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V59' AND              00135900
+011551        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V69' AND              00136000
+011552        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V77' AND              00136100
+011553        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V98' AND              00136200
+011554*                                                                 00136300
+011555        BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V99'                  00136400
+011556*       PER TIPO RECORD NON AMMESSO, TROVO LA                     00136500
+011557*       DESCRIZIONE SOLO UTILIZZANDO IL TIPO RECORD 'V00'         00136600
+011558        MOVE 'V00'                    TO W-SER-TIPO-REC.          00136700
+011559     MOVE BQVFB41-EV1-ERR-POS (W-IND) TO W-SER-DISPL.             00136800
+011560     SEARCH ALL W-TAB-TRAC AT END                                 00136900
+011561        MOVE ZERO TO W-FLG-TROVATO                                00137000
+011562      WHEN W-TAB-KEY (W-PUNT-TRAC) EQUAL W-SER-KEY                00137100
+011563        MOVE 1 TO W-FLG-TROVATO.                                  00137200
+011564 D3-100.                                                          00137300
+011565     IF W-FLG-TROVATO EQUAL ZERO                                  00137400
+011566          DISPLAY 'BQVFBS-D3-100-01: DISPLACEMENT NON TROVATO:'   00137500
+011567                   W-SER-KEY                                      00137600
+011568          MOVE '0008' TO ABEND-CODE                               00137700
+011569          CALL 'BQVFSR' USING ABEND-CODE.                         00137800
+011570     MOVE W-TAB-DESCR  (W-PUNT-TRAC) TO W-TEST-CAM-DES.           00137900
+011571 D3-990-DISPL-EX.                                                 00138000
+011572     EXIT.                                                        00138100
+011573     EJECT                                                        00138200
+

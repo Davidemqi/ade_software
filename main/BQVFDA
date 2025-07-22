@@ -1,0 +1,527 @@
+000100 IDENTIFICATION  DIVISION.                                        00000100
+000200     SKIP3                                                        00000200
+000300 PROGRAM-ID. BQVFDA.                                              00000300
+000400 AUTHOR. F.P.PISANI                                               00000400
+000500 DATE-WRITTEN. 15/12/97.                                          00000500
+000600     SKIP2                                                        00000600
+000700**************************************************************    00000700
+000800*$1 TITOLO: VERSAMENTI UNIFICATI - MAINFRAME UTENTE               00000800
+000900*           ROUTINE CONTROLLO DATA                                00000900
+001000*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00001000
+001100*    LA ROUTINE RICEVE IN INPUT DUE DATE, (NEL FORMATO ANNO,      00001100
+001200*    MESE E GIORNO) E VERIFICA:                                   00001200
+001300*    1-SE LA PRIMA DATA E' FORMALMENTE CORRETTA                   00001300
+001400*    2-IL GIORNO DELLA SETTIMANA (1,2,..,7) CORRISPONDENTE        00001400
+001500*      ALLA PRIMA DATA                                            00001500
+001600*    3-SE IL GIORNO CORRISPONDENTE ALLA PRIMA DATA E'             00001600
+001700*      FESTIVO O MENO.                                            00001700
+001800*    NEL CASO SIA PRESENTE LA SECONDA DATA E SIA FORMALMENTE      00001800
+001900*    CORRETTA, LA ROUTINE CALCOLA INOLTRE:                        00001900
+002000*    4- IL NUMERO DI GIORNI LAVORATIVI COMPRESI TRA LE DUE DATE.  00002000
+002100*                                                                 00002100
+002200*    I CONTROLLI DI CUI AI PUNTI 2), 3) E 4) SONO SVOLTI          00002200
+002300*    SOLO SE L'ANNO E' COMPRESO TRA IL 1991 ED IL 2050.           00002300
+002400*                                                                 00002400
+002500*    LA ROUTINE RESTITUISCE IN OUTPUT:                            00002500
+002600*    -- BQVFDA1-OK                                                00002600
+002700*       0 = PRIMA DATA FORMALMENTE CORRETTA                       00002700
+002800*       1 = PRIMA DATA FORMALMENTE ERRATA                         00002800
+002900*       2 = SECONDA DATA IMPOSTATA MA FORMALMENTE ERRATA          00002900
+003000*    -- BQVFDA1-SETTIMANA (SE 1991<=ANNO INPUT<=2050)             00003000
+003100*       GIORNO DELLA SETTIMANA CORRISPONDENTE ALLA PRIMA DATA     00003100
+003200*    -- BQVFDA1-FESTIVO (SE 1991<=ANNO INPUT<=2050)               00003200
+003300*       INDICATORE DI FESTIVITA' RELATIVO ALLA PRIMA DATA         00003300
+003400*       0 = GIORNO LAVORATIVO                                     00003400
+003500*       1 = GIORNO FESTIVO                                        00003500
+003600*    -- BQVFDA1-GIORNI (SE 1991<=ANNI INPUT<=2050)                00003600
+003700*       NUMERO DI GIORNI LAVORATIVI COMPRESI TRA LA PRIMA E LA    00003700
+003800*       SECONDA DATA                                              00003800
+003900*    -- BQVFDA1-GIORNI-TOT (SE 1991<=ANNI INPUT<=2050)            00003900
+004000*       NUMERO DI GIORNI COMPRESI TRA LA PRIMA E LA               00004000
+004100*       SECONDA DATA                                              00004100
+004200******************************************************************00004200
+004300*              **  ENVIRONMENT  DIVISION  **                     *00004300
+004400******************************************************************00004400
+004500     SKIP3                                                        00004500
+004600 ENVIRONMENT DIVISION.                                            00004600
+004700     SKIP2                                                        00004700
+004800 CONFIGURATION SECTION.                                           00004800
+004900     SKIP2                                                        00004900
+005000 SPECIAL-NAMES.                                                   00005000
+005100     SKIP2                                                        00005100
+005200     DECIMAL-POINT IS COMMA.                                      00005200
+005300     SKIP1                                                        00005300
+005400 INPUT-OUTPUT SECTION.                                            00005400
+005500     SKIP3                                                        00005500
+005600 FILE-CONTROL.                                                    00005600
+005700     SKIP3                                                        00005700
+005800******************************************************************00005800
+005900*                   **  DATA  DIVISION  **                       *00005900
+006000******************************************************************00006000
+006100     SKIP3                                                        00006100
+006200 DATA DIVISION.                                                   00006200
+006300     SKIP3                                                        00006300
+006400 FILE SECTION.                                                    00006400
+006500     SKIP3                                                        00006500
+006600******************************************************************00006600
+006700*              **  WORKING-STORAGE SECTION  **                   *00006700
+006800******************************************************************00006800
+006900     SKIP1                                                        00006900
+007000 WORKING-STORAGE SECTION.                                         00007000
+007100     SKIP1                                                        00007100
+007200**   INDICATORE SE L'ANNO E' BISESTILE                            00007200
+007300**   0=NON BISESTILE, 1=BISESTILE                                 00007300
+007400 77  W-ANNO-BIS                 PIC 9(001).                       00007400
+007500**   AREA NUMERICA                                                00007500
+007600 77  W-IND-ANNO                 PIC 9(002).                       00007600
+007700**   NUMERO DI GIORNI TRASCORSI DAL 1/1/91 ALLA DATA IN ESAME     00007700
+007800 77  W-TRASCORSI                PIC 9(005).                       00007800
+007900 77  W-QUOZIENTE                PIC 9(005).                       00007900
+008000 77  W-RESTO                    PIC 9(001).                       00008000
+008100 77  W-FLAG-FORMA               PIC X(001).                       00008100
+008200 77  W-FLAG-SETTIMANA           PIC X(001).                       00008200
+008300 77  W-FLAG-FESTIVO             PIC X(001).                       00008300
+008400 01  W-DATA-INIZIO              PIC X(008).                       00008400
+008500 01  W-DATA-FINE                PIC X(008).                       00008500
+008600 01  W-DATA.                                                      00008600
+008700     03 W-DATA-AAAA             PIC X(004).                       00008700
+008800     03 W-DATA-MM               PIC X(002).                       00008800
+008900     03 W-DATA-GG               PIC X(002).                       00008900
+009000 01  W-DATA-NUM REDEFINES W-DATA.                                 00009000
+009100     03  W-ANNO-NUM             PIC 9(004).                       00009100
+009200     03  W-ANNO-XXX REDEFINES W-ANNO-NUM.                         00009200
+009300         05  W-ANNO-NUM-I       PIC 9(002).                       00009300
+009400         05  W-ANNO-NUM-F       PIC 9(002).                       00009400
+009500     03  W-MESE-GIORNO.                                           00009500
+009600         05  W-MESE-NUM         PIC 9(002).                       00009600
+009700         05  W-GIORNO-NUM       PIC 9(002).                       00009700
+009800**   AREA CON LE INFORMAZIONI RELATIVE AGLI ANNI GESTITI          00009800
+009900**   PER OGNI ANNO, RIPORTA :                                     00009900
+010000**   - L'INDICAZIONE DEL LUNEDI' DELL'ANGELO                      00010000
+010100**   - IL NUMERO DI ANNI BISESTILI PRECEDENTI (DAL '91 IN POI)    00010100
+010200 01  W-ANNO-RED.                                                  00010200
+010300     03  FILLER                 PIC X(010) VALUE '1991040100'.    00010300
+010400     03  FILLER                 PIC X(010) VALUE '1992042000'.    00010400
+010500     03  FILLER                 PIC X(010) VALUE '1993041201'.    00010500
+010600     03  FILLER                 PIC X(010) VALUE '1994040401'.    00010600
+010700     03  FILLER                 PIC X(010) VALUE '1995041701'.    00010700
+010800     03  FILLER                 PIC X(010) VALUE '1996040801'.    00010800
+010900     03  FILLER                 PIC X(010) VALUE '1997033102'.    00010900
+011000     03  FILLER                 PIC X(010) VALUE '1998041302'.    00011000
+011100     03  FILLER                 PIC X(010) VALUE '1999040502'.    00011100
+011200     03  FILLER                 PIC X(010) VALUE '2000042402'.    00011200
+011300     03  FILLER                 PIC X(010) VALUE '2001041603'.    00011300
+011400     03  FILLER                 PIC X(010) VALUE '2002040103'.    00011400
+011500     03  FILLER                 PIC X(010) VALUE '2003042103'.    00011500
+011600     03  FILLER                 PIC X(010) VALUE '2004041203'.    00011600
+011700     03  FILLER                 PIC X(010) VALUE '2005032804'.    00011700
+011800     03  FILLER                 PIC X(010) VALUE '2006041704'.    00011800
+011900     03  FILLER                 PIC X(010) VALUE '2007040904'.    00011900
+012000     03  FILLER                 PIC X(010) VALUE '2008032404'.    00012000
+012100     03  FILLER                 PIC X(010) VALUE '2009041305'.    00012100
+012200     03  FILLER                 PIC X(010) VALUE '2010040505'.    00012200
+012300     03  FILLER                 PIC X(010) VALUE '2011042505'.    00012300
+012400     03  FILLER                 PIC X(010) VALUE '2012040905'.    00012400
+012500     03  FILLER                 PIC X(010) VALUE '2013040106'.    00012500
+012600     03  FILLER                 PIC X(010) VALUE '2014042106'.    00012600
+012700     03  FILLER                 PIC X(010) VALUE '2015040606'.    00012700
+012800     03  FILLER                 PIC X(010) VALUE '2016032806'.    00012800
+012900     03  FILLER                 PIC X(010) VALUE '2017041707'.    00012900
+013000     03  FILLER                 PIC X(010) VALUE '2018040207'.    00013000
+013100     03  FILLER                 PIC X(010) VALUE '2019042207'.    00013100
+013200     03  FILLER                 PIC X(010) VALUE '2020041307'.    00013200
+013210     03  FILLER                 PIC X(010) VALUE '2021040508'.    00013210
+013220     03  FILLER                 PIC X(010) VALUE '2022041808'.    00013220
+013230     03  FILLER                 PIC X(010) VALUE '2023041008'.    00013230
+013240     03  FILLER                 PIC X(010) VALUE '2024040108'.    00013240
+013250     03  FILLER                 PIC X(010) VALUE '2025042109'.    00013250
+013260     03  FILLER                 PIC X(010) VALUE '2026040609'.    00013260
+013270     03  FILLER                 PIC X(010) VALUE '2027032909'.    00013270
+013280     03  FILLER                 PIC X(010) VALUE '2028041709'.    00013280
+013290     03  FILLER                 PIC X(010) VALUE '2029040210'.    00013290
+013291     03  FILLER                 PIC X(010) VALUE '2030042210'.    00013291
+013292     03  FILLER                 PIC X(010) VALUE '2031041410'.    00013292
+013293     03  FILLER                 PIC X(010) VALUE '2032032910'.    00013293
+013294     03  FILLER                 PIC X(010) VALUE '2033041811'.    00013294
+013295     03  FILLER                 PIC X(010) VALUE '2034041011'.    00013295
+013296     03  FILLER                 PIC X(010) VALUE '2035032611'.    00013296
+013297     03  FILLER                 PIC X(010) VALUE '2036041411'.    00013297
+013298     03  FILLER                 PIC X(010) VALUE '2037040612'.    00013298
+013299     03  FILLER                 PIC X(010) VALUE '2038042612'.    00013299
+013300     03  FILLER                 PIC X(010) VALUE '2039041112'.    00013300
+013301     03  FILLER                 PIC X(010) VALUE '2040040212'.    00013301
+013302     03  FILLER                 PIC X(010) VALUE '2041042213'.    00013302
+013303     03  FILLER                 PIC X(010) VALUE '2042040713'.    00013303
+013304     03  FILLER                 PIC X(010) VALUE '2043033013'.    00013304
+013305     03  FILLER                 PIC X(010) VALUE '2044041813'.    00013305
+013306     03  FILLER                 PIC X(010) VALUE '2045041014'.    00013306
+013307     03  FILLER                 PIC X(010) VALUE '2046032614'.    00013307
+013308     03  FILLER                 PIC X(010) VALUE '2047041514'.    00013308
+013309     03  FILLER                 PIC X(010) VALUE '2048040614'.    00013309
+013310     03  FILLER                 PIC X(010) VALUE '2049041915'.    00013310
+013311     03  FILLER                 PIC X(010) VALUE '2050041115'.    00013311
+013320 01  W-ANNO REDEFINES W-ANNO-RED.                                 00013320
+013400     03  W-ANNO-TAB  OCCURS 60 TIMES.                             00013400
+013500**           ANNO IN ESAME (1991-2050)                            00013500
+013600         05  W-ANNO-KEY             PIC 9(004).                   00013600
+013700**           LUNEDI' DELL'ANGELO (MM-GG)                          00013700
+013800         05  W-ANNO-ANGELO          PIC 9(004).                   00013800
+013900**           NUMERO DI ANNI BISESTILI CHE PRECEDONO               00013900
+014000**           L'ANNO IN ESAME (DAL 1991 IL POI)                    00014000
+014100         05  W-ANNO-NUM-PREC        PIC 9(002).                   00014100
+014200**   AREA PER IL CONTROLLO DEI GIORNI FESTIVI                     00014200
+014300**   I GIORNI FESTIVI INFRASETTIMANALI SONO SEMPRE GLI            00014300
+014400**   STESSI, TRANNE IL LUNEDI' DELL'ANGELO, VARIABILE             00014400
+014500**   N.B. NEL CASO DI VARIZIONI, E' SUFFICIENTE MODIFICARE        00014500
+014600**        LA TABELLINA DI SEGUITO RIPORTATA                       00014600
+014700**     (CHE EVENTUALMENTE PREVEDE AL TERMINE DELLA STESSA         00014700
+014800**        DEI CAMPI IN PIU' A DISPOSIZIONE (...,9898,9999))       00014800
+014900 01  W-FEST-RED.                                                  00014900
+015000     03  FILLER                     PIC X(004) VALUE '0101'.      00015000
+015100     03  FILLER                     PIC X(004) VALUE '0106'.      00015100
+015200     03  FILLER                     PIC X(004) VALUE '0425'.      00015200
+015300     03  FILLER                     PIC X(004) VALUE '0501'.      00015300
+015400     03  FILLER                     PIC X(004) VALUE '0602'.      00015400
+015500     03  FILLER                     PIC X(004) VALUE '0815'.      00015500
+015600     03  FILLER                     PIC X(004) VALUE '1101'.      00015600
+015700     03  FILLER                     PIC X(004) VALUE '1208'.      00015700
+015800     03  FILLER                     PIC X(004) VALUE '1225'.      00015800
+015900     03  FILLER                     PIC X(004) VALUE '1226'.      00015900
+016000     03  FILLER                     PIC X(004) VALUE '9999'.      00016000
+016100 01  W-FEST REDEFINES W-FEST-RED.                                 00016100
+016200     03  W-FEST-TAB                                               00016200
+016300                     OCCURS 11 TIMES                              00016300
+016400                     ASCENDING W-MESE-MG                          00016400
+016500                     INDEXED BY W-PUNT-FEST.                      00016500
+016600         05  W-MESE-MG.                                           00016600
+016700             07  W-MESE-FEST        PIC 9(002).                   00016700
+016800             07  W-GIORNO-FEST      PIC 9(002).                   00016800
+016900**   AREA PER IL CONTROLLO DEI GIORNI TRASCORSI DALL'INIZIO       00016900
+017000**   DELL'ANNO                                                    00017000
+017100 01  W-MESE-RED.                                                  00017100
+017200     03 FILLER                      PIC 9(003) VALUE 000.         00017200
+017300     03 FILLER                      PIC 9(003) VALUE 031.         00017300
+017400     03 FILLER                      PIC 9(003) VALUE 059.         00017400
+017500     03 FILLER                      PIC 9(003) VALUE 090.         00017500
+017600     03 FILLER                      PIC 9(003) VALUE 120.         00017600
+017700     03 FILLER                      PIC 9(003) VALUE 151.         00017700
+017800     03 FILLER                      PIC 9(003) VALUE 181.         00017800
+017900     03 FILLER                      PIC 9(003) VALUE 212.         00017900
+018000     03 FILLER                      PIC 9(003) VALUE 243.         00018000
+018100     03 FILLER                      PIC 9(003) VALUE 273.         00018100
+018200     03 FILLER                      PIC 9(003) VALUE 304.         00018200
+018300     03 FILLER                      PIC 9(003) VALUE 334.         00018300
+018400 01  W-MESE REDEFINES W-MESE-RED.                                 00018400
+018500     03  W-MESE-TAB OCCURS 12       PIC 9(003).                   00018500
+018600     SKIP1                                                        00018600
+018700******************************************************************00018700
+018800*                  **   LINKAGE SECTION   **                     *00018800
+018900******************************************************************00018900
+019000 LINKAGE SECTION.                                                 00019000
+019100     SKIP1                                                        00019100
+019200  COPY 'FBQVFDA1'.                                                00019200
+019300     SKIP1                                                        00019300
+019400******************************************************************00019400
+019500*                  ** PROCEDURE DIVISION  **                     *00019500
+019600******************************************************************00019600
+019700     SKIP3                                                        00019700
+019800 PROCEDURE DIVISION USING BQVFDA1.                                00019800
+019900     SKIP1                                                        00019900
+020000**                                                                00020000
+020100 ML-010.                                                          00020100
+020300     MOVE '0' TO BQVFDA1-OK                                       00020300
+020400                 BQVFDA1-SETTIMANA                                00020400
+020500                 BQVFDA1-FESTIVO                                  00020500
+020600     MOVE  0  TO BQVFDA1-GIORNI                                   00020600
+020700     MOVE  0  TO BQVFDA1-GIORNI-TOT                               00020700
+020800**** CONTROLLO CHE LA DATA SIA FORMALMENTE CORRETTA               00020800
+020900     MOVE BQVFDA1-DAT1      TO   W-DATA                           00020900
+021000     PERFORM A1-010-FORMA   THRU A1-990-FORMA-EX                  00021000
+021100**** I TRATTAMENTI SUCCESSIVI SONO ATTIVATI SOLO                  00021100
+021200**** SE NON SI E' VERIFICATO GIA' UN ERRORE                       00021200
+021300     IF W-FLAG-FORMA  NOT EQUAL '0'                               00021300
+021400        MOVE '1'          TO BQVFDA1-OK                           00021400
+021500        GO TO ML-990-EXIT.                                        00021500
+021600 ML-020.                                                          00021600
+021700**** STABILISCO IL GIORNO DELLA SETTIMANA                         00021700
+021800     IF BQVFDA1-DAT1-AAAA NOT LESS    '1991' AND                  00021800
+021900        BQVFDA1-DAT1-AAAA NOT GREATER '2050'                      00021900
+022000        PERFORM B1-010-GIORNO  THRU B1-990-GIORNO-EX              00022000
+022100        MOVE W-FLAG-SETTIMANA   TO BQVFDA1-SETTIMANA              00022100
+022200**** STABILISCO SE IL GIORNO E' FESTIVO                           00022200
+022300        PERFORM C1-010-FESTIVO THRU C1-990-FESTIVO-EX             00022300
+022400        MOVE W-FLAG-FESTIVO      TO BQVFDA1-FESTIVO.              00022400
+022500**** VERIFICO INNANZITUTTO SE LA SECONDA DATA E' IMPOSTATA        00022500
+022600     IF BQVFDA1-DAT2 EQUAL ZERO      OR                           00022600
+022700        BQVFDA1-DAT2 EQUAL SPACES    OR                           00022700
+022800        BQVFDA1-DAT2 EQUAL LOW-VALUE OR                           00022800
+022900        BQVFDA1-DAT2 EQUAL HIGH-VALUE                             00022900
+023000        GO TO ML-990-EXIT.                                        00023000
+023100 ML-030.                                                          00023100
+023200**** VERIFICO SE LA SECONDA DATA E' FORMALMENTE CORRETTA          00023200
+023300     MOVE BQVFDA1-DAT2      TO   W-DATA                           00023300
+023400     PERFORM A1-010-FORMA   THRU A1-990-FORMA-EX                  00023400
+023500     IF W-FLAG-FORMA  NOT EQUAL '0'                               00023500
+023600        MOVE '2'          TO BQVFDA1-OK                           00023600
+023700        GO TO ML-990-EXIT.                                        00023700
+023800 ML-040.                                                          00023800
+023900**** STABILISCO IL NUMERO DI GIORNI LAVORATIVI COMPRESI TRA       00023900
+024000**** DUE DATE                                                     00024000
+024100     IF BQVFDA1-DAT1-AAAA NOT LESS    '1991' AND                  00024100
+024200        BQVFDA1-DAT1-AAAA NOT GREATER '2050' AND                  00024200
+024300        BQVFDA1-DAT2-AAAA NOT LESS    '1991' AND                  00024300
+024400        BQVFDA1-DAT2-AAAA NOT GREATER '2050'                      00024400
+024500        PERFORM D1-010-GIORNI  THRU D1-990-GIORNI-EX.             00024500
+024600**** DISPLAY 'GIORNI     = ' BQVFDA1-GIORNI.                      00024600
+024700**** DISPLAY 'GIORNI-TOT = ' BQVFDA1-GIORNI-TOT.                  00024700
+024800 ML-990-EXIT.                                                     00024800
+024900     GOBACK.                                                      00024900
+025000     EJECT                                                        00025000
+025100******************************************************************00025100
+025200*    CONTROLLO FORMALE SULLA DATA                                *00025200
+025300******************************************************************00025300
+025400 A1-010-FORMA.                                                    00025400
+025500     MOVE '0' TO W-FLAG-FORMA                                     00025500
+025600*    ANNO                                                         00025600
+025700     IF W-DATA      IS NOT NUMERIC OR                             00025700
+025800        W-DATA-AAAA LESS    '1700' OR                             00025800
+025900        W-DATA-AAAA GREATER '2050'                                00025900
+026000*       ANNO NON GESTITO                                          00026000
+026100        MOVE '1' TO W-FLAG-FORMA                                  00026100
+026200        GO TO A1-990-FORMA-EX.                                    00026200
+026300 A1-020.                                                          00026300
+026400*    MESE                                                         00026400
+026500     IF W-DATA-MM LESS    '01' OR                                 00026500
+026600        W-DATA-MM GREATER '12'                                    00026600
+026700*       MESE ERRATO                                               00026700
+026800        MOVE '1' TO W-FLAG-FORMA                                  00026800
+026900        GO TO A1-990-FORMA-EX.                                    00026900
+027000 A1-030.                                                          00027000
+027100*    GIORNO                                                       00027100
+027200     IF W-DATA-GG LESS    '01' OR                                 00027200
+027300        W-DATA-GG GREATER '31'                                    00027300
+027400*       GIORNO ERRATO                                             00027400
+027500        MOVE '1' TO W-FLAG-FORMA                                  00027500
+027600        GO TO A1-990-FORMA-EX.                                    00027600
+027700 A1-050.                                                          00027700
+027800*    MESE E GIORNO                                                00027800
+027900*    ...30 GIORNI HA NOVEMBRE, CON APRILE,                        00027900
+028000*          GIUGNO E SETTEMBRE                                     00028000
+028100     IF (W-DATA-MM EQUAL '11' OR                                  00028100
+028200         W-DATA-MM EQUAL '04' OR                                  00028200
+028300         W-DATA-MM EQUAL '06' OR                                  00028300
+028400         W-DATA-MM EQUAL '09') AND                                00028400
+028500         W-DATA-GG EQUAL '31'                                     00028500
+028600*       GIORNO ERRATO                                             00028600
+028700        MOVE '1' TO W-FLAG-FORMA                                  00028700
+028800        GO TO A1-990-FORMA-EX.                                    00028800
+028900 A1-060.                                                          00028900
+029000*    MESE E GIORNO                                                00029000
+029100*    ...DI 28 CE N'E' 1                                           00029100
+029200     IF W-DATA-MM EQUAL   '02' AND                                00029200
+029300        W-DATA-GG GREATER '29'                                    00029300
+029400*       GIORNO ERRATO                                             00029400
+029500        MOVE '1' TO W-FLAG-FORMA                                  00029500
+029600        GO TO A1-990-FORMA-EX.                                    00029600
+029700 A1-070.                                                          00029700
+029800*    VERIFICO SE L'ANNO E' O MENO BISESTILE                       00029800
+029900     PERFORM A2-010-BISEX THRU A2-990-BISEX-EX                    00029900
+030000*    MESE E GIORNO                                                00030000
+030100*    IL 29 FEBBRAIO E' AMMESSO SOLO PER GLI ANNI BISESTILI        00030100
+030200     IF W-DATA-MM  EQUAL '02' AND                                 00030200
+030300        W-DATA-GG  EQUAL '29' AND                                 00030300
+030400        W-ANNO-BIS       EQUAL ZERO                               00030400
+030500*         GIORNO ERRATO                                           00030500
+030600          MOVE '1' TO W-FLAG-FORMA.                               00030600
+030700 A1-990-FORMA-EX.                                                 00030700
+030800     EXIT.                                                        00030800
+030900     EJECT                                                        00030900
+031000******************************************************************00031000
+031100*    STABILISCO IL GIORNO DELLA SETTIMANA                        *00031100
+031200******************************************************************00031200
+031300 B1-010-GIORNO.                                                   00031300
+031400*    L' 1/1/91 E' MARTEDI'                                        00031400
+031500*    IL NUMERO DI GIORNI TRASCORSI DA QUELLA DATA E' PARI A       00031500
+031600*     A) (IL NUMERO DI ANNI TRASCORSI * 365)     +                00031600
+031700*     B) IL NUMERO DI ANNI BISESTILI TRASCORSI   +                00031700
+031800*     C) IL NUMERO DI GIORNI DELL'ANNO IN ESAME                   00031800
+031900*                                                                 00031900
+032000     MOVE '0' TO W-FLAG-SETTIMANA                                 00032000
+032100*    INDICE PER LE INFORMAZIONI SULL'ANNO DA TRATTARE             00032100
+032200     COMPUTE W-IND-ANNO = W-ANNO-NUM - 1990                       00032200
+032300*     A) (IL NUMERO DI ANNI TRASCORSI * 365)                      00032300
+032400     COMPUTE W-TRASCORSI = (W-ANNO-NUM - 1991) * 365              00032400
+032500*                                                                 00032500
+032600*     B) IL NUMERO DI ANNI BISESTILI TRASCORSI                    00032600
+032700     ADD W-ANNO-NUM-PREC (W-IND-ANNO) TO W-TRASCORSI              00032700
+032800*                                                                 00032800
+032900*     C) IL NUMERO DI GIORNI DELL'ANNO IN ESAME                   00032900
+033000*                                                                 00033000
+033100*      C.1) GIORNI FINO AL MESE PRECEDENTE                        00033100
+033200     ADD W-MESE-TAB (W-MESE-NUM)      TO W-TRASCORSI              00033200
+033300*      C.2) GIORNI DEL MESE IN ESAME                              00033300
+033400     ADD W-GIORNO-NUM                 TO W-TRASCORSI              00033400
+033500*    SE L'ANNO E' BISESTILE E SIAMO OLTRE IL 28/02                00033500
+033600*    AGGIUNGO ANCORA UN ALTRO GIORNO                              00033600
+033700     IF W-ANNO-BIS  EQUAL 1            AND                        00033700
+033800        W-DATA-MM   GREATER '02'                                  00033800
+033900         ADD 1                        TO W-TRASCORSI.             00033900
+034000 B1-020.                                                          00034000
+034100*    UTILIZZANDO COME GIORNO DI RIFERIMENTO UN MARTEDI'           00034100
+034200*    (L'1/1/91), AGGIUNGO ANCORA 1                                00034200
+034300     ADD 1                            TO W-TRASCORSI              00034300
+034400*    DIVIDO IL NUMERO DI GIORNI PER 7 E CONSIDERO IL RESTO        00034400
+034500     DIVIDE 7 INTO W-TRASCORSI GIVING    W-QUOZIENTE              00034500
+034600                               REMAINDER W-RESTO                  00034600
+034700     IF W-RESTO EQUAL ZERO                                        00034700
+034800        MOVE 7 TO W-RESTO.                                        00034800
+034900     MOVE W-RESTO TO W-FLAG-SETTIMANA.                            00034900
+035000 B1-990-GIORNO-EX.                                                00035000
+035100     EXIT.                                                        00035100
+035200     EJECT                                                        00035200
+035300******************************************************************00035300
+035400*    STABILISCO SE IL GIORNO E' FESTIVO                          *00035400
+035500******************************************************************00035500
+035600 C1-010-FESTIVO.                                                  00035600
+035700*    VERIFICO SE IL GIORNO CORRRISPONDE AD UNA FESTIVITA'         00035700
+035800*    INDIPENDENTE DALL'ANNO IN ESAME                              00035800
+035900     SEARCH ALL W-FEST-TAB                                        00035900
+036000        AT END MOVE '0' TO W-FLAG-FESTIVO                         00036000
+036100     WHEN W-MESE-MG (W-PUNT-FEST) EQUAL W-MESE-GIORNO             00036100
+036200        MOVE '1' TO W-FLAG-FESTIVO.                               00036200
+036300 C1-020.                                                          00036300
+036400*    VERIFICO SE IL GIORNO CORRISPONDE AD UN LUNEDI' DELL'ANGELO  00036400
+036500     IF W-MESE-GIORNO EQUAL W-ANNO-ANGELO (W-IND-ANNO)            00036500
+036600        MOVE '1' TO W-FLAG-FESTIVO.                               00036600
+036700 C1-990-FESTIVO-EX.                                               00036700
+036800     EXIT.                                                        00036800
+036900     EJECT                                                        00036900
+037000******************************************************************00037000
+037100**** STABILISCO IL NUMERO DI GIORNI LAVORATIVI COMPRESI TRA      *00037100
+037200**** DUE DATE                                                    *00037200
+037300******************************************************************00037300
+037400 D1-010-GIORNI.                                                   00037400
+037500     IF BQVFDA1-DAT1 EQUAL BQVFDA1-DAT2                           00037500
+037600*      LE DUE DATE COINCIDONO                                     00037600
+037700        GO TO D1-990-GIORNI-EX.                                   00037700
+037800 D1-020.                                                          00037800
+037900*    MEMORIZZO INIZIO E FINE PERIODO                              00037900
+038000     MOVE BQVFDA1-DAT1      TO   W-DATA-INIZIO                    00038000
+038100     MOVE BQVFDA1-DAT2      TO   W-DATA-FINE                      00038100
+038200     IF BQVFDA1-DAT1 GREATER BQVFDA1-DAT2                         00038200
+038300       MOVE BQVFDA1-DAT2    TO   W-DATA-INIZIO                    00038300
+038400       MOVE BQVFDA1-DAT1    TO   W-DATA-FINE.                     00038400
+038500 D1-030.                                                          00038500
+038600**** DETERMINO IL GIORNO PRECEDENTE ALLA DATA DI FINE PERIODO     00038600
+038700     PERFORM B2-010-PREC    THRU B2-990-PREC-EX                   00038700
+038800**** STABILISCO IL GIORNO DELLA SETTIMANA                         00038800
+038900     MOVE '0'               TO   W-FLAG-FESTIVO                   00038900
+039000     PERFORM B1-010-GIORNO  THRU B1-990-GIORNO-EX                 00039000
+039100     IF W-FLAG-SETTIMANA    LESS '6'                              00039100
+039200****   STABILISCO SE IL GIORNO E' FESTIVO                         00039200
+039300       PERFORM C1-010-FESTIVO THRU C1-990-FESTIVO-EX.             00039300
+039400     IF W-FLAG-SETTIMANA    LESS  '6' AND                         00039400
+039500        W-FLAG-FESTIVO      EQUAL '0'                             00039500
+039600****   GIORNO LAVORATIVO                                          00039600
+039700       ADD 1 TO BQVFDA1-GIORNI.                                   00039700
+039800     ADD 1 TO BQVFDA1-GIORNI-TOT.                                 00039800
+039900 D1-040.                                                          00039900
+040000     IF W-DATA-FINE NOT EQUAL W-DATA-INIZIO                       00040000
+040100       GO TO D1-030.                                              00040100
+040200 D1-050.                                                          00040200
+040300     IF BQVFDA1-DAT1 GREATER BQVFDA1-DAT2                         00040300
+040400****   ESSENDO LA PRIMA DATA MAGGIORE DELLA SECONDA               00040400
+040500****   IL NUMERO DI GIORNI CALCOLATI E' NEGATIVO                  00040500
+040600       COMPUTE BQVFDA1-GIORNI = BQVFDA1-GIORNI * -1               00040600
+040700       COMPUTE BQVFDA1-GIORNI-TOT = BQVFDA1-GIORNI-TOT * -1.      00040700
+040800 D1-990-GIORNI-EX.                                                00040800
+040900     EXIT.                                                        00040900
+041000     EJECT                                                        00041000
+041100******************************************************************00041100
+041200*    VERIFICO SE L'ANNO E' BISESTILE                             *00041200
+041300*                                                                *00041300
+041400* ANNO = XXYY                                                    *00041400
+041500*  SE YY= '00', L'ANNO E' BISESTILE SE 'XX'   E' DIVISIBILE PER 4*00041500
+041600*  SE YY<>'00', L'ANNO E' BISESTILE SE 'XXYY' E' DIVISIBILE PER 4*00041600
+041700******************************************************************00041700
+041800 A2-010-BISEX.                                                    00041800
+041900     MOVE ZERO         TO W-ANNO-BIS                              00041900
+042000     IF W-ANNO-NUM-F EQUAL ZERO                                   00042000
+042100       GO TO A2-030.                                              00042100
+042200 A2-020.                                                          00042200
+042300*   YY<>'00'                                                      00042300
+042400*   L'ANNO E' BISESTILE SE 'XXYY' E' DIVISIBILE PER 4*            00042400
+042500     DIVIDE 4 INTO W-ANNO-NUM GIVING    W-QUOZIENTE               00042500
+042600                              REMAINDER W-RESTO                   00042600
+042700     GO TO A2-040.                                                00042700
+042800 A2-030.                                                          00042800
+042900*   YY= '00'                                                      00042900
+043000*   L'ANNO E' BISESTILE SE 'XX'   E' DIVISIBILE PER 4*            00043000
+043100     DIVIDE 4 INTO W-ANNO-NUM-I GIVING    W-QUOZIENTE             00043100
+043200                                REMAINDER W-RESTO.                00043200
+043300 A2-040.                                                          00043300
+043400     IF W-RESTO EQUAL ZERO                                        00043400
+043500       MOVE 1         TO W-ANNO-BIS.                              00043500
+043600 A2-990-BISEX-EX.                                                 00043600
+043700     EXIT.                                                        00043700
+043800     EJECT                                                        00043800
+043900******************************************************************00043900
+044000**** DETERMINO IL GIORNO PRECEDENTE QUELLO IN ESAME              *00044000
+044100******************************************************************00044100
+044200 B2-010-PREC.                                                     00044200
+044300     MOVE W-DATA-FINE      TO   W-DATA                            00044300
+044600*    TRANNE CHE IL PRIMO DI OGNI MESE, POSSO CALCOLARE IL         00044600
+044700*    GIORNO PRECEDENTE SEMPLICEMENTE SOTTRAENDO UNO AL GIORNO     00044700
+044800     IF W-GIORNO-NUM GREATER 1                                    00044800
+044900       SUBTRACT 1 FROM W-GIORNO-NUM                               00044900
+044910*    VERIFICO SE L'ANNO E' O MENO BISESTILE                       00044910
+044920       PERFORM A2-010-BISEX THRU A2-990-BISEX-EX                  00044920
+045000       GO TO B2-060.                                              00045000
+045100*   E' IL PRIMO DEL MESE                                          00045100
+045200 B2-020.                                                          00045200
+045300     IF W-MESE-NUM EQUAL 1                                        00045300
+045400*      E' IL PRIMO GENNAIO                                        00045400
+045500       SUBTRACT 1 FROM W-ANNO-NUM                                 00045500
+045600       MOVE    31 TO   W-GIORNO-NUM                               00045600
+045700       MOVE    12 TO   W-MESE-NUM                                 00045700
+045710*    VERIFICO SE L'ANNO E' O MENO BISESTILE                       00045710
+045720       PERFORM A2-010-BISEX THRU A2-990-BISEX-EX                  00045720
+045800       GO TO B2-060.                                              00045800
+045900 B2-030.                                                          00045900
+046000*   IL MESE E' QUELLO PRECEDENTE                                  00046000
+046100     SUBTRACT 1 FROM W-MESE-NUM                                   00046100
+046200*   IL GIORNO E' L'ULTIMO DEL MESE                                00046200
+046300     IF W-MESE-NUM EQUAL 1 OR                                     00046300
+046400        W-MESE-NUM EQUAL 3 OR                                     00046400
+046500        W-MESE-NUM EQUAL 5 OR                                     00046500
+046600        W-MESE-NUM EQUAL 7 OR                                     00046600
+046700        W-MESE-NUM EQUAL 8 OR                                     00046700
+046800        W-MESE-NUM EQUAL 10                                       00046800
+046900*      PER QUESTI MESI, L'ULTIMO GIORNO E' IL 31                  00046900
+047000       MOVE    31 TO   W-GIORNO-NUM                               00047000
+047010*    VERIFICO SE L'ANNO E' O MENO BISESTILE                       00047010
+047020       PERFORM A2-010-BISEX THRU A2-990-BISEX-EX                  00047020
+047100       GO TO B2-060.                                              00047100
+047200 B2-040.                                                          00047200
+047300     IF W-MESE-NUM EQUAL 4  OR                                    00047300
+047400        W-MESE-NUM EQUAL 6  OR                                    00047400
+047500        W-MESE-NUM EQUAL 9  OR                                    00047500
+047600        W-MESE-NUM EQUAL 11                                       00047600
+047700*      PER QUESTI MESI, IL GIORNO PRECEDENTE E' SEMPRE IL 30      00047700
+047800       MOVE    30 TO   W-GIORNO-NUM                               00047800
+047810*    VERIFICO SE L'ANNO E' O MENO BISESTILE                       00047810
+047820       PERFORM A2-010-BISEX THRU A2-990-BISEX-EX                  00047820
+047900       GO TO B2-060.                                              00047900
+048000 B2-050.                                                          00048000
+048100*    E' IL PRIMO MARZO                                            00048100
+048201*    VERIFICO SE L'ANNO E' O MENO BISESTILE                       00048201
+048210     PERFORM A2-010-BISEX THRU A2-990-BISEX-EX.                   00048210
+048230     MOVE    28  TO   W-GIORNO-NUM.                               00048230
+048300     IF W-ANNO-BIS       EQUAL 1                                  00048300
+048400*      ANNO BISESTILE                                             00048400
+048500       MOVE  29  TO   W-GIORNO-NUM.                               00048500
+048600 B2-060.                                                          00048600
+048700     MOVE W-DATA TO   W-DATA-FINE.                                00048700
+048800 B2-990-PREC-EX.                                                  00048800
+048900     EXIT.                                                        00048900
+049000     EJECT                                                        00049000

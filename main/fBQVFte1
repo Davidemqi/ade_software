@@ -1,0 +1,26 @@
+000010 01  BQVFTE1.
+000020*                       CHIAVE
+000030     03 BQVFTE1-KEY.
+000040*                       CODICE ENTE
+000050        05 BQVFTE1-KEY-COD-ENTE     PIC X(2).
+000060*                       CODICE TRIBUTO
+000070        05 BQVFTE1-KEY-COD-TRIB     PIC X(4).
+000080*                       INIZIO VALIDITA
+000090        05 BQVFTE1-KEY-INIZIO-VAL   PIC X(8).
+000100*                       FINE VALIDITA
+000110     03 BQVFTE1-FINE-VAL     PIC X(8).
+000120*                       DESCRIZIONE
+000130     03 BQVFTE1-DESCR        PIC X(20).
+000140*                       PROVINCIA
+000150     03 BQVFTE1-PROV         PIC X(1).
+000160*                       CODICE IDENTIFICATIVO
+000170     03 BQVFTE1-COD-IDENT    PIC 99.
+000180*                       RIFERIMENTO TRIBUTO
+000190     03 BQVFTE1-RIFER-TRIB   PIC X(6).
+000191*                       CODICE UFFICIO
+000192     03 BQVFTE1-COD-UFF      PIC X(1).
+000193*                       CODICE ATTO
+000194     03 BQVFTE1-COD-ATTO     PIC X(1).
+000195*                       RATEAZIONE
+000196     03 BQVFTE1-RATEAZIONE   PIC X(1).
+

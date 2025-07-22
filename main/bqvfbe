@@ -1,0 +1,751 @@
+000010***************************************************************** 00000100
+000020 IDENTIFICATION DIVISION.                                         00000200
+000030 PROGRAM-ID. BQVFBE.                                              00000300
+000040 AUTHOR. N9276 - A.D'URSO.                                        00000400
+000050 DATE-WRITTEN. 12/11/98.                                          00000500
+000060***************************************************************** 00000600
+000070*$1 TITOLO: VERSAMENTI UNIFICATI                                  00000700
+000080*           CREAZIONE ESITI CONTROLLI FLUSSI F24                  00000800
+000090***************************************************************** 00000900
+000100*                                                                 00001000
+000110*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00001100
+000120*                                                                 00001200
+000130*   IL PROGRAMMA SI INSERISCE NEL PACCHETTO DI CONTROLLO DATI     00001300
+000140*   'FLUSSI F24' PER MAINFRAME UTENTE.                            00001400
+000150*   I DATI DEI FLUSSI F24 SONO REGISTRATI NEL FILE BQVFB1.        00001500
+000160*   IL PGM BQVFB0 EFFETTUA IL CONTROLLO DI TALI DATI, RIPORTANDO  00001600
+000170*   NEL FILE BQVFB2 I DATI CONTROLLATI CON I FLAG DI ERRORE E     00001700
+000180*   NEL FILE BQVFB3 I DATI RIEPILOGATIVI DEL CONTROLLO.           00001800
+000190*   IL PGM BQVFBE SCORRE QUESTI ULTIMI DUE FILE E RIPORTA         00001900
+000200*   GLI ERRORI REGISTRATI NEL FILE BQVFB4 (FILE ESITO), IN        00002000
+000210*   FORMATO UTILE AL PGM BQVFBS, CHE SCORRE DI SEGUITO            00002100
+000220*   TALE FILE E PRODUCE UNA STAMPA RIEPILOGATIVA DEGLI            00002200
+000230*   ERRORI RISCONTRATI.                                           00002300
+000240*                                                                 00002400
+000250*   IL PROGRAMMA, SULLA BASE DELLA SEGNALAZIONE DEGLI ERRORI      00002500
+000260*   CREATI DAL PGM DI CONTROLLO DEL FLUSSO, CREA                  00002600
+000270*   L'ARCHIVIO 'ESITO' CONTENENTE GLI ERRORI FORMALI E DI         00002700
+000280*   CONGRUENZA.                                                   00002800
+000290*   PER OGNI RECORD DELL'ARCHIVIO DI INPUT (FLUSSI                00002900
+000300*   CONTROLLATI) LA PROCEDURA ANALIZZA I FLAG DI ERRORE           00003000
+000310*   VALORIZZATI DURANTE IL CONTROLLO.                             00003100
+000320*   NEL CASO IL FLAG ERRORE RISULTI IMPOSTATO, IL CAMPO ERRATO (IN00003200
+000330*   TERMINI DI 'DISPLACEMENT' NELL'ARCHIVIO, DI TIPOLOGIA DI      00003300
+000340*   ERRORE E DI VALORE ASSUNTO) VIENE RIPORTATO IN UNA STRUTTURA  00003400
+000350*   TABELLARE PRESENTE NELL'ARCHIVIO DI OUTPUT (ESITI).           00003500
+000360*                                                                 00003600
+000370*   IL PACCHETTO DI CONTROLLO DATI PER MAINFRAME UTENTE           00003700
+000380*   UTILIZZA LA STESSA LOGICA SEGUITA DALLE PROCEDURE DI          00003800
+000390*   ACQUISIZIONE DATI E DEGLI ESITI PRESSO LA ANAGRAFE            00003900
+000400*   TRIBUTARIA.                                                   00004000
+000410*   IL PACCHETTO CONSENTE ALL'UTENTE DI EFFETTUARE PRESSO         00004100
+000420*   IL PROPRIO SISTEMA GLI STESSI CONTROLLI CHE VERRANNO          00004200
+000430*   SVOLTI DALLA ANAGRAFE TRIBUTARIA DOPO L'INVIO DEI DATI,       00004300
+000440*   ANTICIPANDO QUINDI L'INDIVIDUAZIONE DEGLI EVENTUALI           00004400
+000450*   ERRORI.                                                       00004500
+000460*                                                                 00004600
+000470*     ARCHIVI  GESTITI                                            00004700
+000480*                                                                 00004800
+000490*     NOME       DESCRIZIONE                         ACCESSO      00004900
+000500*                                                                 00005000
+000510*   * BQVFB2 * FLUSSI CONTROLLATI                    * IN * SEQ  *00005100
+000520*              ARCHIVIO DELLE SEGNALAZIONI COSTITUITO             00005200
+000530*              DAL FILE FISICO CONTROLLATO (CONCATENAZIONE        00005300
+000540*              DI UNO O PIU' FILE LOGICI INDIVIDUATI DALLA        00005400
+000550*              PRESENZA DI UN RECORD 'V00' INIZIALE E DI UN       00005500
+000560*              RECORD 'V99' FINALE) CON L'ACCODAMENTO             00005600
+000570*              ORIZZONTALE DI UNA SERIE DI FLAG                   00005700
+000580*                                                                 00005800
+000590*   * BQVFB3 * INVII                                 * IN * SEQ  *00005900
+000600*              ARCHIVIO CONTENENTE I DATI IDENTIFICATIVI          00006000
+000610*              DEI FILE LOGICI INVIATI                            00006100
+000620*                                                                 00006200
+000630*   * BQVFB4 * ESITI                                 * OUT* SEQ  *00006300
+000640*              ARCHIVIO CONTENENTE GLI EVENTUALI ERRORI,          00006400
+000650*              FORMALI E DI QUADRATURA, CONTENUTI NEI             00006500
+000660*              FLUSSI                                             00006600
+000670*                                                                 00006700
+000680*   * BQVFBT * DECODIFICA TRACCIATO RECORD           * IN * SEQ  *00006800
+000690*              ARCHIVIO CONTENENTE DISPLACEMENT E DESCRIZIONE     00006900
+000700*              DEI CAMPI DEL TRACCIATO RECORD                     00007000
+000710*                                                                 00007100
+000720*     ROUTINE  RICHIAMATE                                         00007200
+000730*                                                                 00007300
+000740*     BQVFSR   ABEND                                              00007400
+000750*                                                                 00007500
+000760***************************************************************** 00007600
+000770     EJECT                                                        00007700
+000780***************************************************************** 00007800
+000790*                ENVIRONMENT DIVISION                             00007900
+000800***************************************************************** 00008000
+000810 ENVIRONMENT DIVISION.                                            00008100
+000820 CONFIGURATION SECTION.                                           00008200
+000830 SPECIAL-NAMES.                                                   00008300
+000840     DECIMAL-POINT IS COMMA.                                      00008400
+000850 INPUT-OUTPUT SECTION.                                            00008500
+000860 FILE-CONTROL.                                                    00008600
+000870**   FLUSSI CONTROLLATI                                           00008700
+000880     SELECT BQVFB2                                                00008800
+000890            ASSIGN TO UT-S-BQVFB2.                                00008900
+000900     EJECT                                                        00009000
+000910**   INVII                                                        00009100
+000920     SELECT BQVFB3                                                00009200
+000930            ASSIGN TO UT-S-BQVFB3.                                00009300
+000940     EJECT                                                        00009400
+000950**   ESITI                                                        00009500
+000960     SELECT BQVFB4                                                00009600
+000970            ASSIGN TO UT-S-BQVFB4.                                00009700
+000980     EJECT                                                        00009800
+000990**   DECODIFICA TRACCIATO RECORD                                  00009900
+001000     SELECT BQVFBT                                                00010000
+001010            ASSIGN TO UT-S-BQVFBT.                                00010100
+001020     EJECT                                                        00010200
+001030***************************************************************** 00010300
+001040*                DATA DIVISION                                  * 00010400
+001050***************************************************************** 00010500
+001060 DATA DIVISION.                                                   00010600
+001070 FILE SECTION.                                                    00010700
+001080**   FLUSSI CONTROLLATI                                           00010800
+001090 FD  BQVFB2                                                       00010900
+001100     LABEL RECORD IS OMITTED                                      00011000
+001110     BLOCK CONTAINS 0 RECORDS.                                    00011100
+001120 01  BQVFB22                         PIC X(512).                  00011200
+001130**   INVII                                                        00011300
+001140 FD  BQVFB3                                                       00011400
+001150     LABEL RECORD IS OMITTED                                      00011500
+001160     BLOCK CONTAINS 0 RECORDS.                                    00011600
+001170 01  BQVFB32                         PIC X(250).                  00011700
+001180**   ESITI                                                        00011800
+001190 FD  BQVFB4                                                       00011900
+001200     LABEL RECORD IS OMITTED                                      00012000
+001210     BLOCK CONTAINS 0 RECORDS.                                    00012100
+001220 01  BQVFB42                         PIC X(256).                  00012200
+001230**   DECODIFICA TRACCIATO RECORD                                  00012300
+001240 FD  BQVFBT                                                       00012400
+001250     LABEL RECORD IS OMITTED                                      00012500
+001260     BLOCK CONTAINS 0 RECORDS.                                    00012600
+001270 01  BQVFBT2                         PIC X(059).                  00012700
+001280***************************************************************** 00012800
+001290*                WORKING-STORAGE SECTION                        * 00012900
+001300***************************************************************** 00013000
+001310 WORKING-STORAGE SECTION.                                         00013100
+001320     SKIP2                                                        00013200
+001330 77  FILLER                      PIC X(017) VALUE                 00013300
+001340                                 'INIZIO W-S BQVFBE'.             00013400
+001350**   CODICE USER ABEND                                            00013500
+001360 77  ABEND-CODE                  PIC X(004) VALUE ZERO.           00013600
+001370**   CAMPI DI COMODO PER IL TEST DI FINE FILE                     00013700
+001380 77  W-EOF-BQVFB2                PIC X(001).                      00013800
+001390 77  W-EOF-BQVFB3                PIC X(001).                      00013900
+001400 77  W-EOF-BQVFBT                PIC X(001).                      00014000
+001410**   FLAG RICERCA                                                 00014100
+001420 77  FLG-TROVATO                 PIC 9(001) VALUE ZERO.           00014200
+001430**   INDICE DECODIFICA DISPLACEMENT                               00014300
+001440 77  IND-RECORD-DISPL            PIC 9(003).                      00014400
+001450**   INDICE ERRORI PER TIPO RECORD                                00014500
+001460 77  W-IND                       PIC 9(001).                      00014600
+001470**   INDICE ERRORI PER IL CAMPO ERRATO                            00014700
+001480 77  W-IND-ERR                   PIC 9(002).                      00014800
+001490**   INDICE PER LO SCORRIMENTO DEL TRACCIATO RECORD DA CONTROLLARE00014900
+001500 77  W-IND-REC                   PIC 9(003).                      00015000
+001510**   CONTATORI STATISTICI:                                        00015100
+001520**   TOTALE RECORD LETTI DA 'FLUSSI CONTROLLATI'                  00015200
+001530 77  CTR-LET-TOT-BQVFB2          PIC 9(007).                      00015300
+001540**   RECORD LETTI DA 'FLUSSI CONTROLLATI' PER FILE LOGICO         00015400
+001550 77  CTR-LET-PAR-BQVFB2          PIC 9(007).                      00015500
+001560**   TOTALE RECORD SCRITTI SU 'ESITO'                             00015600
+001570 77  CTR-SCR-TOT-BQVFB4          PIC 9(007).                      00015700
+001580**   RECORD SCRITTI SU 'ESITO' PER FILE LOGICO                    00015800
+001590 77  CTR-SCR-PAR-BQVFB4          PIC 9(007).                      00015900
+001600**   TOTALE RECORD LETTI DA 'INVII'                               00016000
+001610 77  CTR-LETTI-BQVFB3            PIC 9(007).                      00016100
+001620**                                                                00016200
+001630 01  MEM-RELEASE                 PIC X(003).                      00016300
+001640**   CAMPO DI COMODO PER IL RECORD DI CODA                        00016400
+001650**   DELL'ARCHIVIO ESITO                                          00016500
+001660 01  WS-REC9                     PIC X(018).                      00016600
+001670**   TABELLA DISPLACEMENT TRACCIATO RECORD FILE DA CONTROLLARE    00016700
+001680 01  W-TAB-TRAC-NUM-MAX          PIC 9(003) VALUE 650.            00016800
+001690 01  W-TRACCIATO.                                                 00016900
+001700     03  W-TAB-TRAC  OCCURS 650 TIMES                             00017000
+001710                     ASCENDING W-TAB-KEY                          00017100
+001720                     INDEXED BY W-PUNT-TRAC.                      00017200
+001730         05  W-TAB-KEY.                                           00017300
+001740             07  W-TAB-TIPO-REC  PIC X(003).                      00017400
+001750             07  W-TAB-DISPL     PIC X(003).                      00017500
+001760         05  W-TAB-DESCR         PIC X(050).                      00017600
+001770         05  W-TAB-FLAG          PIC X(003).                      00017700
+001780 01  W-SER-KEY.                                                   00017800
+001790**   APPOGGIO PER LA SEARCH                                       00017900
+001800     03  W-SER-TIPO-REC          PIC X(003).                      00018000
+001810     03  W-SER-DISPL             PIC X(003).                      00018100
+001820**   APPOGGIO CAMPO ERRATO                                        00018200
+001830 01  W-REC-EV1.                                                   00018300
+001840     03  W-REC-ERR   OCCURS 20 TIMES.                             00018400
+001850         05  W-REC-APP           PIC X(001).                      00018500
+001860     EJECT                                                        00018600
+001870***************************************************************** 00018700
+001880*                  TRACCIATO RECORD ARCHIVI                     * 00018800
+001890***************************************************************** 00018900
+001900**   FLUSSI CONTROLLATI                                           00019000
+001910 COPY FBQVFB21.                                                   00019100
+001920**   TABELLA TRACCIATO RECORD FILE DA CONTROLLARE                 00019200
+001930 01  W-REC-INP REDEFINES BQVFB21.                                 00019300
+001940     03  W-REC-TAB   OCCURS 512 TIMES.                            00019400
+001950         05  W-REC-ELEM          PIC X(001).                      00019500
+001960     EJECT                                                        00019600
+001970**   INVII                                                        00019700
+001980 COPY FBQVFB31.                                                   00019800
+001990     EJECT                                                        00019900
+002000**   ESITI                                                        00020000
+002010 COPY FBQVFB41.                                                   00020100
+002020     EJECT                                                        00020200
+002030**   TRACCIATO RECORD                                             00020300
+002040 COPY FBQVFBT1.                                                   00020400
+002050     EJECT                                                        00020500
+002060***************************************************************** 00020600
+002070*                  LINKAGE SECTION                              * 00020700
+002080***************************************************************** 00020800
+002090 LINKAGE SECTION.                                                 00020900
+002100     EJECT                                                        00021000
+002110 PROCEDURE DIVISION.                                              00021100
+002120***************************************************************** 00021200
+002130*                PROCEDURE  DIVISION                            * 00021300
+002140***************************************************************** 00021400
+002150 ML-010.                                                          00021500
+002160*****DISPLAY DI INIZIO PROGRAMMA                                  00021600
+002170     DISPLAY '************************************************'   00021700
+002180     DISPLAY '*                                              *'   00021800
+002190     DISPLAY '*         -    VERSAMENTI UNIFICATI   -        *'   00021900
+002200     DISPLAY '*                                              *'   00022000
+002210     DISPLAY '*                 CREAZIONE ESITI              *'   00022100
+002220     DISPLAY '*                       F24                    *'   00022200
+002230     DISPLAY '*                                              *'   00022300
+002240     DISPLAY '************************************************'   00022400
+002250     DISPLAY '*            INIZIO PROGRAMMA BQVFBE           *'   00022500
+002260     DISPLAY '************************************************'.  00022600
+002270*****APERTURA ARCHIVI                                             00022700
+002280     PERFORM A1-010-OPEN          THRU A1-990-OPEN-EX.            00022800
+002290*****CICLO ELABORATIVO                                            00022900
+002300     PERFORM B1-010-CONFRONTA-REC THRU B1-990-CONFRONTA-REC-EX.   00023000
+002310 ML-990.                                                          00023100
+002320     STOP RUN.                                                    00023200
+002330     EJECT                                                        00023300
+002340***************************************************************** 00023400
+002350*                APERTURA ARCHIVI                               * 00023500
+002360***************************************************************** 00023600
+002370 A1-010-OPEN.                                                     00023700
+002380*    APERTURA FLUSSI CONTROLLATI                                  00023800
+002390     MOVE ZERO TO CTR-LET-TOT-BQVFB2.                             00023900
+002400     OPEN INPUT  BQVFB2.                                          00024000
+002410*    APERTURA INVII                                               00024100
+002420     MOVE ZERO TO CTR-LETTI-BQVFB3.                               00024200
+002430     OPEN INPUT  BQVFB3.                                          00024300
+002440*    APERTURA ESITI                                               00024400
+002450     MOVE ZERO TO CTR-SCR-TOT-BQVFB4.                             00024500
+002460     OPEN OUTPUT BQVFB4.                                          00024600
+002470*    DECODIFICA DEL DISPLACEMENT                                  00024700
+002480     PERFORM C2-010-DISPL THRU C2-990-DISPL-EX.                   00024800
+002490*                                                                 00024900
+002500 A1-990-OPEN-EX.                                                  00025000
+002510     EXIT.                                                        00025100
+002520     EJECT                                                        00025200
+002530***************************************************************** 00025300
+002540*                LETTURA E CONFRONTO RECORD                     * 00025400
+002550*                                                               * 00025500
+002560* NEL FILE FISICO 'FLUSSI CONTROLLATI' BQVFB2 SONO CONTENUTI 'N'* 00025600
+002570* FILE  LOGICI, IL CUI NUMERO DI RECORD E' RIPORTATO NEL FILE   * 00025700
+002580* DI RIEPILOGO BQVFB3. PER OGNI RECORD DI BQVFB3, SI LEGGONO I  * 00025800
+002590* CORRISPONDENTI RECORD DA 'FLUSSI CONTROLLATI' BQVFB2,SCRIVENDO* 00025900
+002600* UN RECORD DI TESTA 'EV0', 'M' RECORD DI ERRORE 'EV1' ED UN    * 00026000
+002610* RECORD DI CODA 'EV9' NELL'ARCHIVIO 'ESITI' BQVFB4             * 00026100
+002620***************************************************************** 00026200
+002630 B1-010-CONFRONTA-REC.                                            00026300
+002640**  INIZIO CICLO                                                  00026400
+002650 B1-020.                                                          00026500
+002660     MOVE ZERO TO CTR-SCR-PAR-BQVFB4                              00026600
+002670*    LETTURA DELL'ARCHIVIO INVII                                  00026700
+002680*    SCRITTURA RECORD DI TESTA ARCHIVIO ESITI                     00026800
+002690     PERFORM A2-010-SCRIVI-TESTA THRU A2-990-SCRIVI-TESTA-EX.     00026900
+002700     IF W-EOF-BQVFB3     EQUAL HIGH-VALUE                         00027000
+002710*      FINE FILE                                                  00027100
+002720       GO TO B1-070.                                              00027200
+002730 B1-030.                                                          00027300
+002740     MOVE ZERO TO CTR-LET-PAR-BQVFB2.                             00027400
+002750 B1-040.                                                          00027500
+002760*    LETTURA RECORD ARCHIVIO FLUSSI CONTROLLATI                   00027600
+002770     MOVE LOW-VALUE TO W-EOF-BQVFB2.                              00027700
+002780     READ BQVFB2 INTO BQVFB21 AT END                              00027800
+002790           MOVE HIGH-VALUE TO W-EOF-BQVFB2.                       00027900
+002800     IF W-EOF-BQVFB2 EQUAL HIGH-VALUE                             00028000
+002810*       IMPREVISTA FINE ARCHIVIO FLUSSI CONTROLLATI               00028100
+002820        DISPLAY 'BQVFBE-B1-040-01: IMPREVISTA FINE'               00028200
+002830        DISPLAY 'BQVFBE-B1-040-01: ARCHIVIO BQVFB2'               00028300
+002840        MOVE '0001' TO ABEND-CODE                                 00028400
+002850        CALL 'BQVFSR' USING ABEND-CODE.                           00028500
+002860* AN MODIFICA  MAGGIO 2004                                        00028600
+002870     IF BQVFB21-TIPO-RECORD = 'V00'                               00028700
+002880        MOVE BQVFB21-00-RELEASE TO MEM-RELEASE.                   00028800
+002890* AN FINE MODIFICA  MAGGIO 2004                                   00028900
+002900     ADD 1 TO CTR-LET-TOT-BQVFB2                                  00029000
+002910     ADD 1 TO CTR-LET-PAR-BQVFB2                                  00029100
+002920*    IL GENERICO RECORD LOGICO DELL'ARCHIVIO 'FLUSSI              00029200
+002930*    CONTROLLATI' VIENE CONTROLLATO. IN  BASE ALL'ESITO DEL       00029300
+002940*    CONTROLLO, SI STABILISCE SE SCRIVERE UNO O PIU' RECORD       00029400
+002950*    DI ERRORE (EV1) NELL'ARCHIVIO 'ESITO'                        00029500
+002960     PERFORM F2-010-CONTR-GEN THRU F2-990-CONTR-GEN-EX.           00029600
+002970 B1-050.                                                          00029700
+002980     IF BQVFB31-NUM-REC-TOT GREATER CTR-LET-PAR-BQVFB2            00029800
+002990*      SONO PRESENTI ULTERIORI RECORD RELATIVI ALLO               00029900
+003000*      STESSO FILE LOGICO                                         00030000
+003010       GO TO B1-040.                                              00030100
+003020 B1-060.                                                          00030200
+003030*    NON SONO PRESENTI ULTERIORI RECORD RELATIVI ALLO             00030300
+003040*    STESSO FILE LOGICO                                           00030400
+003050*    SI CONCLUDE CON LA SCRITTURA                                 00030500
+003060*    DEL RECORD DI CODA DELL'ARCHIVIO ESITI                       00030600
+003070     PERFORM E2-010-SCRIVI-CODA THRU E2-990-SCRIVI-CODA-EX.       00030700
+003080     GO TO B1-080.                                                00030800
+003090 B1-070.                                                          00030900
+003100*    FINE FILE INVII                                              00031000
+003110 B1-080.                                                          00031100
+003120     IF W-EOF-BQVFB3 NOT EQUAL HIGH-VALUE                         00031200
+003130*      POTREBBERO ESSERE PRESENTI ULTERIORI FILE LOGICI           00031300
+003140       GO TO B1-020.                                              00031400
+003150 B1-090.                                                          00031500
+003160*    FINE ELABORAZIONE                                            00031600
+003170*    ...CHIUDO GLI ARCHIVI....                                    00031700
+003180     PERFORM B2-010-CLOSE THRU B2-990-CLOSE-EX.                   00031800
+003190*    ...ED EMETTO I DISPLAY STATISTICI                            00031900
+003200     PERFORM D2-010-DISPL THRU D2-990-DISPL-EX.                   00032000
+003210 B1-990-CONFRONTA-REC-EX.                                         00032100
+003220     EXIT.                                                        00032200
+003230     EJECT                                                        00032300
+003240***************************************************************** 00032400
+003250*                LETTURA DELL'ARCHIVIO INVII                    * 00032500
+003260*                                                               * 00032600
+003270*             SCRITTURA RECORD DI TESTA ARCHIVIO ESITI          * 00032700
+003280***************************************************************** 00032800
+003290 A2-010-SCRIVI-TESTA.                                             00032900
+003300*****LEGGO INVII                                                  00033000
+003310     MOVE LOW-VALUE TO W-EOF-BQVFB3.                              00033100
+003320     READ BQVFB3 INTO BQVFB31 AT END                              00033200
+003330           MOVE HIGH-VALUE TO W-EOF-BQVFB3.                       00033300
+003340     IF W-EOF-BQVFB3     EQUAL HIGH-VALUE AND                     00033400
+003350        CTR-LETTI-BQVFB3 EQUAL ZERO                               00033500
+003360*      ARCHIVIO VUOTO                                             00033600
+003370       DISPLAY 'BQVFBE-A2-010-01: ARCHIVIO BQVFB3 VUOTO'          00033700
+003380       MOVE '0002' TO ABEND-CODE                                  00033800
+003390       CALL 'BQVFSR' USING ABEND-CODE.                            00033900
+003400     IF W-EOF-BQVFB3     EQUAL HIGH-VALUE                         00034000
+003410*      FINE FILE                                                  00034100
+003420       GO TO A2-990-SCRIVI-TESTA-EX.                              00034200
+003430 A2-020.                                                          00034300
+003440     ADD  1                      TO CTR-LETTI-BQVFB3              00034400
+003450*    SCRIVO IL RECORD DI TESTA DELL'ARCHIVIO 'ESITO'              00034500
+003460     MOVE ZERO                   TO BQVFB41                       00034600
+003470     MOVE 'EV0'                  TO BQVFB41-TIPO-REC              00034700
+003480     MOVE BQVFB31-ID-FLUSSO      TO BQVFB41-EV0-ID-FLUSSO         00034800
+003490     MOVE BQVFB31-PROG-FLUSSO-TRASM                               00034900
+003500                                 TO BQVFB41-EV0-PROG-FLUSSO-TRASM 00035000
+003510     MOVE BQVFB31-DATA-ESITO     TO BQVFB41-EV0-DATA-ESITO        00035100
+003520     MOVE BQVFB31-ESITO          TO BQVFB41-EV0-ESITO             00035200
+003530     MOVE BQVFB31-FLAG-TIPO-ERR  TO BQVFB41-EV0-FLAG-TIPO-ERR     00035300
+003540     MOVE BQVFB31-TOT-REC-ERRATI TO BQVFB41-EV0-TOT-REC-ERRATI    00035400
+003550     MOVE BQVFB31-TOT-REC-ERR-BLOC                                00035500
+003560                                 TO BQVFB41-EV0-TOT-REC-ERR-BLOC  00035600
+003570     MOVE BQVFB31-NUM-ERR-TOT    TO BQVFB41-EV0-NUM-ERR-TOT       00035700
+003580     MOVE BQVFB31-NUM-ERR-BLOC   TO BQVFB41-EV0-NUM-ERR-BLOC      00035800
+003590     MOVE BQVFB31-REC-FISCO      TO BQVFB41-EV0-REC-FISCO         00035900
+003600     MOVE BQVFB31-REC-INPS       TO BQVFB41-EV0-REC-INPS          00036000
+003610     MOVE BQVFB31-REC-REG        TO BQVFB41-EV0-REC-REG           00036100
+003620     MOVE BQVFB31-REC-ENTI       TO BQVFB41-EV0-REC-ENTI          00036200
+003630     MOVE BQVFB31-REC-INAIL      TO BQVFB41-EV0-REC-INAIL         00036300
+003640     MOVE BQVFB31-REC-ALTRI      TO BQVFB41-EV0-REC-ALTRI         00036400
+003650     MOVE BQVFB31-REC-ACCISE     TO BQVFB41-EV0-REC-ACCISE        00036500
+003660     MOVE BQVFB31-REC-IVA-AUTO   TO BQVFB41-EV0-REC-IVA-AUTO      00036600
+003670     MOVE BQVFB31-REC-ANAG-PF    TO BQVFB41-EV0-REC-ANAG-PF       00036700
+003680     MOVE BQVFB31-REC-ANAG-PNF   TO BQVFB41-EV0-REC-ANAG-PNF      00036800
+003690     MOVE BQVFB31-REC-ATM        TO BQVFB41-EV0-REC-ATM           00036900
+003700     MOVE BQVFB31-REC-RIEPIL     TO BQVFB41-EV0-REC-RIEPIL        00037000
+003710     MOVE BQVFB31-REC-ACCRED     TO BQVFB41-EV0-REC-ACCRED        00037100
+003720     MOVE BQVFB31-REC-BONIF      TO BQVFB41-EV0-REC-BONIF         00037200
+003730     MOVE BQVFB31-REC-ASS        TO BQVFB41-EV0-REC-ASS           00037300
+003740     MOVE BQVFB31-NUM-REC-TOT    TO BQVFB41-EV0-NUM-REC-TOT       00037400
+003750     WRITE BQVFB42 FROM BQVFB41                                   00037500
+003760     ADD 1 TO CTR-SCR-TOT-BQVFB4                                  00037600
+003770     ADD 1 TO CTR-SCR-PAR-BQVFB4                                  00037700
+003780*****DOPO AVER SCRITTO IL RECORD DI TESTA, MEMORIZZO I DATI       00037800
+003790*****DA UTILIZZARE IN SEGUITO PER LA SCRITTURA DEL RECORD DI CODA 00037900
+003800     MOVE BQVFB41-EV0-ID-FLUSSO  TO WS-REC9.                      00038000
+003810 A2-990-SCRIVI-TESTA-EX.                                          00038100
+003820     EXIT.                                                        00038200
+003830     EJECT                                                        00038300
+003840***************************************************************** 00038400
+003850*                CHIUSURA ARCHIVI                               * 00038500
+003860***************************************************************** 00038600
+003870 B2-010-CLOSE.                                                    00038700
+003880*    CHIUSURA FLUSSI CONTROLLATI                                  00038800
+003890     CLOSE BQVFB2.                                                00038900
+003900*    CHIUSURA INVII                                               00039000
+003910     CLOSE BQVFB3.                                                00039100
+003920*    CHIUSURA ESITI                                               00039200
+003930     CLOSE BQVFB4.                                                00039300
+003940*                                                                 00039400
+003950 B2-990-CLOSE-EX.                                                 00039500
+003960     EXIT.                                                        00039600
+003970     EJECT                                                        00039700
+003980***************************************************************** 00039800
+003990* CARICAMENTO DECODIFICA DISPLACEMENT TRACCIATO RECORD          * 00039900
+003991***************************************************************** 00040000
+003992 C2-010-DISPL.                                                    00040100
+003993*    APERTURA DECODIFICA DISPLACEMENT                             00040200
+003994     OPEN INPUT BQVFBT.                                           00040300
+003995*    INIZIALIZZO LA TABELLA DI W-S                                00040400
+003996     MOVE HIGH-VALUE TO W-TRACCIATO.                              00040500
+003997 C2-020.                                                          00040600
+003998     MOVE LOW-VALUE TO W-EOF-BQVFBT                               00040700
+003999     MOVE ZERO      TO IND-RECORD-DISPL.                          00040800
+004000 C2-030.                                                          00040900
+004001*    LETTURA ARCHIVIO DECODIFICA DISPLACEMENT                     00041000
+004002     READ BQVFBT INTO BQVFBT1 AT END                              00041100
+004003           MOVE HIGH-VALUE TO W-EOF-BQVFBT.                       00041200
+004004     IF W-EOF-BQVFBT EQUAL HIGH-VALUE                             00041300
+004005       GO TO C2-050.                                              00041400
+004006 C2-040.                                                          00041500
+004007*    CARICAMENTO AREA DI W-S                                      00041600
+004008     ADD 1                 TO                 IND-RECORD-DISPL    00041700
+004009     MOVE BQVFBT1-TIPO-REC TO W-TAB-TIPO-REC (IND-RECORD-DISPL)   00041800
+004010     MOVE BQVFBT1-DISPL    TO W-TAB-DISPL    (IND-RECORD-DISPL)   00041900
+004011     MOVE BQVFBT1-DESCR    TO W-TAB-DESCR    (IND-RECORD-DISPL)   00042000
+004012     MOVE BQVFBT1-FLAG-DIS TO W-TAB-FLAG     (IND-RECORD-DISPL)   00042100
+004013     GO TO C2-060.                                                00042200
+004014 C2-050.                                                          00042300
+004015*    FINE FILE                                                    00042400
+004016     IF IND-RECORD-DISPL EQUAL ZERO                               00042500
+004017*       FILE VUOTO                                                00042600
+004018        DISPLAY 'BQVFBE-C2-050-01: ARCHIVIO BQVFBT VUOTO'         00042700
+004019        MOVE '0003' TO ABEND-CODE                                 00042800
+004020        CALL 'BQVFSR' USING ABEND-CODE.                           00042900
+004021 C2-060.                                                          00043000
+004022*    CICLO FINO A FINE FILE OPPURE A FINE SPAZIO IN W-S           00043100
+004023     IF W-EOF-BQVFBT NOT EQUAL HIGH-VALUE AND                     00043200
+004024        IND-RECORD-DISPL LESS W-TAB-TRAC-NUM-MAX                  00043300
+004025        GO TO C2-030.                                             00043400
+004026 C2-070.                                                          00043500
+004027*    CHIUSURA DECODIFICA DISPLACEMENT                             00043600
+004028     CLOSE BQVFBT.                                                00043700
+004029 C2-990-DISPL-EX.                                                 00043800
+004030     EXIT.                                                        00043900
+004031     EJECT                                                        00044000
+004032***************************************************************** 00044100
+004033*   EMISSIONE DISPLAY STATISTICI                                * 00044200
+004410***************************************************************** 00044300
+004411 D2-010-DISPL.                                                    00044400
+004412     DISPLAY '************************************************'   00044500
+004413     DISPLAY '* NUMERO FLUSSI LOGICI ELABORATI     : '            00044600
+004414             CTR-LETTI-BQVFB3                              ' *'   00044700
+004415     DISPLAY '*                                              *'   00044800
+004416     DISPLAY '* RIEPILOGO FINALE NUMERO RECORDS              *'   00044900
+004417     DISPLAY '* LETTI      DA -FLUSSI CONTROLLATI- : '            00045000
+004418             CTR-LET-TOT-BQVFB2                            ' *'   00045100
+004419     DISPLAY '* LETTI      DA -INVII-              : '            00045200
+004420             CTR-LETTI-BQVFB3                              ' *'   00045300
+004421     DISPLAY '* SCRITTI    SU -ESITI-              : '            00045400
+004422             CTR-SCR-TOT-BQVFB4                            ' *'   00045500
+004423     DISPLAY '************************************************'   00045600
+004424     DISPLAY '*             FINE PROGRAMMA BQVFBE            *'   00045700
+004425     DISPLAY '************************************************'.  00045800
+004426 D2-990-DISPL-EX.                                                 00045900
+004427     EXIT.                                                        00046000
+004428     EJECT                                                        00046100
+004429***************************************************************** 00046200
+004430*                SCRITTURA RECORD DI CODA  ARCHIVIO ESITI       * 00046300
+004620***************************************************************** 00046400
+004621 E2-010-SCRIVI-CODA.                                              00046500
+004622     ADD 1                       TO CTR-SCR-PAR-BQVFB4            00046600
+004623     ADD 1                       TO CTR-SCR-TOT-BQVFB4            00046700
+004624     MOVE ZERO                   TO BQVFB41                       00046800
+004625     MOVE 'EV9'                  TO BQVFB41-TIPO-REC              00046900
+004626     MOVE WS-REC9                TO BQVFB41-EV9-ID-FLUSSO         00047000
+004627     MOVE CTR-SCR-PAR-BQVFB4     TO BQVFB41-EV9-TOT-REC           00047100
+004628     WRITE BQVFB42 FROM BQVFB41.                                  00047200
+004629 E2-990-SCRIVI-CODA-EX.                                           00047300
+004630     EXIT.                                                        00047400
+004631     EJECT                                                        00047500
+004632***************************************************************** 00047600
+004633* TRATTAMENTO RECORD GENERICO ARCHIVIO FLUSSI CONTROLLATI       * 00047700
+004760***************************************************************** 00047800
+004761 F2-010-CONTR-GEN.                                                00047900
+004762*    SE L'ESITO E' POSITIVO OPPURE SE L'INTERA TRASMISSIONE       00048000
+004763*    E' STATA RIFIUTATA, EVITO IL CONTROLLO                       00048100
+004764     IF BQVFB31-ESITO EQUAL '0' OR                                00048200
+004765        BQVFB31-ESITO EQUAL '3'                                   00048300
+004766       GO TO F2-990-CONTR-GEN-EX.                                 00048400
+004767 F2-020.                                                          00048500
+004768*    IMPOSTO IL RECORD INTERMEDIO                                 00048600
+004769     MOVE ZERO                   TO BQVFB41                       00048700
+004770*    TIPO RECORD                                                  00048800
+004771     MOVE 'EV1'                  TO BQVFB41-TIPO-REC              00048900
+004772*    TIPO RECORD ERRATO                                           00049000
+004773     MOVE BQVFB21-TIPO-RECORD    TO BQVFB41-EV1-TIPO-REC-ERR      00049100
+004774*    PROGRESSIVO DELEGA                                           00049200
+004775     MOVE BQVFB21-00-PROG-DELEGAA TO BQVFB41-EV1-PRG-DELEGA       00049300
+004776*    RIGA, PROVINCIA E PROGRESSIVO A/B NON SONO PRESENTI          00049400
+004777*    PER TIPO RECORD V00 E V99                                    00049500
+004778     MOVE ZERO                   TO BQVFB41-EV1-RIGA              00049600
+004779                                    BQVFB41-EV1-PROV              00049700
+004780                                    BQVFB41-EV1-PROGRESSIVO.      00049800
+004781     IF     BQVFB21-TIPO-RECORD  NOT EQUAL 'V00' AND              00049900
+004782            BQVFB21-TIPO-RECORD  NOT EQUAL 'V99'                  00050000
+004783*    RIGA                                                         00050100
+004784       MOVE BQVFB21-01-PROG-RIGAA     TO BQVFB41-EV1-RIGA         00050200
+004785*    PROVINCIA                                                    00050300
+004786       MOVE BQVFB21-01-SIGLA-PROV     TO BQVFB41-EV1-PROV         00050400
+004787*    PROGRESSIVO A/B                                              00050500
+004788       MOVE BQVFB21-01-PROG-ACCR-BONA TO BQVFB41-EV1-PROGRESSIVO. 00050600
+004789*    POSIZIONE DEL RECORD ERRATO NEL FILE LOGICO                  00050700
+004790     MOVE CTR-LET-PAR-BQVFB2     TO BQVFB41-EV1-PRG-REC-FL        00050800
+004791*    PROGRESSIVO RECORD INTERMEDIO FILE ESITO RELATIVO AL         00050900
+004792*    RECORD ERRATO                                                00051000
+004793     MOVE 1                      TO BQVFB41-EV1-PRG-REC-ERR       00051100
+004794*    TRATTAMENTO DETTAGLIO ERRORI                                 00051200
+004795     PERFORM A3-010-ERR  THRU A3-990-ERR-EX.                      00051300
+004796 F2-990-CONTR-GEN-EX.                                             00051400
+004797     EXIT.                                                        00051500
+004798     EJECT                                                        00051600
+004799***************************************************************** 00051700
+004800* TRATTAMENTO DETTAGLIO ERRORI                                  * 00051800
+005170***************************************************************** 00051900
+005171 A3-010-ERR.                                                      00052000
+005172     MOVE ZERO TO W-IND.                                          00052100
+005173     MOVE BQVFB41-EV1-TIPO-REC-ERR TO W-SER-TIPO-REC.             00052200
+005174* PER GESTIRE LA REDEFINES DEL RECORD V07 E'  STATO INVENTATO     00052300
+005175* UN TIPO RECORD FITTIZIO 'V77'                                   00052400
+005176*                                                                 00052500
+005177* MONOPOLI    INIZIO MODIFICA DEL 4 MAGGIO 2004                   00052600
+005250*                                                                 00052700
+005251     IF BQVFB21-TIPO-RECORD = 'V07' AND                           00052800
+005252       (MEM-RELEASE GREATER 'R04')                                00052900
+005253        MOVE 'V77'                 TO W-SER-TIPO-REC              00053000
+005254        MOVE 'V77'                 TO BQVFB41-EV1-TIPO-REC-ERR.   00053100
+005255* MONOPOLI    FINE MODIFICA DEL 4 MAGGIO 2004                     00053200
+005256* PER GESTIRE LA REDEFINES DEL RECORD V49, E' STATO INVENTATO     00053300
+005257* UN TIPO RECORD FITTIZIO 'V59' AVENTE GLI STESSI CAMPI DEL V49   00053400
+005258* A MENO DEI CAMPI RIDEFINITI                                     00053500
+005259*                                                                 00053600
+005260* MODIFICA 12/2004: PER GESTIRE UN'ALTRA REDEFINES SI INVENTA     00053700
+005261*                   IL RECORD FITTIZIO 'V69'                      00053800
+005262* INTERNET                                                        00053900
+005263*                                                                 00054000
+005264     IF BQVFB21-TIPO-RECORD = 'V99' AND                           00054100
+005265       (MEM-RELEASE LESS    'R06')                                00054200
+005266        MOVE 'V98'                 TO W-SER-TIPO-REC              00054300
+005267        MOVE 'V98'                 TO BQVFB41-EV1-TIPO-REC-ERR.   00054400
+005268*                                                                 00054500
+005269     IF BQVFB21-TIPO-RECORD = 'V49' AND                           00054600
+005270       (BQVFB21-49-CAUS-ANNUL = '4' OR '5' OR '6')                00054700
+005271        MOVE 'V59'                 TO W-SER-TIPO-REC              00054800
+005272        MOVE 'V59'                 TO BQVFB41-EV1-TIPO-REC-ERR.   00054900
+005273* CODICE A BARRE 12/2004                                          00055000
+005274*                                                                 00055100
+005275     IF BQVFB21-TIPO-RECORD = 'V49' AND                           00055200
+005276       (BQVFB21-49-CAUS-ANNUL = '8' OR '9')                       00055300
+005277        MOVE 'V69'                 TO W-SER-TIPO-REC              00055400
+005278        MOVE 'V69'                 TO BQVFB41-EV1-TIPO-REC-ERR.   00055500
+005279     IF BQVFB21-TIPO-RECORD = 'V49' AND                           00055600
+005280       (BQVFB21-49-CAUS-ANNUL = '7')                              00055700
+005281        MOVE 'V69'                 TO W-SER-TIPO-REC              00055800
+005282        MOVE 'V69'                 TO BQVFB41-EV1-TIPO-REC-ERR.   00055900
+005283     MOVE '000'                    TO W-SER-DISPL.                00056000
+005284*    POSIZIONAMENTO PUNTATORE                                     00056100
+005285     SEARCH ALL W-TAB-TRAC AT END                                 00056200
+005286        MOVE ZERO TO FLG-TROVATO                                  00056300
+005287      WHEN W-TAB-KEY (W-PUNT-TRAC) EQUAL W-SER-KEY                00056400
+005288        MOVE 1 TO FLG-TROVATO.                                    00056500
+005289 A3-020.                                                          00056600
+005290     IF FLG-TROVATO EQUAL ZERO                                    00056700
+005291*      TIPO RECORD ERRATO                                         00056800
+005292        DISPLAY 'BQVFBE-A3-020: TIPO RECORD NON TROVATO: '        00056900
+005293        W-SER-TIPO-REC                                            00057000
+005294        GO TO A3-120.                                             00057100
+005295 A3-030.                                                          00057200
+005296*    TIPO RECORD CORRETTO                                         00057300
+005297*    PUNTATORE POSIZIONATO SUL PRIMO ELEMENTO DELLA TABELLA       00057400
+005298*    RELATIVO AL TIPO RECORD IN QUESTIONE:                        00057500
+005299*    INIZIO IL CICLO                                              00057600
+005300 A3-040.                                                          00057700
+005301*    -- W-TAB-FLAG CONTIENE IL DISPLACEMENT (NEL TRACCIATO RECORD 00057800
+005302*       DEL FILE DA CONTROLLARE) DEL FLAG DI ERRORE               00057900
+005303     MOVE W-TAB-FLAG (W-PUNT-TRAC) TO W-IND-REC                   00058000
+005304*    -- VERIFICO SE TALE FLAG DI ERRORE E' DIVERSO DA ZERO        00058100
+005305     IF W-REC-ELEM (W-IND-REC + 1) EQUAL ZERO AND                 00058200
+005306        W-REC-ELEM (W-IND-REC + 2) EQUAL ZERO AND                 00058300
+005307        W-REC-ELEM (W-IND-REC + 3) EQUAL ZERO                     00058400
+005308*       IL FLAG DI ERRORE E' A ZERO                               00058500
+005309        GO TO A3-090.                                             00058600
+005310 A3-050.                                                          00058700
+005311*   IL FLAG DI ERRORE E' VALORIZZATO:                             00058800
+005312*   -- VERIFICO SE IL RECORD DEL FILE ESITO CONTIENE SPAZIO       00058900
+005313*      PER IMPOSTARE IL NUOVO ERRORE                              00059000
+005314        PERFORM A4-010-SCRIVI-ERR THRU A4-990-SCRIVI-ERR-EX       00059100
+005315*   -- POSIZIONE DEL CAMPO ERRATO                                 00059200
+005316        MOVE W-TAB-DISPL (W-PUNT-TRAC)                            00059300
+005317                                  TO BQVFB41-EV1-ERR-POS (W-IND)  00059400
+005318*   -- CODICE ERRORE RISCONTRATO                                  00059500
+005319        MOVE W-REC-ELEM (W-IND-REC + 1)                           00059600
+005320                                  TO BQVFB41-EV1-ERR-CO1 (W-IND)  00059700
+005321        MOVE W-REC-ELEM (W-IND-REC + 2)                           00059800
+005322                                  TO BQVFB41-EV1-ERR-CO2 (W-IND)  00059900
+005323        MOVE W-REC-ELEM (W-IND-REC + 3)                           00060000
+005324                                  TO BQVFB41-EV1-ERR-CO3 (W-IND)  00060100
+005325*   -- TIPOLOGIA ERRORE RISCONTRATO                               00060200
+005326        MOVE W-REC-ELEM (W-IND-REC + 4)                           00060300
+005327                                  TO BQVFB41-EV1-ERR-TIP (W-IND)  00060400
+005328*   -- CONTENUTO CAMPO ERRATO                                     00060500
+005329*      E' NECESSARIO UN CICLO CHE RIPORTI IL CAMPO ERRATO         00060600
+005330*      (BYTE PER BYTE) IN UN CAMPO DI APPOGGIO E DA QUESTO        00060700
+005331*      NEL RECORD DEL FILE ESITO.                                 00060800
+005332*      LA LUNGHEZZA DEL CAMPO ERRATO E' RICAVATA A PARTIRE        00060900
+005333*      DA W-TAB-DISPL (W-PUNT-TRAC) -DISPLACEMENT DEL CAMPO-      00061000
+005334*      FINO A W-TAB-DISPL (W-PUNT-TRAC +1) -DISPLACEMENT DEL      00061100
+005335*      CAMPO SUCCESSIVO-                                          00061200
+005336     MOVE W-TAB-DISPL (W-PUNT-TRAC) TO W-IND-REC                  00061300
+005337     SET W-PUNT-TRAC UP BY 1                                      00061400
+005338     MOVE SPACES TO W-REC-EV1                                     00061500
+005339     MOVE 1      TO W-IND-ERR.                                    00061600
+005340 A3-060.                                                          00061700
+005341*    CICLO FINO A RIPORTARE L'INTERO CAMPO ERRATO NEL FILE        00061800
+005342*    ESITO                                                        00061900
+005343     MOVE W-REC-ELEM (W-IND-REC + 1) TO W-REC-APP (W-IND-ERR)     00062000
+005344     ADD 1 TO W-IND-REC                                           00062100
+005345              W-IND-ERR.                                          00062200
+005346 A3-070.                                                          00062300
+005347     IF W-IND-REC LESS W-TAB-DISPL (W-PUNT-TRAC) AND              00062400
+005348        W-IND-ERR NOT GREATER 20                                  00062500
+005349        GO TO A3-060.                                             00062600
+005350 A3-080.                                                          00062700
+005351*    FINE CICLO (CAMPO ERRATO RIPORTATO NEL FILE ESITO)           00062800
+005352     MOVE W-REC-EV1 TO BQVFB41-EV1-ERR-VAL (W-IND).               00062900
+005353     IF BQVFB41-EV1-TIPO-REC-ERR EQUAL 'V99' AND                  00062911
+005354        BQVFB21-99-ERR-F24-I24   NOT EQUAL ZERO                   00062912
+005355        MOVE SPACES               TO BQVFB41-EV1-ERR-VAL (W-IND)  00062920
+005356     END-IF.                                                      00062930
+005357*    PROSEGUO CON IL PROSSIMO CAMPO                               00063000
+005358     GO TO A3-100.                                                00063100
+005359 A3-090.                                                          00063200
+005360*   IL FLAG DI ERRORE E' A ZERO                                   00063300
+005361*    PROSEGUO CON IL PROSSIMO CAMPO                               00063400
+005362     SET W-PUNT-TRAC UP BY 1.                                     00063500
+005363 A3-100.                                                          00063600
+005364*    -- W-TAB-FLAG CONTIENE IL DISPLACEMENT (NEL TRACCIATO RECORD 00063700
+005365*       DEL FILE DA CONTROLLARE) DEL FLAG DI ERRORE               00063800
+005366*       '000' SEGNALA LA FINE DEI CAMPI PER IL                    00063900
+005367*       TIPO RECORD IN QUESTIONE                                  00064000
+005368     IF W-TAB-FLAG (W-PUNT-TRAC) NOT EQUAL '000'                  00064100
+005369       GO TO A3-040.                                              00064200
+005370 A3-110.                                                          00064300
+005371*    FINE DEL TIPO RECORD IN QUESTIONE                            00064400
+005372*    RIMANE DA VERIFICARE L'ERRORE SULLA SUCCESSIONE              00064500
+005373*    DEI RECORD, PRESENTE SEMPRE, TRANNE PER IL RECORD 'V99'      00064600
+005374*    CONTROLLO L'ESITO PER IL CAMPO:                              00064700
+005375*    SUCCESSIONE RECORD                                           00064800
+005376     IF BQVFB41-EV1-TIPO-REC-ERR NOT EQUAL 'V99' AND              00064900
+005377        BQVFB21-00-ERR-REC-SUCC  NOT EQUAL ZERO                   00065000
+005378        PERFORM A4-010-SCRIVI-ERR THRU A4-990-SCRIVI-ERR-EX       00065100
+005379*       PER SUCCESSIONE RECORD NON ESISTE UN CAMPO CONTROLLATO:   00065200
+005380*       QUESTO CAMPO NON FA PARTE DEL TRACCIATO ORIGINARIO, ED E' 00065300
+005381*       AGGIUNTO SOLO PER POTER MEMORIZZARE L'IMPORTO CHE HA      00065400
+005382*       GENERATO L'ERRORE                                         00065500
+005383        MOVE '998'                TO BQVFB41-EV1-ERR-POS (W-IND)  00065600
+005384        MOVE BQVFB21-00-ERR-REC-SUCC                              00065700
+005385                                  TO BQVFB41-EV1-ERR-COD (W-IND)  00065800
+005386        MOVE BQVFB21-00-ERR-REC-SUCC-A                            00065900
+005387                                  TO BQVFB41-EV1-ERR-TIP (W-IND)  00066000
+005388        MOVE SPACES               TO BQVFB41-EV1-ERR-VAL (W-IND). 00066100
+005389*    RIMANE DA VERIFICARE L'ERRORE SULLA SOMMATORIA DEI RIMBORSI  00066200
+005390*    PRESENTE SOLO IL RECORD 'V36'                                00066300
+005391*    CONTROLLO L'ESITO PER IL CAMPO:                              00066400
+005392*    SOMMATORIA RIMBORSI                                          00066500
+005393     IF BQVFB41-EV1-TIPO-REC-ERR           EQUAL 'V36' AND        00066600
+005394        BQVFB21-36-FLAG-COMPENS-EXTRA  NOT EQUAL ZERO             00066700
+005395        PERFORM A4-010-SCRIVI-ERR THRU A4-990-SCRIVI-ERR-EX       00066800
+005396*       PER SOMMATORIA RIMBORSI NON ESISTE UN CAMPO CONTROLLATO:  00066900
+005397*       LA POSIZIONE E' IMPOSTATA AD UN VALORE DI COMODO, LO      00067000
+005398*       STESSO MEMORIZZATO NEL BQVFBT (DECODIFICA TRACCIATO       00067100
+005399*       RECORD) PER LA DECODIFICA DEL NOME DEL CAMPO IN ERRORE    00067200
+005400        MOVE '999'                TO BQVFB41-EV1-ERR-POS (W-IND)  00067300
+005401        MOVE BQVFB21-36-FLAG-COMPENS-EXTRA                        00067400
+005402                                  TO BQVFB41-EV1-ERR-COD (W-IND)  00067500
+005403        MOVE BQVFB21-36-FLAG-COMPENS-EX-A                         00067600
+005404                                  TO BQVFB41-EV1-ERR-TIP (W-IND). 00067700
+005405*       QUESTO CAMPO NON FA PARTE DEL TRACCIATO ORIGINARIO, ED E' 00067800
+005406*       AGGIUNTO SOLO PER POTER MEMORIZZARE L'IMPORTO CHE HA      00067900
+005407*       GENERATO L'ERRORE                                         00068000
+005408*       MOVE BQVFB21-36-IMP-RIMB  TO BQVFB41-EV1-ERR-VAL (W-IND). 00068100
+005409     GO TO A3-130.                                                00068200
+005410 A3-120.                                                          00068300
+005411*    TIPO RECORD ERRATO: CONTROLLO SOLO L'ESITO PER I CAMPI       00068400
+005412*    COMUNI ALL'INTERO TRACCIATO                                  00068500
+005413*    CONTROLLO L'ESITO PER IL CAMPO:                              00068600
+005414*    TIPO RECORD                                                  00068700
+005415     IF BQVFB21-ERR-TIPO-RECORD NOT EQUAL ZERO                    00068800
+005416        ADD  1                    TO W-IND                        00068900
+005417        MOVE '000'                TO BQVFB41-EV1-ERR-POS (W-IND)  00069000
+005418        MOVE BQVFB21-ERR-TIPO-RECORD                              00069100
+005419                                  TO BQVFB41-EV1-ERR-COD (W-IND)  00069200
+005420        MOVE BQVFB21-ERR-TIPO-RECORD-A                            00069300
+005421                                  TO BQVFB41-EV1-ERR-TIP (W-IND)  00069400
+005422        MOVE BQVFB21-TIPO-RECORD  TO BQVFB41-EV1-ERR-VAL (W-IND). 00069500
+005423*    CONTROLLO L'ESITO PER IL CAMPO:                              00069600
+005424*    ABI                                                          00069700
+005425     IF BQVFB21-ERR-COD-ABI NOT EQUAL ZERO                        00069800
+005426        ADD  1                    TO W-IND                        00069900
+005427        MOVE '003'                TO BQVFB41-EV1-ERR-POS (W-IND)  00070000
+005428        MOVE BQVFB21-ERR-COD-ABI                                  00070100
+005429                                  TO BQVFB41-EV1-ERR-COD (W-IND)  00070200
+005430        MOVE BQVFB21-ERR-COD-ABI-A                                00070300
+005431                                  TO BQVFB41-EV1-ERR-TIP (W-IND)  00070400
+005432        MOVE BQVFB21-COD-ABIA     TO BQVFB41-EV1-ERR-VAL (W-IND). 00070500
+005433*    CONTROLLO L'ESITO PER IL CAMPO:                              00070600
+005434*    DATA BONIFICO                                                00070700
+005435     IF BQVFB21-ERR-DATA-BONIF NOT EQUAL ZERO                     00070800
+005436        ADD  1                    TO W-IND                        00070900
+005437        MOVE '008'                TO BQVFB41-EV1-ERR-POS (W-IND)  00071000
+005438        MOVE BQVFB21-ERR-DATA-BONIF                               00071100
+005439                                  TO BQVFB41-EV1-ERR-COD (W-IND)  00071200
+005440        MOVE BQVFB21-ERR-DATA-BONIF-A                             00071300
+005441                                  TO BQVFB41-EV1-ERR-TIP (W-IND)  00071400
+005442        MOVE BQVFB21-DATA-BONIF   TO BQVFB41-EV1-ERR-VAL (W-IND). 00071500
+005443*    NON SONO POSSIBILI ULTERIORI CONTROLLI                       00071600
+005444 A3-130.                                                          00071700
+005445     IF W-IND GREATER ZERO                                        00071800
+005446*      SCRIVO L'ULTIMO RECORD EV1                                 00071900
+005447       WRITE BQVFB42 FROM BQVFB41                                 00072000
+005448       ADD  1    TO CTR-SCR-PAR-BQVFB4                            00072100
+005449       ADD  1    TO CTR-SCR-TOT-BQVFB4.                           00072200
+005450 A3-990-ERR-EX.                                                   00072300
+005451     EXIT.                                                        00072400
+005452     EJECT                                                        00072500
+005453***************************************************************** 00072600
+005454* SCRITTURA RECORD DI ERRORE  ARCHIVIO ESITI                    * 00072700
+005455***************************************************************** 00072800
+005456 A4-010-SCRIVI-ERR.                                               00072900
+005457     IF W-IND LESS 7                                              00073000
+005458       GO TO A4-030.                                              00073100
+005459 A4-020.                                                          00073200
+005460*    IL RECORD E' PIENO                                           00073300
+005461     WRITE BQVFB42 FROM BQVFB41                                   00073400
+005462     ADD 1 TO CTR-SCR-TOT-BQVFB4                                  00073500
+005463     ADD 1 TO CTR-SCR-PAR-BQVFB4                                  00073600
+005464     MOVE 1    TO W-IND                                           00073700
+005465     ADD  1    TO BQVFB41-EV1-PRG-REC-ERR                         00073800
+005466     MOVE ZERO TO BQVFB41-EV1-ERRORI                              00073900
+005467     GO TO A4-990-SCRIVI-ERR-EX.                                  00074000
+005468 A4-030.                                                          00074100
+005469*    INCREMENTO L'INDICE                                          00074200
+005470     ADD 1       TO W-IND.                                        00074300
+005471 A4-990-SCRIVI-ERR-EX.                                            00074400
+005472     EXIT.                                                        00074500
+005473     EJECT                                                        00074600
+

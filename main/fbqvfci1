@@ -1,0 +1,23 @@
+000010********************************************************
+000020* COPY CATALOGATA FBQVFCI1                             *
+000030*                                                      *
+000040* F.DE INNOCENTIIS- 02/10/2007                         *
+000050*                                                      *
+000060*              TRACCIATO RECORD ARCHIVIO               *
+000070*                CODICI IDENTIFICATIVI                 *
+000080*                                                      *
+000081* LUNGHEZZA RECORD: 18 BYTES                           *
+000100*                                                      *
+000110* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+000120* BARG.BQVX41                                          *
+000130********************************************************
+000140 01 BQVFCI1.
+000150*      CHIAVE
+000160    03 BQVFCI1-KEY.
+000170*      CODICE FORMALISMO
+000180       05 BQVFCI1-COD-IDENT      PIC X(002).
+000190*      DATA INIZIO VALIDITA'
+000200       05 BQVFCI1-INIZIO-VAL     PIC X(008).
+000210*      DATA FINE VALIDITA'
+000220    03 BQVFCI1-FINE-VAL          PIC X(008).
+

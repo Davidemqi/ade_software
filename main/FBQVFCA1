@@ -1,0 +1,32 @@
+000100********************************************************          00000100
+000200* COPY CATALOGATA FBQVFCA1.COBOL2                      *          00000200
+000300*                                                      *          00000300
+000400* A.D'URSO - NETSIEL - 10/11/98                        *          00000400
+000500*                                                      *          00000500
+000600*              TRACCIATO RECORD ARCHIVIO               *          00000600
+000700*                CAUSALI ALTRI ENTI PREVIDENZIALI      *          00000700
+000800* LUNGHEZZA RECORD: 87 BYTES                           *          00000800
+000900*                                                      *          00000900
+001000*                                                      *          00001000
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *          00001100
+001200* BARG.BQVX25                                          *          00001200
+001300********************************************************          00001300
+001400 01 BQVFCA1.                                                      00001400
+001500*      CHIAVE                                                     00001500
+001600    03 BQVFCA1-KEY.                                               00001600
+001700*      CODICE ENTE                                                00001700
+001800       05 BQVFCA1-COD         PIC X(004).                         00001800
+001900*      SEDE ENTE                                                  00001900
+002000       05 BQVFCA1-CAU         PIC X(004).                         00002000
+002100*      DATA INIZIO VALIDITA'                                      00002100
+002200       05 BQVFCA1-INIZ-VAL    PIC X(008).                         00002200
+002300*      DATA FINE VALIDITA'                                        00002300
+002400    03 BQVFCA1-FINE-VAL       PIC X(008).                         00002400
+002500*      FORMATO MATRICOLA                                                00
+002600    03 BQVFCA1-FORM-MATR      PIC X(001).                         00002600
+002700*      TIPO INIZIO RIFERIMENTO                                    00002500
+002800    03 BQVFCA1-TIPO-INIZIO    PIC X(001).                         00002600
+002900*      TIPO FINE RIFERIMENTO                                      00002700
+003000    03 BQVFCA1-TIPO-FINE      PIC X(001).                         00002800
+003100*      DESCRIZIONE                                                      00
+003200    03 BQVFCA1-DESCR          PIC X(060).                         00002800

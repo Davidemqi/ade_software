@@ -1,0 +1,25 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFRE1.COBOL2                      *
+000300*                                                      *
+000400* G.BARLETTA - NETSIEL - 06/02/98                      *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*                        REGIONE                       *
+000800* LUNGHEZZA RECORD: 43 BYTES                           *
+000900*                                                      *
+001000*                                                      *
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001200* BARG.BQVB11                                          *
+001300********************************************************
+001400 01 BQVFRE1.
+001500*      CCHIAVE
+001600    03 BQVFRE1-KEY.
+001700*      CODICE REGIONE
+001800       05 BQVFRE1-COD         PIC X(002).
+001900*      DATA INIZIO VALIDITA'
+002000       05 BQVFRE1-INIZ-VAL    PIC X(008).
+002100*      DATA FINE VALIDITA'
+002200    03 BQVFRE1-FINE-VAL       PIC X(008).
+002300*      DIZIONE REGIONE
+002400    03 BQVFRE1-DESCR          PIC X(025).
+002500

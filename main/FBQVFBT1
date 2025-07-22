@@ -1,0 +1,45 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFBT1                             *
+000300*                                                      *
+000400*       ********** B A N C H E **************          *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700* "DECODIFICA DEL DISPLACEMENT DEI CAMPI PRESENTI NEL  *
+000800*       TRACCIATO RECORD DEL FILE DA CONTROLLARE"      *
+000900* LUNGHEZZA RECORD: 59 BYTES                           *
+001000*                                                      *
+001100* L'ARCHIVIO DEVE RIPORTARE UN RECORD PER OGNI CAMPO   *
+001200* DA CONTROLLARE PRESENTE NELL'ARCHIVIO BANCHE, PIU'   *
+001300* UN RECORD FINALE PER OGNI TIPO RECORD.               *
+001400*                                                      *
+001500* IN TALE RECORD, DEVE ESSERE RIPORTATO:               *
+001600* -- IL TIPO RECORD DEL CAMPO DA CONTROLLARE;          *
+001700* -- IL DISPLACEMENT DEL CAMPO DA CONTROLLARE;         *
+001800* -- LA DESCRIZIONE  DEL CAMPO DA CONTROLLARE;         *
+001900* -- IL DISPLACEMENT DEL FLAG DI ERRORE ASSOCIATO AL   *
+002000*    CAMPO.                                            *
+002100*                                                      *
+002200* IL RECORD FINALE PER OGNI TIPO RECORD DEVE           *
+002300* CONTENERE                                            *
+002400* -- COME TIPO RECORD: IL TIPO RECORD IN ESAME;        *
+002500* -- COME DISPLACEMENT: IL DISPLACEMENT DEL FILLER     *
+002600*    CHE SEGUE L'ULTIMO CAMPO DEL TIPO RECORD IN ESAME;*
+002700* -- COME DESCRIZIONE: "FILLER";                       *
+002800* -- COME DISPLACEMENT DEL FLAG DI ERRORE ASSOCIATO AL *
+002900*    CAMPO: "000".                                     *
+003000*                                                      *
+003100* L'ARCHIVIO DEVE ESSERE ORDINATO PER TIPO RECORD E    *
+003200* PER DISPLACEMENT                                     *
+003300*                                                      *
+003400* IL DISPLACEMENT DEVE PARTIRE DALLA POSIZIONE '0'.    *
+003500*                                                      *
+003600********************************************************
+003700 01 BQVFBT1.
+003800*      TIPO RECORD
+003900    03 BQVFBT1-TIPO-REC         PIC X(003).
+004000*      DISPLACEMENT
+004100    03 BQVFBT1-DISPL            PIC X(003).
+004200*      DESRIZIONE
+004300    03 BQVFBT1-DESCR            PIC X(050).
+004400*      DISPLACEMENT FLAG ERRORE
+004500    03 BQVFBT1-FLAG-DIS         PIC X(003).

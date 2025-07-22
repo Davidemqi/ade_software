@@ -1,0 +1,2142 @@
+000100 IDENTIFICATION DIVISION.                                         00000100
+000200 PROGRAM-ID.     BQVFB6.                                          00000200
+000300 AUTHOR. N9143 - R. D'ELIA.                                       00000300
+000400 DATE-WRITTEN.  05/04/2000.                                       00000400
+000500*************************************************************     00000500
+000600*$1 TITOLO - CONTROLLI FORMALI E QUADRATURA - RECORD V36          00000600
+000700*************************************************************     00000700
+000800*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00000800
+000895*                                                                 00000895
+000900*   IL COMPONENTE RICEVE IN INPUT I DATI RELATIVI AL RECORD       00000900
+001000*   DI TIPO V36 E UNA TABELLA CONTENENTE I PAGAMENTI ED I         00001000
+001100*   RIMBORSI RELATIVI AI RECORD 01, 02, 03, 04, 05 E 06.          00001100
+001200*   SVOLGE DEI CONTROLLI FORMALI E DI QUADRATURA SUI CAMPI;       00001200
+001300*   IN CASO DI INCORRETTEZZE PROVVEDE AD IMPOSTARE (NELLO         00001300
+001400*   STESSO MODULO) DEI CODICI DI ERRORE ED INCREMENTA I           00001400
+001500*   CONTATORI RELATIVI AL TIPO DI ERRORE (BLOCCANTE/NON           00001500
+001600*   BLOCCANTE)                                                    00001600
+001700*                                                                 00001700
+001800* 2. ARCHIVI GESTITI                                              00001800
+001900*      NESSUNO                                                    00001900
+002000*                                                                 00002000
+002100* 3. SUBROUTINES RICHIAMATE                                       00002100
+002200*      NESSUNA                                                    00002200
+002300******************************************************************00002300
+002301*                                                                *00002301
+002302*$ 11/06/2024 MODIFICA MANUALE SIA REL. 6.21  (A1-090)           *00002302
+002303*                                                                *00002303
+002304*                                                                *00002304
+002305*                                                                *00002305
+002306*                                                                *00002306
+002307*                                                                *00002307
+002308*                                                                *00002308
+002309*                                                                *00002309
+002310*                                                                *00002310
+002320******************************************************************00002320
+002400 ENVIRONMENT DIVISION.                                            00002400
+002500 CONFIGURATION SECTION.                                           00002500
+002600 SPECIAL-NAMES.                                                   00002600
+002700     DECIMAL-POINT IS COMMA.                                      00002700
+002800 INPUT-OUTPUT SECTION.                                            00002800
+002900 FILE-CONTROL.                                                    00002900
+003000 DATA DIVISION.                                                   00003000
+003100 FILE SECTION.                                                    00003100
+003200***************  WORKING STORAGE SECTION  **********************  00003200
+003300 WORKING-STORAGE SECTION.                                         00003300
+003400 77  W-S                            PIC X(8) VALUE 'BQVFB6WS'.    00003400
+003500** CODICE PROVINCIA LETTA DAL FILE                                00003500
+003600 77  W-PROV-INP                  PIC X(2).                        00003600
+003700** CODICE AZIENDA LETTA DAL FILE                                  00003700
+003800 77  W-AZIENDA-INP               PIC X(5).                        00003800
+003900** CODICE AMBITO LETTO DAL FILE                                   00003900
+004000 77  W-AMBITO-INP                PIC X(3).                        00004000
+004100 77  W-AMBITO-INP-N REDEFINES                                     00004100
+004200     W-AMBITO-INP                PIC 9(3).                        00004200
+004300*---               TRACCIATO RECORD "ESITI" - BANCA               00004300
+004400     COPY 'FBQVFB21'.                                             00004400
+004500***---               TRACCIATO RECORD "ESITI" - CONCESSIONARIO    00004500
+004600**     COPY 'FBQVFD21'.                                           00004600
+004700*---               TRACCIATO RECORD PER CONVERSIONE LIRE/EUR      00004700
+004800     COPY 'FBQVFCO1'.                                             00004800
+004900*---        TABELLA PER TOTALIZZARE:                              00004900
+005000*---        .. PRIMO   ELEMENTO ====> IMPORTI ERARIO              00005000
+005100*---        .. SECONDO ELEMENTO ====> IMPORTI INPS                00005100
+005200*---        .. TERZO   ELEMENTO ====> IMPORTI REGIONE             00005200
+005300*---        .. QUARTO  ELEMENTO ====> IMPORTI ENTI LOCALI         00005300
+005400*---        .. QUINTO  ELEMENTO ====> IMPORTI INAIL               00005400
+005500*---        .. SESTO   ELEMENTO ====> IMPORTI ALTRI ENTI          00005500
+005600*---        .. SETTIMO ELEMENTO ====> IMPORTI ACCISE              00005600
+005700 01  W-TAB.                                                       00005700
+005800     03  W-TAB-EL OCCURS 7.                                       00005800
+005900         05  W-TAB-EL-PAG          PIC 9(015).                    00005900
+006000         05  W-TAB-EL-RIM          PIC 9(015).                    00006000
+006100*---        CAMPI APPOGGIO PER SEGNO E RELATIVI ERRORI            00006100
+006200 01  W-SEGNO                       PIC X(001).                    00006200
+006300 01  W-SEGNO-ERR                   PIC 9(003).                    00006300
+006400 01  W-SEGNO-ERR-A                 PIC X(001).                    00006400
+006500*---        CAMPI APPOGGIO PER SALDO E RELATIVI ERRORI            00006500
+006600 01  W-SALDO                       PIC 9(015).                    00006600
+006700 01  W-SALDOA REDEFINES W-SALDO    PIC X(015).                    00006700
+006800 01  W-SALDO-ERR                   PIC 9(003).                    00006800
+006900 01  W-SALDO-ERR-A                 PIC X(001).                    00006900
+007000*---        INDICE PER SCORRIMENTO TABELLA IMPORTI                00007000
+007100 01  W-IND                         PIC 9(001).                    00007100
+007200*---        INDICI PER SCORRIMENTO TABELLA ICI                    00007200
+007300*                                                                 00007300
+007400 01  W-IND-ICI                     PIC 9(001).                    00007400
+007500 01  W-IND-ICI-O                   PIC 9(001).                    00007500
+007600 01  W-FLAG-VUOTO                  PIC X(001).                    00007600
+007700*---                                                              00007700
+007800*--- TABELLA PER I SALDI PER COMUNI ICI                           00007800
+007900*---                                                              00007900
+008000 01  W-TAB-COMUNI-O.                                              00008000
+008100     03  W-ELEM-COMUNI-O   OCCURS 4.                              00008100
+008200         05  W-COD-CATAST-O        PIC X(004).                    00008200
+008300         05  W-PAGAM-ICI-O         PIC 9(015).                    00008300
+008400         05  W-RIMB-ICI-O          PIC 9(015).                    00008400
+008500         05  W-TIPO-TRIBUTO-O      PIC X(001).                    00008500
+008600*                                                                 00008600
+008700*---   CAMPO PER CONTROLLO ULTIME DUE O TRE CIFRE DEGLI IMPORTI   00008700
+008800 01  W-IMPORTO.                                                   00008800
+008900     03  W-IMPORTO-FILLER         PIC 9(012).                     00008900
+009000     03  W-IMPORTO-3              PIC 9(003).                     00009000
+009100*--- NEW:                                                         00009100
+009200 01  W-IMPORTOA REDEFINES W-IMPORTO.                              00009200
+009300     03  W-IMPORTO-FILLER         PIC 9(013).                     00009300
+009400     03  W-IMPORTO-2              PIC 9(002).                     00009400
+009500*--- NEW: FINE.                                                   00009500
+009600*---        CAMPO PER DIFFERENZE                                  00009600
+009700 01  W-DIFF                        PIC S9(015).                   00009700
+009800 01  W-DIFF1                       PIC 9(015).                    00009800
+009900*---        CAMPO PER SALDO CON SEGNO POSITIVO                    00009900
+010000 01  W-SALDO-P                     PIC 9(015).                    00010000
+010100*---        CAMPO PER SALDO CON SEGNO NEGATIVO                    00010100
+010200 01  W-SALDO-N                     PIC 9(015).                    00010200
+010300 01  W-RIMB                        PIC 9(015).                    00010300
+010400*---        LIRE MAX RIMBORSABILI (FINO AL 31/12/2000)            00010400
+010500 01  W-ITL                         PIC 9(015) VALUE 500000000.    00010500
+010600*---        LIRE MAX RIMBORSABILI (DAL 01/01/2001)                00010600
+010700 01  W-ITL-NEW                     PIC 9(015) VALUE 1000000000.   00010700
+010800* INIZIO MODIFICA EURO                                            00010800
+010900*---        EURO MAX RIMBORSABILI (DAL 01/01/2002)                00010900
+011000 01  W-EUR-NEW                 PIC 9(014)V9(4) VALUE 516456,90.   00011000
+011100 01  W-EUR-700                 PIC 9(014)V9(4) VALUE 700000,00.   00011100
+011110 01  W-EUR-1000                PIC 9(014)V9(4) VALUE 1000000,00.  00011110
+011111*BQC79                                                            00011111
+011120 01  W-EUR-2000                PIC 9(014)V9(4) VALUE 2000000,00.  00011120
+011200* FINE MODIFICA EURO                                              00011200
+011300*---        TOTALE COMPENSAZIONI                                  00011300
+011400 01  W-TOT-COMP                    PIC 9(015).                    00011400
+011500*---        EURO MAX RIMBORSABILI                                 00011500
+011600 01  W-EUR                         PIC 9(015).                    00011600
+011700*---                                                              00011700
+011800 01  W-EUR-APP                     PIC 9(014)V9(4).               00011800
+011900*                                                                 00011900
+012000*--- CAMPI DI APPOGGIO PER IL CODICE FISCALE                      00012000
+012100*---                                                              00012100
+012200 01  W-APPO-CF.                                                   00012200
+012300     03  W-APPO-CF-SX.                                            00012300
+012400         05  W-APPO-CF-DENOM.                                     00012400
+012500             07 W-APPO-CF-DENOM-L1  PIC X(01).                    00012500
+012600             07 W-APPO-CF-DENOM-L2  PIC X(01).                    00012600
+012700             07 W-APPO-CF-DENOM-L3  PIC X(01).                    00012700
+012800             07 W-APPO-CF-DENOM-L4  PIC X(01).                    00012800
+012900             07 W-APPO-CF-DENOM-L5  PIC X(01).                    00012900
+013000             07 W-APPO-CF-DENOM-L6  PIC X(01).                    00013000
+013100         05  W-APPO-CF-ANNO         PIC X(02).                    00013100
+013200         05  W-APPO-CF-MESE         PIC X(01).                    00013200
+013300             88  W-APPO-CF-MESE-OK                                00013300
+013400                 VALUE 'A' 'B' 'C' 'D' 'E' 'H' 'L'                00013400
+013500                       'M' 'P' 'R' 'S' 'T'.                       00013500
+013600         05  W-APPO-CF-GIORNO       PIC X(02).                    00013600
+013700     03  W-APPO-CF-DX.                                            00013700
+013800         05  W-APPO-CF-CATAST       PIC X(01).                    00013800
+013900             88  W-COD-FISC-CATAST-OK                             00013900
+014000                 VALUE 'A' 'B' 'C' 'D' 'E' 'F' 'G'                00014000
+014100                       'H' 'I' 'L' 'M' 'Z'.                       00014100
+014200         05  FILLER                 PIC X(04).                    00014200
+014300*                                                                 00014300
+014400 01  W-CF-CATAST.                                                 00014400
+014500     03  FILLER                        PIC X(11).                 00014500
+014600     03  W-CATAST.                                                00014600
+014700        05  W-CATAST-SOTTO1            PIC X(01).                 00014700
+014800        05  W-CATAST-SOTTO2.                                      00014800
+014900            07  W-CATAST-SOTTO21       PIC X(01).                 00014900
+015000               88  W-CATAST-SOTTO21-OK VALUE                      00015000
+015100                   'L' 'M' 'N' 'P' 'Q' 'R' 'S' 'T' 'U' 'V'.       00015100
+015200            07  W-CATAST-SOTTO22       PIC X(01).                 00015200
+015300               88  W-CATAST-SOTTO22-OK VALUE                      00015300
+015400                   'L' 'M' 'N' 'P' 'Q' 'R' 'S' 'T' 'U' 'V'.       00015400
+015500            07  W-CATAST-SOTTO23       PIC X(01).                 00015500
+015600               88  W-CATAST-SOTTO23-OK VALUE                      00015600
+015700                   'L' 'M' 'N' 'P' 'Q' 'R' 'S' 'T' 'U' 'V'.       00015700
+015800*                                                                 00015800
+015900 01  W-CF.                                                        00015900
+016000     03  FILLER                         PIC X(08).                00016000
+016100     03  W-CF-MESE                      PIC X(01).                00016100
+016200                                                                  00016200
+016300         88  W-CF-MESE-30-OK  VALUE 'D' 'H' 'P' 'S'.              00016300
+016400                                                                  00016400
+016500*                                                                 00016500
+016600         88  W-CF-MESE-31-OK  VALUE 'A' 'C' 'E' 'L' 'M' 'R' 'T'.  00016600
+016700                                                                  00016700
+016800*                                                                 00016800
+016900         88  W-CF-MESE-28-OK  VALUE 'B'.                          00016900
+017000                                                                  00017000
+017100*                                                                 00017100
+017200*01  W-APPO-CF-RED REDEFINES W-APPO-CF.                           00017200
+017300*    03  FILLER                     PIC X(05).                    00017300
+017400*    03  W-APPO-CF-RED-DX           PIC X(11).                    00017400
+017500 01  W-APPO-CF-11.                                                00017500
+017600     03  W-APPO-CF-11-PROG          PIC 9(07).                    00017600
+017700     03  W-APPO-CF-11-COD-UFF       PIC 9(03).                    00017700
+017800     03  FILLER                     PIC X(06).                    00017800
+017900 01  W-PARAM-BQVFB3.                                              00017900
+018000     03  W-BQVFB3-COD-FISC          PIC X(16).                    00018000
+018100     03  W-BQVFB3-COD-RIT           PIC X.                        00018100
+018200*                                                                 00018200
+018300 01  W-PF-PNF                       PIC X(03).                    00018300
+018400 01  W-FLAG-NO-BQVFB3               PIC 9(01).                    00018400
+018500*---                                                              00018500
+018600*---   FLAG PER INDICARE CHE IL CAMPO E' STATO TROVATO            00018600
+018700 77  W-FLAG-TROVATO                 PIC 9(001).                   00018700
+018800********************** LINKAGE SECTION ***************************00018800
+018900*                                                                 00018900
+019000 LINKAGE SECTION.                                                 00019000
+019100*----                                                             00019100
+019200*---               AREA DI COLLOQUIO                              00019200
+019300*----                                                             00019300
+019400*---     FLAG INDICANTE LA PROVENIENZA:                           00019400
+019500*---   .. "B" BANCA;                                              00019500
+019600*---   .. "C" CONCESSIONARIO                                      00019600
+019700 01  W-PROV                        PIC X(001).                    00019700
+019800*---     FLAG RELATIVO ALLE AGEVOLAZIONI                          00019800
+019900 01  W-FLAG-AGEV                   PIC X(001).                    00019900
+020000*---     AGEVOLAZIONI                                             00020000
+020100 01  W-SALDO-AG                    PIC 9(015).                    00020100
+020200*---     AREA DATI RELATIVA AL FILE ESITO                         00020200
+020300 01  W-DATI                        PIC X(512).                    00020300
+020400*---     TABELLA IMPORTI                                          00020400
+020500 01  W-TABELLA                     PIC X(210).                    00020500
+020600*---     DIVISA                                                   00020600
+020700 01  W-DIVISA                      PIC X(003).                    00020700
+020800*---   CONTATORE ERRORI NON BLOCCANTI                             00020800
+020900 01  W-CTR1                        PIC 9(009).                    00020900
+021000*---   CONTATORE ERRORI BLOCCANTI                                 00021000
+021100 01  W-CTR2                        PIC 9(009).                    00021100
+021200*--- CAMPO DI APPOGGIO PER I TOTALI COMPENSAZIONI SUL FISCO       00021200
+021300 01  W-COMP-FISCO                  PIC 9(018).                    00021300
+021400*--- CAMPO DI APPOGGIO PER I TOTALI COMPENSAZIONI SULLE REGIONI   00021400
+021500 01  W-COMP-REG                    PIC 9(018).                    00021500
+021600*---   FLAG PER IL CONTROLLO DEL SEGNO E SALDO ERARIO SE RIFERITO 00021600
+021700*      AL TIPO RECORD V20.                                        00021700
+021800 01  W-V20                         PIC X(001).                    00021800
+021900*---                                                              00021900
+022000*--- TABELLA PER I SALDI PER COMUNI ICI                           00022000
+022100*---                                                              00022100
+022200 01  W-TAB-COMUNI.                                                00022200
+022300     03  W-ELEM-COMUNI   OCCURS 4.                                00022300
+022400         05  W-COD-CATAST           PIC X(004).                   00022400
+022500         05  W-PAGAM-ICI            PIC 9(015).                   00022500
+022600         05  W-RIMB-ICI             PIC 9(015).                   00022600
+022700         05  W-TIPO-TRIBUTO         PIC X(001).                   00022700
+022800*--- IMPORTO A CREDITO TRIBUTO 3900                               00022800
+022900 01  W-TOT-RIMB-TRIB                PIC 9(015).                   00022900
+023000*--- TRIBUTO IMU                                                  00023000
+023100 01  W-TIPO-TRIB-NO-IMU             PIC X(001).                   00023100
+023200*--- TRIBUTO TARES                                                00023200
+023300 01  W-TIPO-TRIB-NO-TARES           PIC X(001).                   00023300
+023400*---                                                              00023400
+023500**TABELLA CONTENENTE I CODICI AZIENDA PRELEVATI DAL FILE SEQ.     00023500
+023600**BQVFAZ  (PER I CONTROLLI CUI CODICI ABI)                        00023600
+023700*---                                                              00023700
+023800 01  W-TAB-AZIENDE.                                               00023800
+023900     03 W-TAB-AZIENDE-NUM-MAX    PIC 9(004) VALUE 2000.           00023900
+024000     03 W-TAB-AZIENDE-OCC.                                        00024000
+024100        05 W-TAB-AZIENDE-EL      OCCURS 2000 TIMES                00024100
+024200                                 ASCENDING W-TAB-AZ-COD-NUM       00024200
+024300                                 INDEXED BY W-PUNT-AZIENDE.       00024300
+024400           07 W-TAB-AZ-COD-NUM   PIC 9(005).                      00024400
+024500           07 W-TAB-AZ-COD-ALF   REDEFINES                        00024500
+024600              W-TAB-AZ-COD-NUM   PIC X(005).                      00024600
+024700*---                                                              00024700
+024800**TABELLA CONTENENTE I CODICI AMBITI  PRELEVATI DAL FILE BQVFAM   00024800
+024900*---                                                              00024900
+025000 01  W-TAB-AMBITI.                                                00025000
+025100     03 W-TAB-AMBITI-NUM-MAX        PIC 9(003) VALUE 150.         00025100
+025200     03 W-TAB-AMBITI-OCC.                                         00025200
+025300        05 W-TAB-AMBITI-EL OCCURS   150 TIMES                     00025300
+025400                                   ASCENDING W-TAB-AMBITI-COD-ALF 00025400
+025500                                            W-TAB-AMBITI-COD-PROV 00025500
+025600                                   INDEXED BY W-PUNT-AMBITI.      00025600
+025700           07 W-TAB-AMBITI-KEY.                                   00025700
+025800              09 W-TAB-AMBITI-COD-NUM  PIC 9(003).                00025800
+025900              09 W-TAB-AMBITI-COD-ALF  REDEFINES                  00025900
+026000                  W-TAB-AMBITI-COD-NUM PIC X(003).                00026000
+026100              09 W-TAB-AMBITI-INI-VAL  PIC X(008).                00026100
+026200           07 W-TAB-AMBITI-FIN-VAL  PIC X(008).                   00026200
+026300           07 W-TAB-AMBITI-COD-PROV PIC X(002).                   00026300
+026400***---   FLAG PER IL CONTROLLO DELL'OMOGENEITA' NRO/CODUFF V01    00026400
+026500** 01  W-CTR-OMOG-V01                PIC 9(001).                  00026500
+026600*---                                                              00026600
+026700*--- TABELLA DEI CODICI IDENTIFICATIVI                            00026700
+026800*---                                                              00026800
+026900 01  W-TAB-IDENT.                                                 00026900
+027000     03  W-TAB-IDENT-NUM-MAX PIC 9(003) VALUE 100.                00027000
+027100     03  W-TAB-IDENT-OCC.                                         00027100
+027200        05  W-TAB-IDENT-EL OCCURS 100                             00027200
+027300                            ASCENDING W-TAB-IDENT-COD             00027300
+027400                                      W-TAB-IDENT-INIZIO-VAL      00027400
+027500                            INDEXED BY W-PUNT-IDENT.              00027500
+027600            07  W-TAB-IDENT-KEY.                                  00027600
+027700                09  W-TAB-IDENT-COD            PIC X(002).        00027700
+027800                09  W-TAB-IDENT-INIZIO-VAL      PIC X(008).       00027800
+027900            07  W-TAB-IDENT-FINE-VAL   PIC X(008).                00027900
+028000*--- CONFERIMENTO F24 I24                                         00028000
+028100 01  W-FLAG-CONF-F24                PIC X(001).                   00028100
+028200 01  W-FLAG-CONF-I24                PIC X(001).                   00028200
+028300*--- TRIBUTO TASI                                                 00028300
+028400 01  W-TIPO-TRIB-NO-TASI            PIC X(001).                   00028400
+028500*---                                                              00028500
+028600 01  W-FLAG-TRIB-CONC              PIC X(001).                    00028600
+028700 01  W-FLAG-CRED                   PIC X(001).                    00028700
+028800 01  W-COMP-EL                     PIC 9(018).                    00028800
+028900*---                                                              00028900
+029000 01  W-TOT-IMP-CRED-CONTR-ELO      PIC S9(015).                   00029000
+029100 01  W-TOT-IMP-CRED-CONTR-IRF      PIC S9(015).                   00029100
+029200 01  W-TOT-IMP-CRED-CONTR-ADX      PIC S9(015).                   00029200
+029300 01  W-TOT-IMP-CRED-CONTR-IIE      PIC S9(015).                   00029300
+029400 01  W-TOT-IMP-CRED-CONTR-IFE      PIC S9(015).                   00029400
+029500 01  W-TOT-IMP-CRED-CONTR-FF1      PIC S9(015).                   00029500
+029600 01  W-TOT-IMP-CRED-CONTR-FF2      PIC S9(015).                   00029600
+029700 01  W-TOT-IMP-CRED-CONTR-FF3      PIC S9(015).                   00029700
+029800 01  W-TOT-IMP-CRED-CONTR-ORO      PIC S9(015).                   00029800
+029900 01  W-TOT-IMP-CRED-CONTR-SEC      PIC S9(015).                   00029900
+030000 01  W-TOT-IMP-CRED-CONTR-IEC      PIC S9(015).                   00030000
+030010 01  W-TOT-IMP-CRED-CONTR-QR1      PIC S9(015).                   00030010
+030020 01  W-TOT-IMP-CRED-CONTR-BTC      PIC S9(015).                   00030020
+030100*                                                                 00030100
+030200********************** PROCEDURE DIVISION ************************00030200
+030300*                                                                 00030300
+030400 PROCEDURE DIVISION   USING W-PROV W-FLAG-AGEV W-SALDO-AG W-DATI  00030400
+030500                W-TABELLA W-DIVISA W-CTR1 W-CTR2 W-COMP-FISCO     00030500
+030600                W-COMP-REG                                        00030600
+030700                W-V20 W-TAB-COMUNI W-TAB-AZIENDE W-TAB-AMBITI     00030700
+030800                W-TAB-IDENT                                       00030800
+030900                W-TOT-RIMB-TRIB                                   00030900
+031000                W-TIPO-TRIB-NO-IMU                                00031000
+031100                W-TIPO-TRIB-NO-TARES                              00031100
+031200                W-FLAG-CONF-F24 W-FLAG-CONF-I24                   00031200
+031300                W-TIPO-TRIB-NO-TASI                               00031300
+031400                W-FLAG-TRIB-CONC                                  00031400
+031500                W-FLAG-CRED                                       00031500
+031600                W-COMP-EL                                         00031600
+031700                W-TOT-IMP-CRED-CONTR-ELO                          00031700
+031800                W-TOT-IMP-CRED-CONTR-IRF                          00031800
+031900                W-TOT-IMP-CRED-CONTR-ADX                          00031900
+032000                W-TOT-IMP-CRED-CONTR-IIE                          00032000
+032100                W-TOT-IMP-CRED-CONTR-IFE                          00032100
+032200                W-TOT-IMP-CRED-CONTR-FF1                          00032200
+032300                W-TOT-IMP-CRED-CONTR-FF2                          00032300
+032400                W-TOT-IMP-CRED-CONTR-FF3                          00032400
+032500                W-TOT-IMP-CRED-CONTR-ORO                          00032500
+032600                W-TOT-IMP-CRED-CONTR-SEC                          00032600
+032700                W-TOT-IMP-CRED-CONTR-IEC                          00032700
+032710                W-TOT-IMP-CRED-CONTR-QR1                          00032710
+032720                W-TOT-IMP-CRED-CONTR-BTC.                         00032720
+032800***             W-V20 W-CTR-OMOG-V01.                             00032800
+032900 ML-010-INIZIO.                                                   00032900
+033000*---   INIZIALIZZAZIONE DELLE AREE DI LAVORO                      00033000
+033100     MOVE ZERO TO W-TOT-COMP.                                     00033100
+033200     MOVE ZERO TO W-RIMB.                                         00033200
+033300     PERFORM RZ-010-INIZIA THRU RZ-010-INIZIA-EX.                 00033300
+033400     MOVE ZERO TO W-DIFF                                          00033400
+033500                  W-DIFF1                                         00033500
+033600                  W-SALDO-P                                       00033600
+033700                  W-SALDO-N.                                      00033700
+033800*---   IMPOSTAZIONE AREA DI PASSAGGIO RELATIVA AI DATI E          00033800
+033900*---   ALLA TABELLA DI TOTALIZZAZIONE A SECONDA DELLA PROVENIENZA 00033900
+034000*---                                                              00034000
+034100**     IF W-PROV EQUAL 'B'                                        00034100
+034200**       GO TO ML-030.                                            00034200
+034300** ML-020.                                                        00034300
+034400**     MOVE W-DATI                    TO BQVFD21.                 00034400
+034500***---   ROUTINE PER IMPOSTARE I CAMPI DELLA COPY FBQVFD21 IN     00034500
+034600***---   FBQVFB21.                                                00034600
+034700***---                                                            00034700
+034800**     PERFORM RX-010-BANCA THRU RX-010-BANCA-EX.                 00034800
+034900**     GO TO ML-040.                                              00034900
+035000** ML-030.                                                        00035000
+035100     MOVE W-DATI                    TO BQVFB21.                   00035100
+035200 ML-040.                                                          00035200
+035300     MOVE W-TABELLA                 TO W-TAB.                     00035300
+035400*---   ROUTINE DI CONTROLLO FORMALE DEI CAMPI CODICE CAB,         00035400
+035500*---   MODALITA' DI PAGAMENTO E CONFERIMENTO DELEGA.              00035500
+035600*---                                                              00035600
+035700     PERFORM A1-010-CONTR-FORM THRU A1-010-CONTR-FORM-EX.         00035700
+035800*---                                                              00035800
+035900*---        ROUTINE DI CONTROLLO SALDI PARZIALI                   00035900
+036000*---                                                              00036000
+036100     IF BQVFB21-36-TIPO-MODELLO NOT EQUAL "1" AND                 00036100
+036200        BQVFB21-36-TIPO-MODELLO NOT EQUAL "2" AND                 00036200
+036300        BQVFB21-36-TIPO-MODELLO NOT EQUAL "3" AND                 00036300
+036400        BQVFB21-36-TIPO-MODELLO NOT EQUAL "4"                     00036400
+036500        PERFORM B1-010-SALDI-PAR THRU B1-010-SALDI-PAR-EX         00036500
+036600     END-IF.                                                      00036600
+036700*---                                                              00036700
+036800*---        ROUTINE DI CONTROLLO SALDO FINALE                     00036800
+036900     PERFORM C1-010-SALDO-FIN THRU C1-010-SALDO-FIN-EX.           00036900
+037000*---                                                              00037000
+037100*---        ROUTINE DI CONTROLLO TOTALE COMPENSAZIONI             00037100
+037200     IF BQVFB21-36-DATA-RISC > '20001231' THEN                    00037200
+037300         PERFORM C2-010-TOT-COMP  THRU C2-010-TOT-COMP-EX.        00037300
+037400*---                                                              00037400
+037500*---        ROUTINE PER IMPOSTAZIONE AGEVOLAZIONI                 00037500
+037600     PERFORM D1-010-AGEV      THRU D1-010-AGEV-EX.                00037600
+037700*---                                                              00037700
+037800*---        ROUTINE PER CONTROLLO CODICE ABI                      00037800
+037900*---        SE PROVENIENZA CONCESSIONARI                          00037900
+038000     IF W-PROV = 'C'                                              00038000
+038100        PERFORM E1-010-CODABI    THRU E1-010-CODABI-EX.           00038100
+038200*---                                                              00038200
+038300*---                                                              00038300
+038400*---        ROUTINE DI CONTROLLO SECONDO CODICE FISCALE           00038400
+038500     PERFORM F1-010   THRU F1-990.                                00038500
+038600*                                                                 00038600
+038700     IF (BQVFB21-36-CF2 EQUAL SPACE OR                            00038700
+038800         BQVFB21-36-CF2 EQUAL ZERO) AND                           00038800
+038900        BQVFB21-36-COD-IDENT NOT EQUAL SPACE AND                  00038900
+039000        BQVFB21-36-COD-IDENT NOT EQUAL ZERO                       00039000
+039100           MOVE 96  TO BQVFB21-36-ERR-COD-IDENT                   00039100
+039200           MOVE 'E' TO BQVFB21-36-ERR-COD-IDENT-A                 00039200
+039300           ADD 1 TO W-CTR2.                                       00039300
+039400*                                                                 00039400
+039500     IF BQVFB21-36-CF2 NOT EQUAL SPACE AND                        00039500
+039600        BQVFB21-36-CF2 NOT EQUAL ZERO                             00039600
+039700           PERFORM IDENT-010 THRU IDENT-EXIT.                     00039700
+039800*F      BQVFB21-36-COD-IDENT NOT EQUAL '02' AND                   00039800
+039900*F      BQVFB21-36-COD-IDENT NOT EQUAL '03' AND                   00039900
+040000*F      BQVFB21-36-COD-IDENT NOT EQUAL '07' AND                   00040000
+040100*F      BQVFB21-36-COD-IDENT NOT EQUAL '51'                       00040100
+040200*F         MOVE 55  TO BQVFB21-36-ERR-COD-IDENT                   00040200
+040300*F         MOVE 'E' TO BQVFB21-36-ERR-COD-IDENT-A                 00040300
+040400*F         ADD 1 TO W-CTR2.                                       00040400
+040500*                                                                 00040500
+040600     IF BQVFB21-36-MOD-CONFER NOT EQUAL '1' AND                   00040600
+040700        BQVFB21-36-MOD-CONFER NOT EQUAL '2' AND                   00040700
+040800        BQVFB21-36-PROGR-IUD NOT EQUAL SPACE AND                  00040800
+040900        BQVFB21-36-PROGR-IUD NOT EQUAL ZERO AND                   00040900
+041000        BQVFB21-COD-ABI NOT EQUAL 7601 AND                        00041000
+041100        BQVFB21-COD-ABI NOT EQUAL 36081                           00041100
+041200           MOVE 96  TO BQVFB21-36-ERR-PROGR-IUD                   00041200
+041300           MOVE 'E' TO BQVFB21-36-ERR-PROGR-IUD-A                 00041300
+041400           ADD 1 TO W-CTR2.                                       00041400
+041500**     IF W-PROV EQUAL 'B'                                        00041500
+041600**       GO TO ML-060.                                            00041600
+041700** ML-050.                                                        00041700
+041800***---   ROUTINE PER IMPOSTARE I CAMPI DELLA COPY FBQVFB21 IN     00041800
+041900***---   FBQVFD21.                                                00041900
+042000***---                                                            00042000
+042100**     PERFORM RY-010-CONC THRU RY-010-CONC-EX.                   00042100
+042200**     MOVE BQVFD21             TO W-DATI.                        00042200
+042300**     GO TO ML-990.                                              00042300
+042400** ML-060.                                                        00042400
+042500     MOVE BQVFB21             TO W-DATI.                          00042500
+042600 ML-990.                                                          00042600
+042700     GOBACK.                                                      00042700
+042800*---------------------------------------------------------------- 00042800
+042900*---   SI CONTROLLA LA CORRETTEZZA  DEI CAMPI CODICE CAB,         00042900
+043000*---   MODALITA' DI PAGAMENTO E CONFERIMENTO DELEGA; SE SI        00043000
+043100*---   PROVIENE DA CONCESSIONARIO SI CONTROLLANO GLI ESTREMI      00043100
+043200*---   QUIETANZA                                                  00043200
+043300*---------------------------------------------------------------- 00043300
+043400 A1-010-CONTR-FORM.                                               00043400
+043500*---   CONTROLLO NUMERICITA' CODICE CAB (SOLO SE DA BANCA)        00043500
+043600     IF BQVFB21-36-COD-CABA NUMERIC  OR                           00043600
+043700        W-PROV              EQUAL 'C'                             00043700
+043800       GO TO A1-030.                                              00043800
+043900 A1-020.                                                          00043900
+044000*---   IMPOSTAZIONE ERRORE NON BLOCCANTE                          00044000
+044100     IF BQVFB21-36-ERR-COD-CAB EQUAL ZERO                         00044100
+044200        MOVE 33                      TO BQVFB21-36-ERR-COD-CAB    00044200
+044300        MOVE 'W'                     TO BQVFB21-36-ERR-COD-CAB-A  00044300
+044400        ADD  1                       TO W-CTR1.                   00044400
+044500     GO TO A1-050.                                                00044500
+044600 A1-030.                                                          00044600
+044700*---   CONTROLLO IMPOSTAZIONE CODICE CAB (SOLO SE DA BANCA)       00044700
+044800     IF BQVFB21-36-COD-CABA GREATER ZERO OR                       00044800
+044900        W-PROV              EQUAL 'C'                             00044900
+045000       GO TO A1-050.                                              00045000
+045100 A1-040.                                                          00045100
+045200*---   IMPOSTAZIONE ERRORE NON BLOCCANTE                          00045200
+045300     IF BQVFB21-36-ERR-COD-CAB EQUAL ZERO                         00045300
+045400        MOVE 39                      TO BQVFB21-36-ERR-COD-CAB    00045400
+045500        MOVE 'W'                     TO BQVFB21-36-ERR-COD-CAB-A  00045500
+045600        ADD  1                       TO W-CTR1.                   00045600
+045700 A1-050.                                                          00045700
+045800*---   CONTROLLO CORRETTA IMPOSTAZIONE MODALITA' PAGAMENTO        00045800
+045900     IF BQVFB21-36-MOD-PAG EQUAL 'B'   OR                         00045900
+046000        BQVFB21-36-MOD-PAG EQUAL 'C'   OR                         00046000
+046100        BQVFB21-36-MOD-PAG EQUAL 'P'   OR                         00046100
+046200        BQVFB21-36-MOD-PAG EQUAL 'Q'   OR                         00046200
+046300        BQVFB21-36-MOD-PAG EQUAL SPACE                            00046300
+046400       GO TO A1-070.                                              00046400
+046500 A1-060.                                                          00046500
+046600*---   IMPOSTAZIONE ERRORE NON BLOCCANTE                          00046600
+046700     MOVE 55                         TO BQVFB21-36-ERR-MOD-PAG.   00046700
+046800     MOVE 'W'                        TO BQVFB21-36-ERR-MOD-PAG-A. 00046800
+046900     ADD  1                          TO W-CTR1.                   00046900
+047000 A1-070.                                                          00047000
+047100*---   CONTROLLO CORRETTA IMPOSTAZIONE CONFERIMENTO DELEGA        00047100
+047200*                                                                 00047200
+047300     IF BQVFB21-36-MOD-CONFER EQUAL '3'                           00047300
+047400        MOVE '1' TO W-FLAG-CONF-I24                               00047400
+047500           ELSE                                                   00047500
+047600        MOVE '1' TO W-FLAG-CONF-F24                               00047600
+047700     END-IF.                                                      00047700
+047800*                                                                 00047800
+047900     IF BQVFB21-36-MOD-CONFER EQUAL '0' OR                        00047900
+048000        BQVFB21-36-MOD-CONFER EQUAL '1' OR                        00048000
+048100        BQVFB21-36-MOD-CONFER EQUAL '2' OR                        00048100
+048200        BQVFB21-36-MOD-CONFER EQUAL '3' OR                        00048200
+048300*F INIZIO MODIFICA 28/01/2004                                     00048300
+048400        BQVFB21-36-MOD-CONFER EQUAL '4' OR                        00048400
+048500        (BQVFB21-36-MOD-CONFER EQUAL '5' AND                      00048500
+048600         BQVFB21-36-TIPO-MODELLO EQUAL '2') OR                    00048600
+048700        (BQVFB21-36-MOD-CONFER EQUAL '6' AND                      00048700
+048800         BQVFB21-36-TIPO-MODELLO EQUAL '3') OR                    00048800
+048900        (BQVFB21-36-MOD-CONFER EQUAL '7' AND                      00048900
+049000         BQVFB21-36-TIPO-MODELLO EQUAL '4') OR                    00049000
+049100*F FINE MODIFICA 28/01/2004                                       00049100
+049200*F INIZIO MODIFICA 04/02/2003                                     00049200
+049300        BQVFB21-36-MOD-CONFER EQUAL '8' OR                        00049300
+049400*F FINE MODIFICA 04/02/2003                                       00049400
+049500        BQVFB21-36-MOD-CONFER EQUAL '9'                           00049500
+049600       GO TO A1-090.                                              00049600
+049700 A1-080.                                                          00049700
+049800*---   IMPOSTAZIONE ERRORE NON BLOCCANTE                          00049800
+049900     MOVE 55                      TO BQVFB21-36-ERR-MOD-CONFER.   00049900
+050000     IF BQVFB21-36-MOD-CONFER NOT EQUAL '5' AND                   00050000
+050100        BQVFB21-36-MOD-CONFER NOT EQUAL '6' AND                   00050100
+050200        BQVFB21-36-MOD-CONFER NOT EQUAL '7'                       00050200
+050300        MOVE 'W'                  TO BQVFB21-36-ERR-MOD-CONFER-A  00050300
+050400        ADD  1                    TO W-CTR1                       00050400
+050500           ELSE                                                   00050500
+050600        MOVE 'E'                  TO BQVFB21-36-ERR-MOD-CONFER-A  00050600
+050700        ADD  1                    TO W-CTR2                       00050700
+050800     END-IF.                                                      00050800
+050900 A1-090.                                                          00050900
+051000*                                                                 00051000
+051010*$ 11/06/2024 MODIFICA MANUALE SIA REL. 6.21                      00051010
+051020*                                                                 00051020
+051030*  A DECORRERE DALLA DATA DI INCASSO 01/07/2024, L'IMPORTO DEL    00051030
+051040*  CREDITO COMPENSATO NON PUO' ESSERE > 0 ANCHE PER LE MODALITA'  00051040
+051050*  CONFERIMENTO DELLA DELEGA DI TIPO 1 E 2.                       00051050
+051060*                                                                 00051060
+051071     IF BQVFB21-36-DATA-RISC < '20240701'                         00051071
+051080        IF BQVFB21-36-MOD-CONFER NOT EQUAL '1' AND                00051080
+051090           BQVFB21-36-MOD-CONFER NOT EQUAL '2' AND                00051090
+051091           BQVFB21-36-DATA-RISC NOT LESS '20150127' AND           00051091
+051092           W-FLAG-CRED          EQUAL '1' AND                     00051092
+051093          (W-FLAG-TRIB-CONC NOT EQUAL '1' OR                      00051093
+051094           W-PROV NOT EQUAL 'C')                                  00051094
+051095           MOVE 96              TO BQVFB21-36-ERR-MOD-CONFER      00051095
+051096           MOVE 'E'             TO BQVFB21-36-ERR-MOD-CONFER-A    00051096
+051097           ADD  1               TO W-CTR2                         00051097
+051098        END-IF                                                    00051098
+051099     ELSE                                                         00051099
+051100        IF W-FLAG-CRED          EQUAL '1' AND                     00051100
+051101          (W-FLAG-TRIB-CONC NOT EQUAL '1' OR                      00051101
+051102           W-PROV NOT EQUAL 'C')                                  00051102
+051103           MOVE 96              TO BQVFB21-36-ERR-MOD-CONFER      00051103
+051104           MOVE 'E'             TO BQVFB21-36-ERR-MOD-CONFER-A    00051104
+051105           ADD  1               TO W-CTR2                         00051105
+051106        END-IF                                                    00051106
+051107     END-IF.                                                      00051107
+051108*                                                                 00051108
+051109*$ 11/06/2024 FINE MODIFICA MANUALE SIA REL. 6.21                 00051109
+051110*                                                                 00051110
+052100*---   CONTROLLO CORRETTA IMPOSTAZIONE DEL FIRMATARIO.            00052100
+052200     IF BQVFB21-36-FIRMATARIO EQUAL '0' OR                        00052200
+052300        BQVFB21-36-FIRMATARIO EQUAL '1'                           00052300
+052400        GO TO A1-110.                                             00052400
+052500 A1-100.                                                          00052500
+052600*---   IMPOSTAZIONE ERRORE NON BLOCCANTE                          00052600
+052700     MOVE 55                      TO BQVFB21-36-ERR-FIRMATARIO.   00052700
+052800     MOVE 'W'                     TO BQVFB21-36-ERR-FIRMATARIO-A. 00052800
+052900     ADD  1                          TO W-CTR1.                   00052900
+053000 A1-110.                                                          00053000
+053100*--- CONTROLLO CORRETTA IMPOSTAZIONE DEL FLAG ESERCIZIO A CAVALLO 00053100
+053200*                                                                 00053200
+053300     IF BQVFB21-36-FLAG-ES-CAV EQUAL '0' OR                       00053300
+053400        BQVFB21-36-FLAG-ES-CAV EQUAL '1'                          00053400
+053500*---                                                              00053500
+053600*--- INTERNET                                                     00053600
+053700*---                                                              00053700
+053800        GO TO A1-130.                                             00053800
+053900 A1-120.                                                          00053900
+054000*---   IMPOSTAZIONE ERRORE NON BLOCCANTE                          00054000
+054100*                                                                 00054100
+054200     MOVE 55                      TO BQVFB21-36-ERR-FLAG-ES-CAV.  00054200
+054300     MOVE 'E'                     TO BQVFB21-36-ERR-FLAG-ES-CAV-A.00054300
+054400     ADD  1                       TO W-CTR2.                      00054400
+054500 A1-130.                                                          00054500
+054600*--- CONTROLLO CONGRUENZA ESITO PAGAMENTO / MODALITA' CONFERIMENTO00054600
+054700*                                                                 00054700
+054800     IF BQVFB21-36-MOD-CONFER  NOT = '3' AND                      00054800
+054900        BQVFB21-36-ESITO-PAGAM     = '0'                          00054900
+055000        GO TO A1-160.                                             00055000
+055100*F      GO TO A1-010-CONTR-FORM-EX.                               00055100
+055200 A1-140.                                                          00055200
+055300*---                                                              00055300
+055400*                                                                 00055400
+055500     IF BQVFB21-36-MOD-CONFER  = '3' AND                          00055500
+055600       (BQVFB21-36-ESITO-PAGAM = '0' OR '1' OR '2' OR '3' OR '9') 00055600
+055700        GO TO A1-160.                                             00055700
+055800*F      GO TO A1-010-CONTR-FORM-EX.                               00055800
+055900 A1-150.                                                          00055900
+056000*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00056000
+056100*                                                                 00056100
+056200     IF BQVFB21-36-ERR-ESITO-PAGAM = ZERO                         00056200
+056300        MOVE 55                TO BQVFB21-36-ERR-ESITO-PAGAM      00056300
+056400        MOVE 'E'               TO BQVFB21-36-ERR-ESITO-PAGAM-A    00056400
+056500        ADD  1                 TO W-CTR2.                         00056500
+056600*                                                                 00056600
+056700 A1-160.                                                          00056700
+056800*                                                                 00056800
+056900     IF BQVFB21-36-TIPO-MODELLO =  '0' OR                         00056900
+057000        BQVFB21-36-TIPO-MODELLO  = '1' OR                         00057000
+057100        (BQVFB21-36-TIPO-MODELLO  = '2' AND                       00057100
+057200         BQVFB21-36-MOD-CONFER  = '5' AND                         00057200
+057300         (BQVFB21-COD-ABI = 7601 OR                               00057300
+057400          BQVFB21-COD-ABI = 36081) AND                            00057400
+057500         W-TIPO-TRIB-NO-IMU = '0') OR                             00057500
+057600        (BQVFB21-36-TIPO-MODELLO  = '3' AND                       00057600
+057700         BQVFB21-36-MOD-CONFER  = '6' AND                         00057700
+057800         (BQVFB21-COD-ABI = 7601 OR                               00057800
+057900          BQVFB21-COD-ABI = 36081) AND                            00057900
+058000         W-TIPO-TRIB-NO-TARES = '0') OR                           00058000
+058100        (BQVFB21-36-TIPO-MODELLO  = '4' AND                       00058100
+058200         BQVFB21-36-MOD-CONFER  = '7' AND                         00058200
+058300         (BQVFB21-COD-ABI = 7601 OR                               00058300
+058400          BQVFB21-COD-ABI = 36081) AND                            00058400
+058500         W-TIPO-TRIB-NO-TASI = '0')                               00058500
+058600           GO TO A1-010-CONTR-FORM-EX.                            00058600
+058700*                                                                 00058700
+058800 A1-170.                                                          00058800
+058900*                                                                 00058900
+059000     IF BQVFB21-36-ERR-TIPO-MODELLO EQUAL ZERO                    00059000
+059100        MOVE 55             TO BQVFB21-36-ERR-TIPO-MODELLO        00059100
+059200        MOVE 'E'            TO BQVFB21-36-ERR-TIPO-MODELLO-A      00059200
+059300        ADD  1              TO W-CTR2.                            00059300
+059400*                                                                 00059400
+059500 A1-010-CONTR-FORM-EX.                                            00059500
+059600     EXIT.                                                        00059600
+059700*---------------------------------------------------------------  00059700
+059800*---     SI EFFETTUANO DEI CONTROLLI FORMALI E DI QUADRATURA      00059800
+059900*---     SUI SALDI PARZIALI                                       00059900
+060000*---------------------------------------------------------------  00060000
+060100 B1-010-SALDI-PAR.                                                00060100
+060200*---   IMPOSTAZIONE CAMPI PER CONTROLLO ERARIO                    00060200
+060300     MOVE ZERO                            TO W-SEGNO-ERR.         00060300
+060400     MOVE ZERO                            TO W-SEGNO-ERR-A.       00060400
+060500     MOVE ZERO                            TO W-SALDO-ERR.         00060500
+060600     MOVE ZERO                            TO W-SALDO-ERR-A.       00060600
+060700     MOVE BQVFB21-36-SEGNO-ERARIO         TO W-SEGNO.             00060700
+060800     MOVE BQVFB21-36-SALDO-ERARIOA        TO W-SALDOA.            00060800
+060900*---   PER LA SEZIONE ERARIO SI CONSULTA IL PRIMO ELEMENTO        00060900
+061000*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00061000
+061100     MOVE 1                               TO W-IND.               00061100
+061200     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00061200
+061300*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00061300
+061400*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00061400
+061500     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-ERARIO.   00061500
+061600     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-ERARIO-A. 00061600
+061700     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-ERARIO.   00061700
+061800     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-ERARIO-A. 00061800
+061900*---   IMPOSTAZIONE CAMPI PER CONTROLLO INPS                      00061900
+062000     MOVE ZERO                            TO W-SEGNO-ERR.         00062000
+062100     MOVE ZERO                            TO W-SEGNO-ERR-A.       00062100
+062200     MOVE ZERO                            TO W-SALDO-ERR.         00062200
+062300     MOVE ZERO                            TO W-SALDO-ERR-A.       00062300
+062400     MOVE BQVFB21-36-SEGNO-INPS           TO W-SEGNO.             00062400
+062500     MOVE BQVFB21-36-SALDO-INPSA          TO W-SALDOA.            00062500
+062600*---   PER LA SEZIONE INPS   SI CONSULTA IL SECONDO ELEMENTO      00062600
+062700*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00062700
+062800     MOVE 2                               TO W-IND.               00062800
+062900     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00062900
+063000*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00063000
+063100*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00063100
+063200     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-INPS.     00063200
+063300     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-INPS-A.   00063300
+063400     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-INPS.     00063400
+063500     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-INPS-A.   00063500
+063600*---                                                              00063600
+063700*---                                                              00063700
+063800*---   IMPOSTAZIONE CAMPI PER CONTROLLO REGIONE                   00063800
+063900     MOVE ZERO                            TO W-SEGNO-ERR.         00063900
+064000     MOVE ZERO                            TO W-SEGNO-ERR-A.       00064000
+064100     MOVE ZERO                            TO W-SALDO-ERR.         00064100
+064200     MOVE ZERO                            TO W-SALDO-ERR-A.       00064200
+064300     MOVE BQVFB21-36-SEGNO-REG            TO W-SEGNO.             00064300
+064400     MOVE BQVFB21-36-SALDO-REGA           TO W-SALDOA.            00064400
+064500*---   PER LA SEZIONE REGIONE SI CONSULTA IL TERZO ELEMENTO       00064500
+064600*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00064600
+064700     MOVE 3                               TO W-IND.               00064700
+064800     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00064800
+064900*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00064900
+065000*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00065000
+065100     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-REG.      00065100
+065200     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-REG-A.    00065200
+065300     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-REG.      00065300
+065400     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-REG-A.    00065400
+065500*---                                                              00065500
+065600*---   IMPOSTAZIONE CAMPI PER CONTROLLO ENTI LOCALI               00065600
+065700     MOVE ZERO                            TO W-SEGNO-ERR.         00065700
+065800     MOVE ZERO                            TO W-SEGNO-ERR-A.       00065800
+065900     MOVE ZERO                            TO W-SALDO-ERR.         00065900
+066000     MOVE ZERO                            TO W-SALDO-ERR-A.       00066000
+066100     MOVE BQVFB21-36-SEGNO-ENTE           TO W-SEGNO.             00066100
+066200     MOVE BQVFB21-36-SALDO-ENTEA          TO W-SALDOA.            00066200
+066300*---   PER LA SEZIONE ENTI LOCALI SI CONSULTA IL QUARTO ELEMENTO  00066300
+066400*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00066400
+066500     MOVE 4                               TO W-IND.               00066500
+066600     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00066600
+066700*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00066700
+066800*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00066800
+066900     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-ENTE.     00066900
+067000     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-ENTE-A.   00067000
+067100     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-ENTE.     00067100
+067200     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-ENTE-A.   00067200
+067300*---                                                              00067300
+067400*--- SI AGGIUNGE IL CONTROLLO SUI SALDI PER COMUNE IN PRESENZA DI 00067400
+067500*--- ICI                                                          00067500
+067600*-CONTROLLO CREDITI ICI ELIMINATO - APRILE 2007                   00067600
+067700     PERFORM A3-010-ICI THRU A3-010-ICI-EX.                       00067700
+067800*---                                                              00067800
+067900*---   IMPOSTAZIONE CAMPI PER CONTROLLO INAIL                     00067900
+068000     MOVE ZERO                            TO W-SEGNO-ERR.         00068000
+068100     MOVE ZERO                            TO W-SEGNO-ERR-A.       00068100
+068200     MOVE ZERO                            TO W-SALDO-ERR.         00068200
+068300     MOVE ZERO                            TO W-SALDO-ERR-A.       00068300
+068400     MOVE BQVFB21-36-SEGNO-INAIL          TO W-SEGNO.             00068400
+068500     MOVE BQVFB21-36-SALDO-INAILA         TO W-SALDOA.            00068500
+068600*---   PER LA SEZIONE INAIL       SI CONSULTA IL QUINTO ELEMENTO  00068600
+068700*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00068700
+068800     MOVE 5                               TO W-IND.               00068800
+068900     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00068900
+069000*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00069000
+069100*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00069100
+069200     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-INAIL.    00069200
+069300     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-INAIL-A.  00069300
+069400     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-INAIL.    00069400
+069500     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-INAIL-A.  00069500
+069600*---                                                              00069600
+069700*---   IMPOSTAZIONE CAMPI PER CONTROLLO ALTRI ENTI                00069700
+069800     MOVE ZERO                            TO W-SEGNO-ERR.         00069800
+069900     MOVE ZERO                            TO W-SEGNO-ERR-A.       00069900
+070000     MOVE ZERO                            TO W-SALDO-ERR.         00070000
+070100     MOVE ZERO                            TO W-SALDO-ERR-A.       00070100
+070200     MOVE BQVFB21-36-SEGNO-ALTRI          TO W-SEGNO.             00070200
+070300     MOVE BQVFB21-36-SALDO-ALTRIA         TO W-SALDOA.            00070300
+070400*---   PER LA SEZIONE ALTRI ENTI  SI CONSULTA IL SESTO ELEMENTO   00070400
+070500*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00070500
+070600     MOVE 6                               TO W-IND.               00070600
+070700     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00070700
+070800*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00070800
+070900*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00070900
+071000     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-ALTRI.    00071000
+071100     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-ALTRI-A.  00071100
+071200     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-ALTRI.    00071200
+071300     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-ALTRI-A.  00071300
+071400*---   IMPOSTAZIONE CAMPI PER CONTROLLO ACCISE                    00071400
+071500*                                                                 00071500
+071600     MOVE ZERO                            TO W-SEGNO-ERR.         00071600
+071700     MOVE ZERO                            TO W-SEGNO-ERR-A.       00071700
+071800     MOVE ZERO                            TO W-SALDO-ERR.         00071800
+071900     MOVE ZERO                            TO W-SALDO-ERR-A.       00071900
+072000     MOVE BQVFB21-36-SEGNO-ACCISE         TO W-SEGNO.             00072000
+072100     MOVE BQVFB21-36-SALDO-ACCISE         TO W-SALDO.             00072100
+072200*---   PER LA SEZIONE ACCISE SI CONSULTA IL SETTIMO ELEMENTO      00072200
+072300*---   DELLA TABELLINA DI TOTALIZZAZIONE                          00072300
+072400*                                                                 00072400
+072500     MOVE 7                               TO W-IND.               00072500
+072600     PERFORM A2-010-SAL-PAR THRU A2-010-SAL-PAR-EX.               00072600
+072700*---   IMPOSTAZIONE DEI CAMPI RESTITUITI DALLA ROUTINE PRIMA      00072700
+072800*---   RICHIAMATA NEI CAMPI DEL FILE DATI.                        00072800
+072900*                                                                 00072900
+073000     MOVE W-SEGNO-ERR           TO BQVFB21-36-ERR-SEGNO-ACCISE.   00073000
+073100     MOVE W-SEGNO-ERR-A         TO BQVFB21-36-ERR-SEGNO-ACCISE-A. 00073100
+073200     MOVE W-SALDO-ERR           TO BQVFB21-36-ERR-SALDO-ACCISE.   00073200
+073300     MOVE W-SALDO-ERR-A         TO BQVFB21-36-ERR-SALDO-ACCISE-A. 00073300
+073400*                                                                 00073400
+073500 B1-010-SALDI-PAR-EX.                                             00073500
+073600     EXIT.                                                        00073600
+073700*---------------------------------------------------------------- 00073700
+073800*---        SI CONTROLLA IL SALDO FINALE                          00073800
+073900*---------------------------------------------------------------- 00073900
+074000 C1-010-SALDO-FIN.                                                00074000
+074100*---   SI CONTROLLA LA NUMERICITA' DEL SALDO FINALE               00074100
+074200     IF BQVFB21-36-SALDO-FINALEA NUMERIC                          00074200
+074300       GO TO C1-030.                                              00074300
+074400 C1-020.                                                          00074400
+074500*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00074500
+074600     MOVE 33                     TO BQVFB21-36-ERR-SALDO-FINALE.  00074600
+074700     MOVE 'E'                    TO BQVFB21-36-ERR-SALDO-FINALE-A.00074700
+074800     ADD  1                      TO W-CTR2.                       00074800
+074900     GO TO C1-070.                                                00074900
+075000 C1-030.                                                          00075000
+075100*                                                                 00075100
+075200     IF BQVFB21-36-SALDO-FINALE EQUAL ZERO AND                    00075200
+075300        BQVFB21-36-DATA-RISC NOT LESS '20150127' AND              00075300
+075400        (W-FLAG-TRIB-CONC NOT EQUAL '1' OR                        00075400
+075500         W-PROV NOT EQUAL 'C')                                    00075500
+075600           MOVE 96               TO BQVFB21-36-ERR-SALDO-FINALE   00075600
+075700           MOVE 'E'              TO BQVFB21-36-ERR-SALDO-FINALE-A 00075700
+075800           ADD  1                TO W-CTR2                        00075800
+075900     END-IF.                                                      00075900
+076000*                                                                 00076000
+076100*---   SI CONTROLLA LA VALORIZZAZIONE DEL SALDO FINALE E LA       00076100
+076200*---   ESATTA IMPOSTAZIONE DELLA DIVISA                           00076200
+076300     IF BQVFB21-36-SALDO-FINALE EQUAL ZERO OR                     00076300
+076400       (W-DIVISA NOT EQUAL 'ITL' AND                              00076400
+076500        W-DIVISA NOT EQUAL 'EUR')                                 00076500
+076600       GO TO C1-070.                                              00076600
+076700 C1-050.                                                          00076700
+076800*---   SE DIVISA "ITL"; LE ULTIME TRE CIFRE DEL SALDO FINALE      00076800
+076900*---   DEVONO ESSERE IMPOSTATE A ZERO                             00076900
+077000*---   SE DIVISA "EUR"; LE ULTIME DUE CIFRE DEL SALDO FINALE      00077000
+077100*---   DEVONO ESSERE IMPOSTATE A ZERO                             00077100
+077200     MOVE BQVFB21-36-SALDO-FINALE   TO W-IMPORTO.                 00077200
+077300*INIZIO MODIFICA EURO                                             00077300
+077400*CB 30/11/2001                                                    00077400
+077500     IF BQVFB21-36-DATA-RISC <= '20011231'                        00077500
+077600           IF (W-IMPORTO-3 EQUAL ZERO   AND                       00077600
+077700               W-DIVISA EQUAL 'ITL')       OR                     00077700
+077800              (W-DIVISA EQUAL 'EUR'     AND                       00077800
+077900               (BQVFB21-DATA-BONIF > '20011231' OR                00077900
+078000                W-IMPORTO-2 EQUAL ZERO   ))                       00078000
+078100               GO TO C1-070                                       00078100
+078200           ELSE                                                   00078200
+078300               GO TO C1-060                                       00078300
+078400           END-IF                                                 00078400
+078500     END-IF.                                                      00078500
+078600           GO TO C1-070.                                          00078600
+078700*CB 30/11/2001                                                    00078700
+078800*FINE   MODIFICA EURO                                             00078800
+078900 C1-060.                                                          00078900
+079000*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00079000
+079100     MOVE 96                     TO BQVFB21-36-ERR-SALDO-FINALE.  00079100
+079200     MOVE 'E'                    TO BQVFB21-36-ERR-SALDO-FINALE-A.00079200
+079300     ADD  1                      TO W-CTR2.                       00079300
+079400 C1-070.                                                          00079400
+079500*---   SI CONTROLLA SE E' STATO RISCONTRATO UN ERRORE SUL         00079500
+079600*---   SALDO FINALE                                               00079600
+079700     IF BQVFB21-36-ERR-SALDO-FINALE NOT EQUAL ZERO                00079700
+079800       GO TO C1-140.                                              00079800
+079900 C1-080.                                                          00079900
+080000*---   SI CALCOLA IL SALDO TRA PAGAMENTI E RIMBORSI DELLA         00080000
+080100*---   TABELLA DI TOTALIZZAZIONE PASSATA AL MAIN                  00080100
+080200     MOVE ZERO                              TO W-IND.             00080200
+080300     MOVE ZERO                              TO W-DIFF.            00080300
+080400 C1-090.                                                          00080400
+080500     ADD 1                                  TO W-IND.             00080500
+080600     COMPUTE W-DIFF = W-DIFF + W-TAB-EL-PAG(W-IND) -              00080600
+080700                               W-TAB-EL-RIM(W-IND).               00080700
+080800     COMPUTE W-RIMB = W-RIMB + W-TAB-EL-RIM(W-IND).               00080800
+080900     IF W-IND LESS 7                                              00080900
+081000       GO TO C1-090.                                              00081000
+081100 C1-095.                                                          00081100
+081200*---   IL SALDO CALCOLATO NON PUO' ESSERE NEGATIVO E COMUNQUE     00081200
+081300*---   DEV'ESSERE PARI AL SALDO FINALE.                           00081300
+081400     MOVE W-DIFF                  TO W-DIFF1.                     00081400
+081500     IF W-DIFF NOT LESS ZERO                    AND               00081500
+081600        W-DIFF1 EQUAL BQVFB21-36-SALDO-FINALE                     00081600
+081700       GO TO C1-110.                                              00081700
+081800 C1-100.                                                          00081800
+081900*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00081900
+082000     MOVE 510                    TO BQVFB21-36-ERR-SALDO-FINALE.  00082000
+082100     MOVE 'E'                    TO BQVFB21-36-ERR-SALDO-FINALE-A.00082100
+082200     ADD  1                      TO W-CTR2.                       00082200
+082300 C1-110.                                                          00082300
+082400*---   SI CONTROLLA SE SONO STATI RISCONTRATI ERRORI SUI          00082400
+082500*---   SALDI PER SEZIONE O SUI RELATIVI SEGNI                     00082500
+082600     IF BQVFB21-36-ERR-SALDO-ERARIO NOT EQUAL ZERO OR             00082600
+082700        BQVFB21-36-ERR-SALDO-INPS   NOT EQUAL ZERO OR             00082700
+082800        BQVFB21-36-ERR-SALDO-REG    NOT EQUAL ZERO OR             00082800
+082900        BQVFB21-36-ERR-SALDO-ENTE   NOT EQUAL ZERO OR             00082900
+083000        BQVFB21-36-ERR-SALDO-INAIL  NOT EQUAL ZERO OR             00083000
+083100        BQVFB21-36-ERR-SALDO-ALTRI  NOT EQUAL ZERO OR             00083100
+083200        BQVFB21-36-ERR-SALDO-ACCISE NOT EQUAL ZERO OR             00083200
+083300        BQVFB21-36-ERR-SEGNO-ERARIO NOT EQUAL ZERO OR             00083300
+083400        BQVFB21-36-ERR-SEGNO-INPS   NOT EQUAL ZERO OR             00083400
+083500        BQVFB21-36-ERR-SEGNO-REG    NOT EQUAL ZERO OR             00083500
+083600        BQVFB21-36-ERR-SEGNO-ENTE   NOT EQUAL ZERO OR             00083600
+083700        BQVFB21-36-ERR-SEGNO-INAIL  NOT EQUAL ZERO OR             00083700
+083800        BQVFB21-36-ERR-SEGNO-ALTRI  NOT EQUAL ZERO OR             00083800
+083900        BQVFB21-36-ERR-SEGNO-ACCISE NOT EQUAL ZERO OR             00083900
+084000        BQVFB21-36-TIPO-MODELLO EQUAL "1" OR                      00084000
+084100        BQVFB21-36-TIPO-MODELLO EQUAL "2" OR                      00084100
+084200        BQVFB21-36-TIPO-MODELLO EQUAL "3" OR                      00084200
+084300        BQVFB21-36-TIPO-MODELLO EQUAL "4"                         00084300
+084400       GO TO C1-140.                                              00084400
+084500 C1-120.                                                          00084500
+084600*---   SI RICHIAMA LA ROUTINE CHE SOMMA IN DUE DISTINTE AREE      00084600
+084700*---   I SALDI POSITIVI CON QUELLI NEGATIVI                       00084700
+084800*---                                                              00084800
+084900     PERFORM B2-010-SOMMA THRU B2-010-SOMMA-EX.                   00084900
+085000*---                                                              00085000
+085100*---   SI CALCOLA LA DIFFERENZA TRA SALDO POSITIVO E NEGATIVO.    00085100
+085200*---                                                              00085200
+085300     COMPUTE W-DIFF = W-SALDO-P - W-SALDO-N.                      00085300
+085400     MOVE W-DIFF                  TO W-DIFF1.                     00085400
+085500*---                                                              00085500
+085600*---   TALE DIFFERENZA NON PUO' ESSERE NEGATIVA E COMUNQUE DEVE   00085600
+085700*---   ESSERE PARI AL SALDO FINALE.                               00085700
+085800*---                                                              00085800
+085900     IF W-DIFF NOT LESS ZERO                    AND               00085900
+086000        W-DIFF1 EQUAL BQVFB21-36-SALDO-FINALE                     00086000
+086100       GO TO C1-140.                                              00086100
+086200 C1-130.                                                          00086200
+086300*---   NON SI IMPOSTA L'ERRORE SE GIA' SEGNALATO                  00086300
+086400     IF BQVFB21-36-ERR-SALDO-FINALE NOT EQUAL ZERO                00086400
+086500        GO TO C1-140.                                             00086500
+086600*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00086600
+086700     MOVE 503                    TO BQVFB21-36-ERR-SALDO-FINALE.  00086700
+086800     MOVE 'E'                    TO BQVFB21-36-ERR-SALDO-FINALE-A.00086800
+086900     ADD  1                      TO W-CTR2.                       00086900
+087000 C1-140.                                                          00087000
+087100*---   SI CONTROLLA LA DIVISA E SE LA SOMMA DEI RIMBORSI          00087100
+087200*---   CALCOLATI DALLA TABELLA DI TOTALIZZAZIONE E > 0            00087200
+087300     IF W-DIVISA NOT EQUAL 'ITL' AND                              00087300
+087400        W-DIVISA NOT EQUAL 'EUR'                                  00087400
+087500       GO TO C1-010-SALDO-FIN-EX.                                 00087500
+087600 C1-150.                                                          00087600
+087700*                                                                 00087700
+087800* INIZIO MODIFICA EURO                                            00087800
+087810* BQC79 - INSERITO GESTIONE CREDITI 2.000.000                     00087810
+087820     IF BQVFB21-36-DATA-RISC > '20011231'                         00087820
+087830        IF BQVFB21-36-DATA-RISC > '20131231' AND                  00087830
+087840           BQVFB21-36-DATA-RISC < '20200519'                      00087840
+087850              COMPUTE W-EUR     = W-EUR-700 * 100                 00087850
+087860        END-IF                                                    00087860
+087870        IF BQVFB21-36-DATA-RISC > '20200518' AND                  00087870
+087880           BQVFB21-36-DATA-RISC < '20210101'                      00087880
+087890              COMPUTE W-EUR     = W-EUR-1000 * 100                00087890
+087891        END-IF                                                    00087891
+087894        IF BQVFB21-36-DATA-RISC > '20201231'                      00087894
+087895              COMPUTE W-EUR     = W-EUR-2000 * 100                00087895
+087896        END-IF                                                    00087896
+087900     ELSE                                                         00087900
+087901        COMPUTE W-EUR     = W-EUR-NEW * 100                       00087901
+087904     END-IF.                                                      00087904
+087905*                                                                 00087905
+087906     IF BQVFB21-36-DATA-RISC > '20011231'                         00087906
+087907           GO TO C1-010-SALDO-FIN-EX.                             00087907
+087909*                                                                 00087909
+088700* FINE MODIFICA EURO                                              00088700
+088800*                                                                 00088800
+088900*--- SI CALCOLA IL VALORE IN 'EUR' IN BASE AL FATT. DI CONV.      00088900
+089000*---                                                              00089000
+089100      IF BQVFB21-36-DATA-RISC > '20001231'                        00089100
+089200***   COMPUTE W-EUR-APP =                                         00089200
+089300***                   (W-ITL-NEW / BQVFCO1-FATT-CONV-EUR) * 100   00089300
+089400      COMPUTE W-EUR-APP =                                         00089400
+089500                      (W-ITL-NEW / BQVFCO1-FATT-CONV-EUR)         00089500
+089600      ELSE                                                        00089600
+089700***   COMPUTE W-EUR-APP = (W-ITL / BQVFCO1-FATT-CONV-EUR) * 100.  00089700
+089800      COMPUTE W-EUR-APP = (W-ITL / BQVFCO1-FATT-CONV-EUR).        00089800
+089900*---                                                              00089900
+090000*--- SI ARROTONDA PER ECCESSO E SI TRONCANO LE CIFRE DECIMALI     00090000
+090100*---                                                              00090100
+090200      COMPUTE W-EUR = W-EUR-APP + 0,500.                          00090200
+090300*---                                                              00090300
+090400*--- SI CONVERTE IN CENTESIMI DI EURO                             00090400
+090500*---                                                              00090500
+090600      COMPUTE W-EUR = W-EUR * 100.                                00090600
+090700*---                                                              00090700
+090800*---   IL RIMBORSO CHIESTO NELLE VARIE SESSIONI NON PUO' SUPERARE 00090800
+090900*---   I 500.000.000 DI LIRE (FINO AL 31/12/2000)                 00090900
+091000*---                                                              00091000
+091100       IF BQVFB21-36-DATA-RISC > '20001231'                       00091100
+091200           GO TO C1-010-SALDO-FIN-EX.                             00091200
+091300*---                                                              00091300
+091400*---   SEZIONE ERARIO                                             00091400
+091500     IF BQVFB21-36-ERR-SALDO-ERARIO NOT EQUAL ZERO                00091500
+091600       GO TO C1-180.                                              00091600
+091700 C1-160.                                                          00091700
+091800     IF (W-DIVISA EQUAL 'ITL'                  AND                00091800
+091900         W-COMP-FISCO    NOT GREATER  W-ITL   ) OR                00091900
+092000        (W-DIVISA EQUAL 'EUR'                  AND                00092000
+092100         W-COMP-FISCO    NOT GREATER  W-EUR   )                   00092100
+092200       GO TO C1-180.                                              00092200
+092300 C1-170.                                                          00092300
+092400*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00092400
+092500     MOVE  514                 TO BQVFB21-36-ERR-SALDO-ERARIO.    00092500
+092600*    MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-ERARIO-A.  00092600
+092700*    ADD  1                    TO W-CTR2.                         00092700
+092800     IF (BQVFB21-36-DATA-RISC > '20000501' AND                    00092800
+092900         BQVFB21-36-DATA-RISC < '20000721')                       00092900
+093000        MOVE 'W'                  TO BQVFB21-36-ERR-SALDO-ERARIO-A00093000
+093100        ADD  1                    TO W-CTR1                       00093100
+093200     ELSE                                                         00093200
+093300        MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-ERARIO-A00093300
+093400        ADD  1                    TO W-CTR2.                      00093400
+093500 C1-180.                                                          00093500
+093600*---   SEZIONE INPS                                               00093600
+093700     IF BQVFB21-36-ERR-SALDO-INPS NOT EQUAL ZERO                  00093700
+093800       GO TO C1-210.                                              00093800
+093900 C1-190.                                                          00093900
+094000     IF (W-DIVISA EQUAL 'ITL'                  AND                00094000
+094100         W-TAB-EL-RIM(2) NOT GREATER  W-ITL   ) OR                00094100
+094200        (W-DIVISA EQUAL 'EUR'                  AND                00094200
+094300         W-TAB-EL-RIM(2) NOT GREATER  W-EUR   )                   00094300
+094400       GO TO C1-210.                                              00094400
+094500 C1-200.                                                          00094500
+094600*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00094600
+094700     MOVE  514                 TO BQVFB21-36-ERR-SALDO-INPS.      00094700
+094800     MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-INPS-A.    00094800
+094900     ADD  1                    TO W-CTR2.                         00094900
+095000 C1-210.                                                          00095000
+095100*---   SEZIONE REGIONE                                            00095100
+095200     IF BQVFB21-36-ERR-SALDO-REG  NOT EQUAL ZERO                  00095200
+095300       GO TO C1-240.                                              00095300
+095400 C1-220.                                                          00095400
+095500     IF (W-DIVISA EQUAL 'ITL'                  AND                00095500
+095600*** MODIFICA PER TRIBUTI REGIONALI AGEVOLATI                      00095600
+095700***      W-TAB-EL-RIM(3) NOT GREATER  W-ITL   )                   00095700
+095800         W-COMP-REG      NOT GREATER  W-ITL   )                   00095800
+095900     OR                                                           00095900
+096000        (W-DIVISA EQUAL 'EUR'                  AND                00096000
+096100***      W-TAB-EL-RIM(3) NOT GREATER  W-EUR   )                   00096100
+096200         W-COMP-REG      NOT GREATER  W-EUR   )                   00096200
+096300       GO TO C1-240.                                              00096300
+096400 C1-230.                                                          00096400
+096500*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00096500
+096600     MOVE  514                 TO BQVFB21-36-ERR-SALDO-REG.       00096600
+096700*    MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-REG-A.     00096700
+096800*    ADD  1                    TO W-CTR2.                         00096800
+096900     IF (BQVFB21-36-DATA-RISC > '20000501' AND                    00096900
+097000         BQVFB21-36-DATA-RISC < '20000721')                       00097000
+097100        MOVE 'W'                  TO BQVFB21-36-ERR-SALDO-REG-A   00097100
+097200        ADD  1                    TO W-CTR1                       00097200
+097300     ELSE                                                         00097300
+097400        MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-REG-A   00097400
+097500        ADD  1                    TO W-CTR2.                      00097500
+097600 C1-240.                                                          00097600
+097700*---    SEZIONE ENTI LOCALI                                       00097700
+097800     IF BQVFB21-36-ERR-SALDO-ENTE NOT EQUAL ZERO                  00097800
+097900       GO TO C1-270.                                              00097900
+098000 C1-250.                                                          00098000
+098100     IF (W-DIVISA EQUAL 'ITL'                  AND                00098100
+098200         W-COMP-EL       NOT GREATER  W-ITL   ) OR                00098200
+098300        (W-DIVISA EQUAL 'EUR'                  AND                00098300
+098400         W-COMP-EL       NOT GREATER  W-EUR   )                   00098400
+098500       GO TO C1-270.                                              00098500
+098600 C1-260.                                                          00098600
+098700*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00098700
+098800     MOVE  514                 TO BQVFB21-36-ERR-SALDO-ENTE.      00098800
+098900     MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-ENTE-A.    00098900
+099000     ADD  1                    TO W-CTR2.                         00099000
+099100 C1-270.                                                          00099100
+099200*---    SEZIONE INAIL                                             00099200
+099300     IF BQVFB21-36-ERR-SALDO-INAIL NOT EQUAL ZERO                 00099300
+099400       GO TO C1-300.                                              00099400
+099500 C1-280.                                                          00099500
+099600     IF (W-DIVISA EQUAL 'ITL'                  AND                00099600
+099700         W-TAB-EL-RIM(5) NOT GREATER  W-ITL   ) OR                00099700
+099800        (W-DIVISA EQUAL 'EUR'                  AND                00099800
+099900         W-TAB-EL-RIM(5) NOT GREATER  W-EUR   )                   00099900
+100000       GO TO C1-300.                                              00100000
+100100 C1-290.                                                          00100100
+100200*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00100200
+100300     MOVE  514                 TO BQVFB21-36-ERR-SALDO-INAIL.     00100300
+100400     MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-INAIL-A.   00100400
+100500     ADD  1                    TO W-CTR2.                         00100500
+100600 C1-300.                                                          00100600
+100700*---    SEZIONE ALTRI ENTI                                        00100700
+100800     IF BQVFB21-36-ERR-SALDO-ALTRI NOT EQUAL ZERO                 00100800
+100900        GO TO C1-010-SALDO-FIN-EX.                                00100900
+101000 C1-310.                                                          00101000
+101100     IF (W-DIVISA EQUAL 'ITL'                  AND                00101100
+101200         W-TAB-EL-RIM(6) NOT GREATER  W-ITL   ) OR                00101200
+101300        (W-DIVISA EQUAL 'EUR'                  AND                00101300
+101400         W-TAB-EL-RIM(6) NOT GREATER  W-EUR   )                   00101400
+101500        GO TO C1-330.                                             00101500
+101600 C1-320.                                                          00101600
+101700*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00101700
+101800     MOVE  514                 TO BQVFB21-36-ERR-SALDO-ALTRI.     00101800
+101900     MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-ALTRI-A.   00101900
+102000     ADD  1                    TO W-CTR2.                         00102000
+102100 C1-330.                                                          00102100
+102200*---                 SEZIONE ACCISE                               00102200
+102300*                                                                 00102300
+102400     IF BQVFB21-36-ERR-SALDO-ACCISE  NOT EQUAL ZERO               00102400
+102500       GO TO C1-010-SALDO-FIN-EX.                                 00102500
+102600 C1-340.                                                          00102600
+102700*                                                                 00102700
+102800     IF (W-TAB-EL-RIM(7) NOT GREATER W-EUR AND                    00102800
+102900         W-DIVISA EQUAL 'EUR')                                    00102900
+103000                        OR                                        00103000
+103100        (W-TAB-EL-RIM(7) NOT GREATER W-ITL AND                    00103100
+103200         W-DIVISA EQUAL 'ITL')                                    00103200
+103300       GO TO C1-010-SALDO-FIN-EX.                                 00103300
+103400 C1-350.                                                          00103400
+103500*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00103500
+103600*                                                                 00103600
+103700     MOVE  514                 TO BQVFB21-36-ERR-SALDO-ACCISE.    00103700
+103800     MOVE 'E'                  TO BQVFB21-36-ERR-SALDO-ACCISE-A.  00103800
+103900     ADD  1                    TO W-CTR2.                         00103900
+104000 C1-010-SALDO-FIN-EX.                                             00104000
+104100     EXIT.                                                        00104100
+104200*---------------------------------------------------------------- 00104200
+104300*---   ROUTINE PER IMPOSTAZIONE AGEVOLAZIONI                      00104300
+104400*---------------------------------------------------------------- 00104400
+104500 D1-010-AGEV.                                                     00104500
+104600*---   SE NON ESISTONO AGEVOLAZIONI O SI TRATTA DI BANCA O SALDO  00104600
+104700*---   NEGATIVO SI ESCE DALLA PERFORM                             00104700
+104800     IF W-FLAG-AGEV NOT EQUAL '1'             OR                  00104800
+104900        W-PROV          EQUAL 'B'             OR                  00104900
+105000        BQVFB21-36-SEGNO-ERARIO EQUAL 'N'                         00105000
+105100      GO TO D1-010-AGEV-EX.                                       00105100
+105200 D1-020.                                                          00105200
+105300*---   SI CONTROLLA SE I CAMPI SU CUI FARE I CONTROLLI SONO ESATTI00105300
+105400     IF BQVFB21-36-ERR-SEGNO-ERARIO NOT EQUAL ZERO OR             00105400
+105500        BQVFB21-36-ERR-SALDO-ERARIO NOT EQUAL ZERO OR             00105500
+105600        BQVFB21-36-ERR-SALDO-FINALE NOT EQUAL ZERO                00105600
+105700      GO TO D1-010-AGEV-EX.                                       00105700
+105800 D1-030.                                                          00105800
+105900*---   SI CONTROLLA SE SALDO ERARIO E' <= SALDO FINALE AL FINE DI 00105900
+106000*---   ADDIZIONARE AL CAMPO DI COMMAREA RELATIVO ALLE AGEVOLAZIONI00106000
+106100*---   IL MINOR VALORE                                            00106100
+106200     IF BQVFB21-36-SALDO-ERARIO NOT GREATER                       00106200
+106300        BQVFB21-36-SALDO-FINALE                                   00106300
+106400       GO TO D1-050.                                              00106400
+106500 D1-040.                                                          00106500
+106600     ADD BQVFB21-36-SALDO-FINALE        TO W-SALDO-AG.            00106600
+106700     GO TO D1-010-AGEV-EX.                                        00106700
+106800 D1-050.                                                          00106800
+106900     ADD BQVFB21-36-SALDO-ERARIO        TO W-SALDO-AG.            00106900
+107000 D1-010-AGEV-EX.                                                  00107000
+107100     EXIT.                                                        00107100
+107200*---   ROUTINE PER CONTROLLO CODABI                               00107200
+107300*                                                                 00107300
+107400 E1-010-CODABI.                                                   00107400
+107500*---                                                              00107500
+107600     IF BQVFB21-36-COD-ABIA NUMERIC                               00107600
+107700        GO TO E1-030.                                             00107700
+107800     SKIP1                                                        00107800
+107900 E1-020.                                                          00107900
+108000*--- ERRORE DI NUMERICITA' DEL CODICE ABI                         00108000
+108100     MOVE 33 TO BQVFB21-36-ERR-COD-ABI.                           00108100
+108200     MOVE 'E' TO BQVFB21-36-ERR-COD-ABI-A.                        00108200
+108300     ADD 1 TO W-CTR2.                                             00108300
+108400     GO TO E1-010-CODABI-EX.                                      00108400
+108500     SKIP1                                                        00108500
+108600 E1-030.                                                          00108600
+108700*--- INTERNET                                                     00108700
+108800     IF BQVFB21-36-MOD-CONFER  = '2'                              00108800
+108900           GO TO E1-070.                                          00108900
+109000     SKIP1                                                        00109000
+109100 E1-040.                                                          00109100
+109200*--- SI CONTROLLA L'ESISTENZA DEL CODICE AMBITO IN TABELLA        00109200
+109300     MOVE BQVFB21-COD-ABI         TO W-AMBITO-INP-N.              00109300
+109400     MOVE BQVFB21-36-SIGLA-PROV   TO W-PROV-INP.                  00109400
+109500     SEARCH  ALL W-TAB-AMBITI-EL                                  00109500
+109600        AT END MOVE ZERO TO W-FLAG-TROVATO                        00109600
+109700     WHEN W-TAB-AMBITI-COD-ALF(W-PUNT-AMBITI) EQUAL W-AMBITO-INP  00109700
+109800      AND W-TAB-AMBITI-COD-PROV(W-PUNT-AMBITI) EQUAL W-PROV-INP   00109800
+109900        MOVE 1           TO W-FLAG-TROVATO.                       00109900
+110000     SKIP1                                                        00110000
+110100 E1-050.                                                          00110100
+110200*--- SI VERIFICA LA CORRETTEZZA DELL'ESECUZIONE DELLA SELECT      00110200
+110300     IF W-FLAG-TROVATO = 1 OR                                     00110300
+110400        BQVFB21-36-SIGLA-PROV = 'OT' OR                           00110400
+110500        BQVFB21-36-SIGLA-PROV = 'OG' OR                           00110500
+110600        BQVFB21-36-SIGLA-PROV = 'CI' OR                           00110600
+110700        BQVFB21-36-SIGLA-PROV = 'VS' OR                           00110700
+110800        BQVFB21-36-SIGLA-PROV = 'MB' OR                           00110800
+110900        BQVFB21-36-SIGLA-PROV = 'FM' OR                           00110900
+111000        BQVFB21-36-SIGLA-PROV = 'BT'                              00111000
+111100        GO TO E1-010-CODABI-EX.                                   00111100
+111200     SKIP1                                                        00111200
+111300 E1-060.                                                          00111300
+111400*--- ERRORE DI ESISTENZA DEL CODICE PROV                          00111400
+111500     MOVE 55  TO BQVFB21-36-ERR-SIGLA-PROV.                       00111500
+111600     MOVE 'E' TO BQVFB21-36-ERR-SIGLA-PROV-A.                     00111600
+111700     ADD 1 TO W-CTR2.                                             00111700
+111800     GO TO E1-010-CODABI-EX.                                      00111800
+111900     SKIP1                                                        00111900
+112000 E1-070.                                                          00112000
+112100*--- CONTROLLA CHE SIA DIVERSO DA ZERO                            00112100
+112200     IF BQVFB21-36-COD-ABI = 0                                    00112200
+112300        MOVE 504 TO BQVFB21-36-ERR-COD-ABI                        00112300
+112400        MOVE 'E' TO BQVFB21-36-ERR-COD-ABI-A                      00112400
+112500        ADD 1 TO W-CTR2                                           00112500
+112600        GO TO E1-010-CODABI-EX.                                   00112600
+112700     SKIP1                                                        00112700
+112800 E1-080.                                                          00112800
+112900*--- SI CONTROLLA L'ESISTENZA DEL CODICE ABI IN TABELLA           00112900
+113000     MOVE BQVFB21-36-COD-ABIA TO W-AZIENDA-INP.                   00113000
+113100     SEARCH  ALL W-TAB-AZIENDE-EL                                 00113100
+113200        AT END MOVE ZERO TO W-FLAG-TROVATO                        00113200
+113300     WHEN W-TAB-AZ-COD-NUM(W-PUNT-AZIENDE)                        00113300
+113400                                     EQUAL W-AZIENDA-INP          00113400
+113500        MOVE 1           TO W-FLAG-TROVATO.                       00113500
+113600     SKIP1                                                        00113600
+113700 E1-090.                                                          00113700
+113800*--- SI VERIFICA LA CORRETTEZZA DELL'ESECUZIONE DELLA SELECT      00113800
+113900     IF W-FLAG-TROVATO = 1                                        00113900
+114000        GO TO E1-010-CODABI-EX.                                   00114000
+114100     SKIP1                                                        00114100
+114200 E1-100.                                                          00114200
+114300*--- ERRORE DI ESISTENZA DEL CODICE ABI                           00114300
+114400     MOVE 504 TO BQVFB21-36-ERR-COD-ABI.                          00114400
+114500     MOVE 'E' TO BQVFB21-36-ERR-COD-ABI-A.                        00114500
+114600     ADD 1 TO W-CTR2.                                             00114600
+114700     SKIP1                                                        00114700
+114800 E1-010-CODABI-EX.                                                00114800
+114900     EXIT.                                                        00114900
+115000*---------------------------------------------------------------  00115000
+115100*---   CONTROLLI SUI SALDI PER SEZIONE:                           00115100
+115200*---   ..  W-IND = 1              ERARIO                          00115200
+115300*---   ..  W-IND = 2              INPS                            00115300
+115400*---   ..  W-IND = 3              REGIONE                         00115400
+115500*---   ..  W-IND = 4              ENTI LOCALI                     00115500
+115600*---   ..  W-IND = 5              INAIL                           00115600
+115700*---   ..  W-IND = 6              ALTRI ENTI                      00115700
+115800*---   ..  W-IND = 7              ACCISE                          00115800
+115900*---------------------------------------------------------------  00115900
+116000 A2-010-SAL-PAR.                                                  00116000
+116100*---   SI CONTROLLA L'ESATTA IMPOSTAZIONE DEL SEGNO: SE SI STA    00116100
+116200*      TRATTANDO L'IMPORTO ACCISE O L'IMPORTO ERARIO RIFERITO     00116200
+116300*      AL TIPO RECORD V20 IL SEGNO DEVE ESSERE 'P'.               00116300
+116400*                                                                 00116400
+116500     IF ( W-SEGNO EQUAL 'N'    AND                                00116500
+116600          W-IND  NOT EQUAL 7   AND                                00116600
+116700         (W-IND NOT EQUAL 1 OR W-V20 EQUAL ZERO) )                00116700
+116800     OR W-SEGNO EQUAL 'P'                                         00116800
+116900       GO TO A2-030.                                              00116900
+117000 A2-020.                                                          00117000
+117100*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00117100
+117200     MOVE 55                         TO W-SEGNO-ERR.              00117200
+117300     MOVE 'E'                        TO W-SEGNO-ERR-A.            00117300
+117400     ADD  1                          TO W-CTR2.                   00117400
+117500 A2-030.                                                          00117500
+117600*---   SI CONTROLLA LA NUMERICITA' DEL SALDO                      00117600
+117700     IF W-SALDOA NUMERIC                                          00117700
+117800       GO TO A2-050.                                              00117800
+117900 A2-040.                                                          00117900
+118000*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00118000
+118100     MOVE 33                         TO W-SALDO-ERR.              00118100
+118200     MOVE 'E'                        TO W-SALDO-ERR-A.            00118200
+118300     ADD  1                          TO W-CTR2.                   00118300
+118400     GO TO A2-090.                                                00118400
+118500 A2-050.                                                          00118500
+118600*---   SE SI STA TRATTANDO L'IMPORTO ERARIO RIFERITO AL TIPO      00118600
+118700*      RECORD V20 DEVE ESSERE > 0                                 00118700
+118800*                                                                 00118800
+118900     IF  (W-IND  NOT EQUAL  1)  OR  (W-V20  NOT EQUAL  1)         00118900
+119000       GO TO A2-053.                                              00119000
+119100*---                                                              00119100
+119200 A2-051.                                                          00119200
+119300*---                                                              00119300
+119400       IF (W-SALDO > ZERO)                                        00119400
+119500          GO TO A2-053.                                           00119500
+119600*---                                                              00119600
+119700 A2-052.                                                          00119700
+119800*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00119800
+119900*                                                                 00119900
+120000     MOVE 96                         TO W-SALDO-ERR.              00120000
+120100     MOVE 'E'                        TO W-SALDO-ERR-A.            00120100
+120200     ADD  1                          TO W-CTR2.                   00120200
+120300*---                                                              00120300
+120400 A2-053.                                                          00120400
+120500*---   SI CONTROLLA L'IMPOSTAZIONE DEL SALDO                      00120500
+120600     IF W-SALDO EQUAL ZERO                                        00120600
+120700       GO TO A2-090.                                              00120700
+120800*                                                                 00120800
+120900     IF W-SALDO-ERR-A  EQUAL  'E'                                 00120900
+121000       GO TO A2-090.                                              00121000
+121100*---                                                              00121100
+121200 A2-054.                                                          00121200
+121300*                                                                 00121300
+121400     IF W-SALDO EQUAL ZERO                                        00121400
+121500       GO TO A2-090.                                              00121500
+121600*---                                                              00121600
+121700 A2-055.                                                          00121700
+121800*---   SI CONTROLLA L'IMPOSTAZIONE DELLA DIVISA                   00121800
+121900     IF W-DIVISA NOT EQUAL 'ITL' AND                              00121900
+122000        W-DIVISA NOT EQUAL 'EUR'                                  00122000
+122100       GO TO A2-090.                                              00122100
+122200 A2-060.                                                          00122200
+122300*---   SI CONTROLLA L'IMPOSTAZIONE DELLA DIVISA                   00122300
+122400*    IF W-DIVISA EQUAL 'EUR'                                      00122400
+122500*      GO TO A2-090.                                              00122500
+122600*A2-070.                                                          00122600
+122700*---   CASO DI DIVISA = ITL; SI CONTROLLA CHE LE ULTIME           00122700
+122800*---   TRE CIFRE SIANO IMPOSTATE A ZERO                           00122800
+122900*---   CASO DI DIVISA = EUR; SI CONTROLLA CHE LE ULTIME           00122900
+123000*---   DUE CIFRE SIANO IMPOSTATE A ZERO                           00123000
+123100     MOVE W-SALDO TO W-IMPORTO.                                   00123100
+123200*INIZIO MODIFICA EURO                                             00123200
+123300*CB 30/11/2001                                                    00123300
+123400     IF BQVFB21-36-DATA-RISC <= '20011231'                        00123400
+123500          IF (W-IMPORTO-3 EQUAL ZERO   AND                        00123500
+123600              W-DIVISA EQUAL 'ITL')       OR                      00123600
+123700             (W-DIVISA EQUAL 'EUR'  AND                           00123700
+123800              (BQVFB21-DATA-BONIF > '20011231' OR                 00123800
+123900               W-IMPORTO-2 EQUAL ZERO))                           00123900
+124000            GO TO A2-090                                          00124000
+124100          ELSE                                                    00124100
+124200            GO TO A2-080                                          00124200
+124300          END-IF                                                  00124300
+124400     END-IF.                                                      00124400
+124500            GO TO A2-090.                                         00124500
+124600*CB 30/11/2001                                                    00124600
+124700*FINE   MODIFICA EURO                                             00124700
+124800 A2-080.                                                          00124800
+124900*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00124900
+125000     MOVE 96                         TO W-SALDO-ERR.              00125000
+125100     MOVE 'E'                        TO W-SALDO-ERR-A.            00125100
+125200     ADD  1                          TO W-CTR2.                   00125200
+125300 A2-090.                                                          00125300
+125400*---   SI CONTROLLA SE E' STATO RISCONTRATO UN ERRORE SUL SALDO   00125400
+125500     IF W-SALDO-ERR NOT EQUAL ZERO                                00125500
+125600       GO TO A2-010-SAL-PAR-EX.                                   00125600
+125700 A2-100.                                                          00125700
+125800*---   SI CALCOLA LA DIFFERENZA TRA PAGAMENTI E RIMBORSI DELLA    00125800
+125900*---   TABELLA DI TOTALIZZAZIONE (IN BASE A W-IND)                00125900
+126000     COMPUTE W-DIFF = W-TAB-EL-PAG(W-IND) - W-TAB-EL-RIM(W-IND).  00126000
+126100     MOVE W-DIFF                  TO W-DIFF1.                     00126100
+126200*---   SI CONTROLLA CHE LA DIFFERENZA IN VALORE ASSOLUTO PRIMA    00126200
+126300*---   CALCOLATA SIA PARI AL SALDO RIPORTATO NEI DATI.            00126300
+126400     IF W-DIFF1 EQUAL W-SALDO                                     00126400
+126500       GO TO A2-120.                                              00126500
+126600 A2-110.                                                          00126600
+126700*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00126700
+126800     MOVE 503                        TO W-SALDO-ERR.              00126800
+126900     MOVE 'E'                        TO W-SALDO-ERR-A.            00126900
+127000     ADD  1                          TO W-CTR2.                   00127000
+127100     GO TO A2-010-SAL-PAR-EX.                                     00127100
+127200 A2-120.                                                          00127200
+127300*---   SI CONTROLLA LA POSITIVITA' DELLA DIFFERENZA               00127300
+127400     IF W-DIFF NOT LESS ZERO                                      00127400
+127500       GO TO A2-160.                                              00127500
+127600 A2-130.                                                          00127600
+127700*---   DIFFERENA NEGATIVA.....                                    00127700
+127800     IF W-SEGNO-ERR NOT EQUAL ZERO                                00127800
+127900       GO TO A2-010-SAL-PAR-EX.                                   00127900
+128000 A2-140.                                                          00128000
+128100*---   .... IL SEGNO DEV'ESSERE "N"                               00128100
+128200     IF W-SEGNO     EQUAL 'N'                                     00128200
+128300       GO TO A2-010-SAL-PAR-EX.                                   00128300
+128400 A2-150.                                                          00128400
+128500*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00128500
+128600     MOVE 42                         TO W-SEGNO-ERR.              00128600
+128700     MOVE 'E'                        TO W-SEGNO-ERR-A.            00128700
+128800     ADD  1                          TO W-CTR2.                   00128800
+128900     GO TO A2-010-SAL-PAR-EX.                                     00128900
+129000 A2-160.                                                          00129000
+129100*---   DIFFERENZA POSITIVA.....                                   00129100
+129200     IF W-SEGNO-ERR NOT EQUAL ZERO                                00129200
+129300       GO TO A2-010-SAL-PAR-EX.                                   00129300
+129400 A2-170.                                                          00129400
+129500*---   .... IL SEGNO DEV'ESSERE "P"                               00129500
+129600     IF W-SEGNO     EQUAL 'P'                                     00129600
+129700       GO TO A2-010-SAL-PAR-EX.                                   00129700
+129800 A2-180.                                                          00129800
+129900*---   IMPOSTAZIONE ERRORE BLOCCANTE                              00129900
+130000     MOVE 42                         TO W-SEGNO-ERR.              00130000
+130100     MOVE 'E'                        TO W-SEGNO-ERR-A.            00130100
+130200     ADD  1                          TO W-CTR2.                   00130200
+130300 A2-010-SAL-PAR-EX.                                               00130300
+130400     EXIT.                                                        00130400
+130500*--------------------------------------------------------------   00130500
+130600*---   SI SOMMANO IN AREE DISTINTE I SALDI POSITIVI E NEGATIVI    00130600
+130700*--------------------------------------------------------------   00130700
+130800 B2-010-SOMMA.                                                    00130800
+130900     MOVE ZERO                TO W-SALDO-P.                       00130900
+131000     MOVE ZERO                TO W-SALDO-N.                       00131000
+131100*---   SI CONTROLLA IL SEGNO ERARIO                               00131100
+131200     IF BQVFB21-36-SEGNO-ERARIO EQUAL 'P'                         00131200
+131300       GO TO B2-030.                                              00131300
+131400 B2-020.                                                          00131400
+131500*---   S'INCREMENTA IL SALDO NEGATIVO                             00131500
+131600     COMPUTE W-SALDO-N = W-SALDO-N + BQVFB21-36-SALDO-ERARIO.     00131600
+131700     GO TO B2-040.                                                00131700
+131800 B2-030.                                                          00131800
+131900*---   S'INCREMENTA IL SALDO POSITIVO                             00131900
+132000     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-ERARIO.     00132000
+132100 B2-040.                                                          00132100
+132200*---   SI CONTROLLA IL SEGNO INPS                                 00132200
+132300     IF BQVFB21-36-SEGNO-INPS EQUAL 'P'                           00132300
+132400       GO TO B2-060.                                              00132400
+132500 B2-050.                                                          00132500
+132600*---   S'INCREMENTA IL SALDO NEGATIVO                             00132600
+132700     COMPUTE W-SALDO-N = W-SALDO-N + BQVFB21-36-SALDO-INPS.       00132700
+132800     GO TO B2-070.                                                00132800
+132900 B2-060.                                                          00132900
+133000*---   S'INCREMENTA IL SALDO POSITIVO                             00133000
+133100     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-INPS.       00133100
+133200 B2-070.                                                          00133200
+133300*---   SI CONTROLLA IL SEGNO REGIONE                              00133300
+133400     IF BQVFB21-36-SEGNO-REG  EQUAL 'P'                           00133400
+133500       GO TO B2-090.                                              00133500
+133600 B2-080.                                                          00133600
+133700*---   S'INCREMENTA IL SALDO NEGATIVO                             00133700
+133800     COMPUTE W-SALDO-N = W-SALDO-N + BQVFB21-36-SALDO-REG.        00133800
+133900     GO TO B2-100.                                                00133900
+134000 B2-090.                                                          00134000
+134100*---   S'INCREMENTA IL SALDO POSITIVO                             00134100
+134200     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-REG.        00134200
+134300 B2-100.                                                          00134300
+134400*---   SI CONTROLLA IL SEGNO ENTI LOCALI                          00134400
+134500     IF BQVFB21-36-SEGNO-ENTE EQUAL 'P'                           00134500
+134600       GO TO B2-120.                                              00134600
+134700 B2-110.                                                          00134700
+134800*---   S'INCREMENTA IL SALDO NEGATIVO                             00134800
+134900     COMPUTE W-SALDO-N = W-SALDO-N + BQVFB21-36-SALDO-ENTE.       00134900
+135000     GO TO B2-130.                                                00135000
+135100 B2-120.                                                          00135100
+135200*---   S'INCREMENTA IL SALDO POSITIVO                             00135200
+135300     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-ENTE.       00135300
+135400 B2-130.                                                          00135400
+135500*---   SI CONTROLLA IL SEGNO INAIL                                00135500
+135600     IF BQVFB21-36-SEGNO-INAIL EQUAL 'P'                          00135600
+135700       GO TO B2-150.                                              00135700
+135800 B2-140.                                                          00135800
+135900*---   S'INCREMENTA IL SALDO NEGATIVO                             00135900
+136000     COMPUTE W-SALDO-N = W-SALDO-N + BQVFB21-36-SALDO-INAIL.      00136000
+136100     GO TO B2-160.                                                00136100
+136200 B2-150.                                                          00136200
+136300*---   S'INCREMENTA IL SALDO POSITIVO                             00136300
+136400     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-INAIL.      00136400
+136500 B2-160.                                                          00136500
+136600*---   SI CONTROLLA IL SEGNO ALTRI                                00136600
+136700     IF BQVFB21-36-SEGNO-ALTRI EQUAL 'P'                          00136700
+136800       GO TO B2-180.                                              00136800
+136900 B2-170.                                                          00136900
+137000*---   S'INCREMENTA IL SALDO NEGATIVO                             00137000
+137100     COMPUTE W-SALDO-N = W-SALDO-N + BQVFB21-36-SALDO-ALTRI.      00137100
+137200     GO TO B2-190.                                                00137200
+137300 B2-180.                                                          00137300
+137400*---   S'INCREMENTA IL SALDO POSITIVO                             00137400
+137500     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-ALTRI.      00137500
+137600 B2-190.                                                          00137600
+137700*---   S'INCREMENTA IL SALDO POSITIVO PER ACCISE                  00137700
+137800*                                                                 00137800
+137900     COMPUTE W-SALDO-P = W-SALDO-P + BQVFB21-36-SALDO-ACCISE.     00137900
+138000 B2-010-SOMMA-EX.                                                 00138000
+138100     EXIT.                                                        00138100
+138200*---------------------------------------------------------------  00138200
+138300*---   LA ROUTINE SPOSTA I DATI DEL RECORD ESITO CONCESSIONARIO   00138300
+138400*---   IN QUELLO RELATIVO AD ESITO BANCA                          00138400
+138500*---------------------------------------------------------------  00138500
+138600** RX-010-BANCA.                                                  00138600
+138700*** 22/04/99                                                      00138700
+138800*** LE MOVE DI DATA-RISC E DATA-BONIF SONO STATE AGGIUNTE         00138800
+138900*** PER POTER EFFETTUARE I NUOVI CONTROLLI SUL NUMERO RATE        00138900
+139000**     MOVE BQVFD21-DATA-BONIF                     TO             00139000
+139100**                         BQVFB21-DATA-BONIF.                    00139100
+139200**     MOVE BQVFD21-36-DATA-RISC                   TO             00139200
+139300**                         BQVFB21-36-DATA-RISC.                  00139300
+139400**     MOVE BQVFD21-36-MOD-CONFER                  TO             00139400
+139500**                         BQVFB21-36-MOD-CONFER.                 00139500
+139600**     MOVE BQVFD21-36-MOD-PAG                     TO             00139600
+139700**                         BQVFB21-36-MOD-PAG.                    00139700
+139800**     MOVE BQVFD21-36-SALDO-ERARIOA               TO             00139800
+139900**                         BQVFB21-36-SALDO-ERARIOA.              00139900
+140000**     MOVE BQVFD21-36-SALDO-FINALEA               TO             00140000
+140100**                         BQVFB21-36-SALDO-FINALEA.              00140100
+140200**     MOVE BQVFD21-36-SALDO-FINALE                TO             00140200
+140300**                         BQVFB21-36-SALDO-FINALE.               00140300
+140400**     MOVE BQVFD21-36-SALDO-INPSA                 TO             00140400
+140500**                         BQVFB21-36-SALDO-INPSA.                00140500
+140600**     MOVE BQVFD21-36-SALDO-INPS                  TO             00140600
+140700**                         BQVFB21-36-SALDO-INPS.                 00140700
+140800**     MOVE BQVFD21-36-COD-REG                     TO             00140800
+140900**                         BQVFB21-36-COD-REG.                    00140900
+141000**     MOVE BQVFD21-36-SALDO-REGA                 TO              00141000
+141100**                         BQVFB21-36-SALDO-REGA.                 00141100
+141200**     MOVE BQVFD21-36-SALDO-REG                  TO              00141200
+141300**                         BQVFB21-36-SALDO-REG.                  00141300
+141400***    MOVE BQVFD21-36-SALDO-REG2A                 TO             00141400
+141500***                        BQVFB21-36-SALDO-REG2A.                00141500
+141600***--- NEW:                                                       00141600
+141700**     MOVE BQVFD21-36-SALDO-ENTE                  TO             00141700
+141800**                         BQVFB21-36-SALDO-ENTE.                 00141800
+141900**     MOVE BQVFD21-36-SALDO-INAIL                 TO             00141900
+142000**                         BQVFB21-36-SALDO-INAIL.                00142000
+142100**     MOVE BQVFD21-36-SALDO-ALTRI                 TO             00142100
+142200**                         BQVFB21-36-SALDO-ALTRI.                00142200
+142300***--- NEW: FINE.                                                 00142300
+142400**     MOVE BQVFD21-36-SEGNO-ERARIO                TO             00142400
+142500**                         BQVFB21-36-SEGNO-ERARIO.               00142500
+142600**     MOVE BQVFD21-36-SEGNO-INPS                  TO             00142600
+142700**                         BQVFB21-36-SEGNO-INPS.                 00142700
+142800**     MOVE BQVFD21-36-SEGNO-REG                   TO             00142800
+142900**                         BQVFB21-36-SEGNO-REG.                  00142900
+143000***    MOVE BQVFD21-36-SEGNO-REG2                  TO             00143000
+143100***                        BQVFB21-36-SEGNO-REG2.                 00143100
+143200***--- NEW:                                                       00143200
+143300**     MOVE BQVFD21-36-SEGNO-ENTE                  TO             00143300
+143400**                         BQVFB21-36-SEGNO-ENTE.                 00143400
+143500**     MOVE BQVFD21-36-SEGNO-INAIL                 TO             00143500
+143600**                         BQVFB21-36-SEGNO-INAIL.                00143600
+143700**     MOVE BQVFD21-36-SEGNO-ALTRI                 TO             00143700
+143800**                         BQVFB21-36-SEGNO-ALTRI.                00143800
+143900**     MOVE BQVFD21-36-FIRMATARIO                 TO              00143900
+144000**                         BQVFB21-36-FIRMATARIO.                 00144000
+144100**     MOVE BQVFD21-36-NUM-RATEA                  TO              00144100
+144200**                         BQVFB21-36-NUM-RATEA.                  00144200
+144300***--- NEW: FINE.                                                 00144300
+144400** RX-010-BANCA-EX.                                               00144400
+144500**     EXIT.                                                      00144500
+144600***---   LA ROUTINE SPOSTA I DATI DEL RECORD ESITO BANCA IN QUELLO00144600
+144700***---   RELATIVO AD ESITO CONCESSIONARIO                         00144700
+144800** RY-010-CONC.                                                   00144800
+144900**     MOVE BQVFB21-36-MOD-CONFER                  TO             00144900
+145000**                         BQVFD21-36-MOD-CONFER.                 00145000
+145100**     MOVE BQVFB21-36-MOD-PAG                     TO             00145100
+145200**                         BQVFD21-36-MOD-PAG.                    00145200
+145300**     MOVE BQVFB21-36-SALDO-ERARIOA               TO             00145300
+145400**                         BQVFD21-36-SALDO-ERARIOA.              00145400
+145500**     MOVE BQVFB21-36-SALDO-FINALEA               TO             00145500
+145600**                         BQVFD21-36-SALDO-FINALEA.              00145600
+145700**     MOVE BQVFB21-36-SALDO-INPSA                 TO             00145700
+145800**                         BQVFD21-36-SALDO-INPSA.                00145800
+145900**     MOVE BQVFB21-36-SALDO-REGA                 TO              00145900
+146000**                         BQVFD21-36-SALDO-REGA.                 00146000
+146100***    MOVE BQVFB21-36-SALDO-REG2A                 TO             00146100
+146200***                        BQVFD21-36-SALDO-REG2A.                00146200
+146300***--- NEW:                                                       00146300
+146400**     MOVE BQVFB21-36-SALDO-ENTE                  TO             00146400
+146500**                         BQVFD21-36-SALDO-ENTE.                 00146500
+146600**     MOVE BQVFB21-36-SALDO-INAIL                 TO             00146600
+146700**                         BQVFD21-36-SALDO-INAIL.                00146700
+146800**     MOVE BQVFB21-36-SALDO-ALTRI                 TO             00146800
+146900**                         BQVFD21-36-SALDO-ALTRI.                00146900
+147000***--- NEW: FINE.                                                 00147000
+147100**     MOVE BQVFB21-36-SEGNO-ERARIO                TO             00147100
+147200**                         BQVFD21-36-SEGNO-ERARIO.               00147200
+147300**     MOVE BQVFB21-36-SEGNO-INPS                  TO             00147300
+147400**                         BQVFD21-36-SEGNO-INPS.                 00147400
+147500**     MOVE BQVFB21-36-SEGNO-REG                   TO             00147500
+147600**                         BQVFD21-36-SEGNO-REG.                  00147600
+147700***    MOVE BQVFB21-36-SEGNO-REG2                  TO             00147700
+147800***                        BQVFD21-36-SEGNO-REG2.                 00147800
+147900***--- NEW:                                                       00147900
+148000**     MOVE BQVFB21-36-SEGNO-ENTE                  TO             00148000
+148100**                         BQVFD21-36-SEGNO-ENTE.                 00148100
+148200**     MOVE BQVFB21-36-SEGNO-INAIL                 TO             00148200
+148300**                         BQVFD21-36-SEGNO-INAIL.                00148300
+148400**     MOVE BQVFB21-36-SEGNO-ALTRI                 TO             00148400
+148500**                         BQVFD21-36-SEGNO-ALTRI.                00148500
+148600**     MOVE BQVFB21-36-FIRMATARIO                 TO              00148600
+148700**                         BQVFD21-36-FIRMATARIO.                 00148700
+148800**     MOVE BQVFB21-36-NUM-RATEA                  TO              00148800
+148900**                         BQVFD21-36-NUM-RATEA.                  00148900
+149000***--- NEW: FINE.                                                 00149000
+149100**     MOVE BQVFB21-36-ERR-MOD-CONFER              TO             00149100
+149200**                         BQVFD21-36-ERR-MOD-CONFER.             00149200
+149300**     MOVE BQVFB21-36-ERR-MOD-CONFER-A            TO             00149300
+149400**                         BQVFD21-36-ERR-MOD-CONFER-A.           00149400
+149500**     MOVE BQVFB21-36-ERR-MOD-PAG                 TO             00149500
+149600**                         BQVFD21-36-ERR-MOD-PAG.                00149600
+149700**     MOVE BQVFB21-36-ERR-MOD-PAG-A               TO             00149700
+149800**                         BQVFD21-36-ERR-MOD-PAG-A.              00149800
+149900**     MOVE BQVFB21-36-ERR-SALDO-ERARIO            TO             00149900
+150000**                         BQVFD21-36-ERR-SALDO-ERARIO.           00150000
+150100**     MOVE BQVFB21-36-ERR-SALDO-ERARIO-A          TO             00150100
+150200**                         BQVFD21-36-ERR-SALDO-ERARIO-A.         00150200
+150300**     MOVE BQVFB21-36-ERR-SALDO-FINALE            TO             00150300
+150400**                         BQVFD21-36-ERR-SALDO-FINALE.           00150400
+150500**     MOVE BQVFB21-36-ERR-SALDO-FINALE-A          TO             00150500
+150600**                         BQVFD21-36-ERR-SALDO-FINALE-A.         00150600
+150700**     MOVE BQVFB21-36-ERR-SALDO-INPS              TO             00150700
+150800**                         BQVFD21-36-ERR-SALDO-INPS.             00150800
+150900**     MOVE BQVFB21-36-ERR-SALDO-INPS-A            TO             00150900
+151000**                         BQVFD21-36-ERR-SALDO-INPS-A.           00151000
+151100**     MOVE BQVFB21-36-ERR-SALDO-REG               TO             00151100
+151200**                         BQVFD21-36-ERR-SALDO-REG.              00151200
+151300**     MOVE BQVFB21-36-ERR-SALDO-REG-A            TO              00151300
+151400**                         BQVFD21-36-ERR-SALDO-REG-A.            00151400
+151500***    MOVE BQVFB21-36-ERR-SALDO-REG2              TO             00151500
+151600***                        BQVFD21-36-ERR-SALDO-REG2.             00151600
+151700***    MOVE BQVFB21-36-ERR-SALDO-REG2-A            TO             00151700
+151800***                        BQVFD21-36-ERR-SALDO-REG2-A.           00151800
+151900***--- NEW:                                                       00151900
+152000**     MOVE BQVFB21-36-ERR-SALDO-ENTE              TO             00152000
+152100**                         BQVFD21-36-ERR-SALDO-ENTE.             00152100
+152200**     MOVE BQVFB21-36-ERR-SALDO-ENTE-A            TO             00152200
+152300**                         BQVFD21-36-ERR-SALDO-ENTE-A.           00152300
+152400**     MOVE BQVFB21-36-ERR-SALDO-INAIL             TO             00152400
+152500**                         BQVFD21-36-ERR-SALDO-INAIL.            00152500
+152600**     MOVE BQVFB21-36-ERR-SALDO-INAIL-A            TO            00152600
+152700**                         BQVFD21-36-ERR-SALDO-INAIL-A.          00152700
+152800**     MOVE BQVFB21-36-ERR-SALDO-ALTRI             TO             00152800
+152900**                         BQVFD21-36-ERR-SALDO-ALTRI.            00152900
+153000**     MOVE BQVFB21-36-ERR-SALDO-ALTRI-A            TO            00153000
+153100**                         BQVFD21-36-ERR-SALDO-ALTRI-A.          00153100
+153200***--- NEW: FINE.                                                 00153200
+153300**     MOVE BQVFB21-36-ERR-SEGNO-ERARIO            TO             00153300
+153400**                         BQVFD21-36-ERR-SEGNO-ERARIO.           00153400
+153500**     MOVE BQVFB21-36-ERR-SEGNO-ERARIO-A          TO             00153500
+153600**                         BQVFD21-36-ERR-SEGNO-ERARIO-A.         00153600
+153700**     MOVE BQVFB21-36-ERR-SEGNO-INPS              TO             00153700
+153800**                         BQVFD21-36-ERR-SEGNO-INPS.             00153800
+153900**     MOVE BQVFB21-36-ERR-SEGNO-INPS-A            TO             00153900
+154000**                         BQVFD21-36-ERR-SEGNO-INPS-A.           00154000
+154100**     MOVE BQVFB21-36-ERR-SEGNO-REG               TO             00154100
+154200**                         BQVFD21-36-ERR-SEGNO-REG.              00154200
+154300**     MOVE BQVFB21-36-ERR-SEGNO-REG-A            TO              00154300
+154400**                         BQVFD21-36-ERR-SEGNO-REG-A.            00154400
+154500***    MOVE BQVFB21-36-ERR-SEGNO-REG2              TO             00154500
+154600***                        BQVFD21-36-ERR-SEGNO-REG2.             00154600
+154700***    MOVE BQVFB21-36-ERR-SEGNO-REG2-A            TO             00154700
+154800***                        BQVFD21-36-ERR-SEGNO-REG2-A.           00154800
+154900***--- NEW:                                                       00154900
+155000**     MOVE BQVFB21-36-ERR-SEGNO-ENTE              TO             00155000
+155100**                         BQVFD21-36-ERR-SEGNO-ENTE.             00155100
+155200**     MOVE BQVFB21-36-ERR-SEGNO-ENTE-A            TO             00155200
+155300**                         BQVFD21-36-ERR-SEGNO-ENTE-A.           00155300
+155400**     MOVE BQVFB21-36-ERR-SEGNO-INAIL             TO             00155400
+155500**                         BQVFD21-36-ERR-SEGNO-INAIL.            00155500
+155600**     MOVE BQVFB21-36-ERR-SEGNO-INAIL-A            TO            00155600
+155700**                         BQVFD21-36-ERR-SEGNO-INAIL-A.          00155700
+155800**     MOVE BQVFB21-36-ERR-SEGNO-ALTRI             TO             00155800
+155900**                         BQVFD21-36-ERR-SEGNO-ALTRI.            00155900
+156000**     MOVE BQVFB21-36-ERR-SEGNO-ALTRI-A            TO            00156000
+156100**                         BQVFD21-36-ERR-SEGNO-ALTRI-A.          00156100
+156200**     MOVE BQVFB21-36-ERR-FIRMATARIO              TO             00156200
+156300**                         BQVFD21-36-ERR-FIRMATARIO.             00156300
+156400**     MOVE BQVFB21-36-ERR-FIRMATARIO-A            TO             00156400
+156500**                         BQVFD21-36-ERR-FIRMATARIO-A.           00156500
+156600**     MOVE BQVFB21-36-ERR-NUM-RATE                TO             00156600
+156700**                         BQVFD21-36-ERR-NUM-RATE.               00156700
+156800**     MOVE BQVFB21-36-ERR-NUM-RATE-A            TO               00156800
+156900**                         BQVFD21-36-ERR-NUM-RATE-A.             00156900
+157000***--- NEW: FINE.                                                 00157000
+157100**     MOVE BQVFB21-36-FLAG-COMPENS-EXTRA          TO             00157100
+157200**                         BQVFD21-36-FLAG-COMPENS-EXTRA.         00157200
+157300**     MOVE BQVFB21-36-FLAG-COMPENS-EX-A        TO                00157300
+157400**                         BQVFD21-36-FLAG-COMPENS-EX-A.          00157400
+157500** RY-010-CONC-EX.                                                00157500
+157600**     EXIT.                                                      00157600
+157700 RZ-010-INIZIA.                                                   00157700
+157800     MOVE ZERO       TO  BQVFB21-36-ERR-MOD-CONFER.               00157800
+157900     MOVE ZERO       TO  BQVFB21-36-ERR-MOD-CONFER-A.             00157900
+158000     MOVE ZERO       TO  BQVFB21-36-ERR-MOD-PAG.                  00158000
+158100     MOVE ZERO       TO  BQVFB21-36-ERR-MOD-PAG-A.                00158100
+158200     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ERARIO.             00158200
+158300     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ERARIO-A.           00158300
+158400     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-FINALE.             00158400
+158500     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-FINALE-A.           00158500
+158600     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-INPS.               00158600
+158700     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-INPS-A.             00158700
+158800     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-REG.                00158800
+158900     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-REG-A.              00158900
+159000     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ENTE.               00159000
+159100     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ENTE-A.             00159100
+159200     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-INAIL.              00159200
+159300     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-INAIL-A.            00159300
+159400     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ALTRI.              00159400
+159500     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ALTRI-A.            00159500
+159600     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ACCISE.             00159600
+159700     MOVE ZERO       TO  BQVFB21-36-ERR-SALDO-ACCISE-A.           00159700
+159800     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ERARIO.             00159800
+159900     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ERARIO-A.           00159900
+160000     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-INPS.               00160000
+160100     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-INPS-A.             00160100
+160200     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-REG.                00160200
+160300     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-REG-A.              00160300
+160400     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ENTE.               00160400
+160500     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ENTE-A.             00160500
+160600     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-INAIL.              00160600
+160700     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-INAIL-A.            00160700
+160800     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ALTRI.              00160800
+160900     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ALTRI-A.            00160900
+161000     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ACCISE.             00161000
+161100     MOVE ZERO       TO  BQVFB21-36-ERR-SEGNO-ACCISE-A.           00161100
+161200     MOVE ZERO       TO  BQVFB21-36-FLAG-COMPENS-EXTRA.           00161200
+161300     MOVE ZERO       TO  BQVFB21-36-FLAG-COMPENS-EX-A.            00161300
+161400     MOVE ZERO       TO  BQVFB21-36-ERR-FIRMATARIO.               00161400
+161500     MOVE ZERO       TO  BQVFB21-36-ERR-FIRMATARIO-A.             00161500
+161600     MOVE ZERO       TO  BQVFB21-36-ERR-FLAG-ES-CAV.              00161600
+161700     MOVE ZERO       TO  BQVFB21-36-ERR-FLAG-ES-CAV-A.            00161700
+161800     MOVE ZERO       TO  BQVFB21-36-ERR-COD-ABI.                  00161800
+161900     MOVE ZERO       TO  BQVFB21-36-ERR-COD-ABI-A.                00161900
+162000     MOVE ZERO       TO  BQVFB21-36-ERR-ESITO-PAGAM.              00162000
+162100     MOVE ZERO       TO  BQVFB21-36-ERR-ESITO-PAGAM-A.            00162100
+162200     MOVE ZERO       TO  BQVFB21-36-ERR-CF2.                      00162200
+162300     MOVE ZERO       TO  BQVFB21-36-ERR-CF2-A.                    00162300
+162400     MOVE ZERO       TO  BQVFB21-36-ERR-FLAG-CF2.                 00162400
+162500     MOVE ZERO       TO  BQVFB21-36-ERR-FLAG-CF2-A.               00162500
+162600     MOVE ZERO       TO  BQVFB21-36-ERR-COD-IDENT.                00162600
+162700     MOVE ZERO       TO  BQVFB21-36-ERR-COD-IDENT-A.              00162700
+162800     MOVE ZERO       TO  BQVFB21-36-ERR-PROGR-IUD.                00162800
+162900     MOVE ZERO       TO  BQVFB21-36-ERR-PROGR-IUD-A.              00162900
+163000 RZ-010-INIZIA-EX.                                                00163000
+163100     EXIT.                                                        00163100
+163200******************************************************************00163200
+163300******        SI CONTROLLANO LE COMPENSAZIONI TOTALI         *****00163300
+163400******************************************************************00163400
+163500 C2-010-TOT-COMP.                                                 00163500
+163600*                                                                 00163600
+163700     IF W-TOT-IMP-CRED-CONTR-ELO LESS ZERO                        00163700
+163800        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-ELO                     00163800
+163900     END-IF.                                                      00163900
+164000     IF W-TOT-IMP-CRED-CONTR-IRF LESS ZERO                        00164000
+164100        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-IRF                     00164100
+164200     END-IF.                                                      00164200
+164300     IF W-TOT-IMP-CRED-CONTR-ADX LESS ZERO                        00164300
+164400        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-ADX                     00164400
+164500     END-IF.                                                      00164500
+164600     IF W-TOT-IMP-CRED-CONTR-IIE LESS ZERO                        00164600
+164700        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-IIE                     00164700
+164800     END-IF.                                                      00164800
+164900     IF W-TOT-IMP-CRED-CONTR-IFE LESS ZERO                        00164900
+165000        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-IFE                     00165000
+165100     END-IF.                                                      00165100
+165200     IF W-TOT-IMP-CRED-CONTR-FF1 LESS ZERO                        00165200
+165300        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-FF1                     00165300
+165400     END-IF.                                                      00165400
+165500     IF W-TOT-IMP-CRED-CONTR-FF2 LESS ZERO                        00165500
+165600        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-FF2                     00165600
+165700     END-IF.                                                      00165700
+165800     IF W-TOT-IMP-CRED-CONTR-FF3 LESS ZERO                        00165800
+165900        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-FF3                     00165900
+166000     END-IF.                                                      00166000
+166100     IF W-TOT-IMP-CRED-CONTR-ORO LESS ZERO                        00166100
+166200        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-ORO                     00166200
+166300     END-IF.                                                      00166300
+166400     IF W-TOT-IMP-CRED-CONTR-SEC LESS ZERO                        00166400
+166500        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-SEC                     00166500
+166600     END-IF.                                                      00166600
+166700     IF W-TOT-IMP-CRED-CONTR-IEC LESS ZERO                        00166700
+166800        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-IEC                     00166800
+166900     END-IF.                                                      00166900
+166910     IF W-TOT-IMP-CRED-CONTR-QR1 LESS ZERO                        00166910
+166920        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-QR1                     00166920
+166930     END-IF.                                                      00166930
+166940     IF W-TOT-IMP-CRED-CONTR-BTC LESS ZERO                        00166940
+166950        MOVE ZERO TO W-TOT-IMP-CRED-CONTR-BTC                     00166950
+166960     END-IF.                                                      00166960
+167000*                                                                 00167000
+167100     COMPUTE W-TOT-COMP= W-COMP-FISCO    +                        00167100
+167200                         W-TAB-EL-RIM(2) +                        00167200
+167300***********************  W-TAB-EL-RIM(3) +                        00167300
+167400*** GESTIONE TRIBUTI REGIONALI AGEVOLATI                          00167400
+167500                         W-COMP-REG      +                        00167500
+167600                         W-COMP-EL       +                        00167600
+167700                         W-TAB-EL-RIM(5) +                        00167700
+167800                         W-TAB-EL-RIM(6) +                        00167800
+167900                         W-TAB-EL-RIM(7) +                        00167900
+168000                         W-TOT-IMP-CRED-CONTR-ELO +               00168000
+168100                         W-TOT-IMP-CRED-CONTR-IRF +               00168100
+168200                         W-TOT-IMP-CRED-CONTR-ADX +               00168200
+168300                         W-TOT-IMP-CRED-CONTR-IIE +               00168300
+168400                         W-TOT-IMP-CRED-CONTR-IFE +               00168400
+168500                         W-TOT-IMP-CRED-CONTR-FF1 +               00168500
+168600                         W-TOT-IMP-CRED-CONTR-FF2 +               00168600
+168700                         W-TOT-IMP-CRED-CONTR-FF3 +               00168700
+168800                         W-TOT-IMP-CRED-CONTR-ORO +               00168800
+168900                         W-TOT-IMP-CRED-CONTR-SEC +               00168900
+169000                         W-TOT-IMP-CRED-CONTR-IEC +               00169000
+169010                         W-TOT-IMP-CRED-CONTR-QR1 +               00169010
+169020                         W-TOT-IMP-CRED-CONTR-BTC.                00169020
+169100*                                                                 00169100
+169200 C2-020.                                                          00169200
+169300*                                                                 00169300
+169400     IF ( W-TOT-COMP NOT GREATER W-EUR AND                        00169400
+169500          W-DIVISA EQUAL 'EUR')                                   00169500
+169600     OR ( W-TOT-COMP NOT GREATER W-ITL-NEW AND                    00169600
+169700          W-DIVISA EQUAL 'ITL')                                   00169700
+169800     GO TO C2-010-TOT-COMP-EX.                                    00169800
+169900*                                                                 00169900
+170000 C2-030.                                                          00170000
+170100*                                                                 00170100
+170200*---   NON SI IMPOSTA L'ERRORE SE GIA' SEGNALATO                  00170200
+170300     IF BQVFB21-36-ERR-SALDO-FINALE NOT EQUAL ZERO                00170300
+170400        GO TO C2-010-TOT-COMP-EX.                                 00170400
+170500***  IMPOSTAZIONE ERRORE BLOCCANTE                                00170500
+170600     MOVE 514 TO BQVFB21-36-ERR-SALDO-FINALE.                     00170600
+170700     MOVE 'E' TO BQVFB21-36-ERR-SALDO-FINALE-A.                   00170700
+170800     ADD  1   TO W-CTR2.                                          00170800
+170900*                                                                 00170900
+171000 C2-010-TOT-COMP-EX.                                              00171000
+171100     EXIT.                                                        00171100
+171200*---                                                              00171200
+171300*--- SI SOMMANO GLI IMPORTI A DEBITO E GLI IMPORTI A CRIDITO A    00171300
+171400*--- PARITA' DI CODICE CATASTALE NEL CASO DI ICI                  00171400
+171500*---                                                              00171500
+171600 A3-010-ICI.                                                      00171600
+171700*---                                                              00171700
+171800*--- SE LA TABELLA ICI E' VUOTA, SI ESCE DALLA PERFORM            00171800
+171900*---                                                              00171900
+172000     IF W-COD-CATAST (1) = SPACE                                  00172000
+172100        GO TO A3-010-ICI-EX.                                      00172100
+172200 A3-015.                                                          00172200
+172300*---                                                              00172300
+172400*--- SI SCORRE LA TABELLA DI LINKAGE E SI RIEMPIE LA TABELLA DI   00172400
+172500*--- WORKING TOTALIZZANDO A PARITA' DI CODICE CATASTALE           00172500
+172600*---                                                              00172600
+172700     INITIALIZE                   W-TAB-COMUNI-O.                 00172700
+172800     MOVE ZERO                 TO W-IND-ICI.                      00172800
+172900     MOVE ZERO                 TO W-FLAG-VUOTO.                   00172900
+173000 A3-020.                                                          00173000
+173100     ADD 1                     TO W-IND-ICI.                      00173100
+173200*--- SE L'ELEMENTO DI TABELLA E' VUOTO, SI ESCE DAL CICLO FORZANDO00173200
+173300*--- L'INDICE                                                     00173300
+173400     IF W-COD-CATAST(W-IND-ICI) = SPACE                           00173400
+173500        MOVE 4                 TO W-IND-ICI                       00173500
+173600        GO TO A3-120.                                             00173600
+173700 A3-030.                                                          00173700
+173800     MOVE ZERO                 TO W-IND-ICI-O.                    00173800
+173900 A3-040.                                                          00173900
+174000     ADD 1                     TO W-IND-ICI-O.                    00174000
+174100*--- SE L'ELEMENTO DI TABELLA DI OUTPUT E' VUOTO, SI IMPOSTA IL   00174100
+174200*--- FLAG PER FORZARE L'USCITA DAL CICLO PIU' INTERNO             00174200
+174300     IF W-COD-CATAST-O(W-IND-ICI-O) = SPACE                       00174300
+174400        MOVE 1                 TO W-FLAG-VUOTO                    00174400
+174500     ELSE                                                         00174500
+174600*--- SE IL CODICE CATASTALE COINCIDE, SI SOMMANO GLI IMPORTI E    00174600
+174700*--- SI FORZANDO L'INDICE PER USCIRE DAL CICLO PIU' INTERNO       00174700
+174800        IF W-COD-CATAST(W-IND-ICI) = W-COD-CATAST-O(W-IND-ICI-O)  00174800
+174900         AND W-TIPO-TRIBUTO(W-IND-ICI) = 'B'                      00174900
+175000          ADD W-PAGAM-ICI(W-IND-ICI) TO W-PAGAM-ICI-O(W-IND-ICI-O)00175000
+175100          MOVE 4                     TO W-IND-ICI-O               00175100
+175200        END-IF                                                    00175200
+175300        IF W-COD-CATAST(W-IND-ICI) = W-COD-CATAST-O(W-IND-ICI-O)  00175300
+175400         AND (W-TIPO-TRIBUTO(W-IND-ICI) = 'B' OR = 'C')           00175400
+175500          ADD W-RIMB-ICI (W-IND-ICI) TO W-RIMB-ICI-O (W-IND-ICI-O)00175500
+175600          MOVE 4                     TO W-IND-ICI-O               00175600
+175700        END-IF                                                    00175700
+175800     END-IF.                                                      00175800
+175900*---                                                              00175900
+176000     IF W-IND-ICI-O < 4 AND                                       00176000
+176100        W-FLAG-VUOTO = ZERO                                       00176100
+176200        GO TO A3-040.                                             00176200
+176300 A3-100.                                                          00176300
+176400     IF W-FLAG-VUOTO = 1                                          00176400
+176500        MOVE W-ELEM-COMUNI(W-IND-ICI)                             00176500
+176600                                   TO W-ELEM-COMUNI-O(W-IND-ICI-O)00176600
+176700        MOVE ZERO                  TO W-FLAG-VUOTO                00176700
+176800     END-IF.                                                      00176800
+176900 A3-120.                                                          00176900
+177000     IF W-IND-ICI < 4                                             00177000
+177100        GO TO A3-020.                                             00177100
+177200 A3-130.                                                          00177200
+177300*---                                                              00177300
+177400*--- SI CONTROLLA CHE NON SIA STATO INDICATO UN CREDITO MAGGIORE  00177400
+177500*--- DEL DEBITO PER SINGOLO COMUNE                                00177500
+177600*---                                                              00177600
+177700     MOVE ZERO                     TO W-IND-ICI.                  00177700
+177800 A3-140.                                                          00177800
+177900*F   ADD 1                         TO W-IND-ICI.                  00177900
+178000*F   IF W-COD-CATAST-O(W-IND-ICI) NOT = SPACE                     00178000
+178100*F       AND (W-TIPO-TRIBUTO-O(W-IND-ICI) = 'B' OR = 'C')         00178100
+178200*---                                                              00178200
+178300*--- SI SEGNALA L'ERRORE NON BLOCCANTE SUL SALDO ENTI LOCALI      00178300
+178400*---                                                              00178400
+178500*F     IF W-RIMB-ICI-O(W-IND-ICI) > W-PAGAM-ICI-O(W-IND-ICI)      00178500
+178600*F        IF BQVFB21-36-ERR-SALDO-ENTE = ZERO                     00178600
+178700*F           MOVE  096             TO BQVFB21-36-ERR-SALDO-ENTE   00178700
+178800*F           MOVE 'E'              TO BQVFB21-36-ERR-SALDO-ENTE-A 00178800
+178900*F           ADD  1                TO W-CTR2                      00178900
+179000*F        END-IF                                                  00179000
+179100*F        MOVE 4                   TO W-IND-ICI                   00179100
+179200*F     END-IF                                                     00179200
+179300*F   END-IF.                                                      00179300
+179400*F   IF W-IND-ICI < 4                                             00179400
+179500*F      GO TO A3-140.                                             00179500
+179600     IF W-TOT-RIMB-TRIB > 20000                                   00179600
+179700        IF BQVFB21-36-ERR-SALDO-ENTE = ZERO                       00179700
+179800           MOVE  096             TO BQVFB21-36-ERR-SALDO-ENTE     00179800
+179900           MOVE 'E'              TO BQVFB21-36-ERR-SALDO-ENTE-A   00179900
+180000           ADD  1                TO W-CTR2                        00180000
+180100        END-IF                                                    00180100
+180200     END-IF.                                                      00180200
+180300 A3-010-ICI-EX.                                                   00180300
+180400     EXIT.                                                        00180400
+180500                                                                  00180500
+180600*---   CONTROLLO SECONDO CODICE FISCALE                           00180600
+180700                                                                  00180700
+180800 F1-010.                                                          00180800
+180900*                                                                 00180900
+181000     MOVE 0 TO W-BQVFB3-COD-RIT.                                  00181000
+181100     MOVE ZERO TO W-FLAG-NO-BQVFB3.                               00181100
+181200     IF BQVFB21-36-FLAG-ERR-CF2 = '0' OR                          00181200
+181300        BQVFB21-36-FLAG-ERR-CF2 = '1'                             00181300
+181400        GO TO F1-020.                                             00181400
+181500*                                                                 00181500
+181600 F1-015.                                                          00181600
+181700*                                                                 00181700
+181800     MOVE 55  TO BQVFB21-36-ERR-FLAG-CF2.                         00181800
+181900     MOVE 'E' TO BQVFB21-36-ERR-FLAG-CF2-A.                       00181900
+182000     ADD 1 TO W-CTR2.                                             00182000
+182100*                                                                 00182100
+182200 F1-020.                                                          00182200
+182300*                                                                 00182300
+182400     IF BQVFB21-36-CF2 EQUAL SPACE OR                             00182400
+182500        BQVFB21-36-CF2 EQUAL ZERO                                 00182500
+182600           GO TO F1-034.                                          00182600
+182700*--- SI CONTROLLA LA CORRETTEZZA DEL CODICE FISCALE               00182700
+182800     PERFORM F2-010   THRU F2-990.                                00182800
+182900     SKIP1                                                        00182900
+183000 F1-034.                                                          00183000
+183100     IF W-BQVFB3-COD-RIT = ZERO OR                                00183100
+183200        W-FLAG-NO-BQVFB3 = 1 OR                                   00183200
+183300        BQVFB21-36-CF2 EQUAL SPACE OR                             00183300
+183400        BQVFB21-36-CF2 EQUAL ZERO                                 00183400
+183500           GO TO F1-060.                                          00183500
+183600*                                                                 00183600
+183700 F1-035.                                                          00183700
+183800*                                                                 00183800
+183900     IF BQVFB21-36-FLAG-ERR-CF2 = '1'                             00183900
+184000       GO TO F1-050.                                              00184000
+184100*                                                                 00184100
+184200 F1-040.                                                          00184200
+184300*                                                                 00184300
+184400*      ERRORI                                                     00184400
+184500     MOVE 96 TO BQVFB21-36-ERR-CF2.                               00184500
+184600     MOVE 'E' TO BQVFB21-36-ERR-CF2-A.                            00184600
+184700     ADD 1 TO W-CTR2.                                             00184700
+184800     IF BQVFB21-36-FLAG-ERR-CF2 = '0'                             00184800
+184900         MOVE 24  TO BQVFB21-36-ERR-FLAG-CF2                      00184900
+185000         MOVE 'E' TO BQVFB21-36-ERR-FLAG-CF2-A                    00185000
+185100         ADD 1 TO W-CTR2.                                         00185100
+185200     GO TO F1-990.                                                00185200
+185300*                                                                 00185300
+185400 F1-050.                                                          00185400
+185500*                                                                 00185500
+185600*      OMOGENEITA'                                                00185600
+185700     GO TO F1-990.                                                00185700
+185800*                                                                 00185800
+185900 F1-060.                                                          00185900
+186000*                                                                 00186000
+186100     IF BQVFB21-36-FLAG-ERR-CF2 = '0'                             00186100
+186200        GO TO F1-990.                                             00186200
+186300*                                                                 00186300
+186400 F1-070.                                                          00186400
+186500*                                                                 00186500
+186600     IF BQVFB21-36-FLAG-ERR-CF2 NOT = '1'                         00186600
+186700       GO TO F1-990.                                              00186700
+186800*                                                                 00186800
+186900 F1-080.                                                          00186900
+187000*                                                                 00187000
+187100*      ERRORE NON BLOCCANTE                                       00187100
+187200     MOVE 24  TO BQVFB21-36-ERR-FLAG-CF2.                         00187200
+187300     MOVE 'W' TO BQVFB21-36-ERR-FLAG-CF2-A.                       00187300
+187400     ADD 1 TO W-CTR1.                                             00187400
+187500*                                                                 00187500
+187600 F1-990.                                                          00187600
+187700*                                                                 00187700
+187800     EXIT.                                                        00187800
+187900*                                                                 00187900
+188000 F2-010.                                                          00188000
+188100*                                                                 00188100
+188200     MOVE ZERO TO W-APPO-CF-11.                                   00188200
+188300     MOVE BQVFB21-36-CF2 TO W-APPO-CF.                            00188300
+188400     IF W-APPO-CF-DX NOT = SPACE     AND                          00188400
+188500        W-APPO-CF-DX NOT = LOW-VALUE AND                          00188500
+188600        W-APPO-CF-DX NOT = HIGH-VALUE                             00188600
+188700        GO TO F2-497.                                             00188700
+188800     SKIP1                                                        00188800
+188900 F2-470.                                                          00188900
+189000*--- CF DI 11 CARATTERI ALLINEATI A SINISTRA                      00189000
+189100     MOVE 'PNF' TO W-PF-PNF.                                      00189100
+189200     IF W-APPO-CF-SX NUMERIC         AND                          00189200
+189300        W-APPO-CF-DX NOT = LOW-VALUE AND                          00189300
+189400        W-APPO-CF-DX NOT = HIGH-VALUE                             00189400
+189500        MOVE W-APPO-CF TO W-BQVFB3-COD-FISC                       00189500
+189600        GO TO F2-482.                                             00189600
+189700     SKIP1                                                        00189700
+189800 F2-480.                                                          00189800
+189900*--- CF DI 11 CARATTERI ERRATO                                    00189900
+190000     MOVE 1 TO W-BQVFB3-COD-RIT.                                  00190000
+190100     GO TO F2-499.                                                00190100
+190200     SKIP1                                                        00190200
+190300 F2-482.                                                          00190300
+190400     MOVE W-BQVFB3-COD-FISC TO W-APPO-CF-11.                      00190400
+190500     IF (W-APPO-CF-11-COD-UFF > 150 AND                           00190500
+190600         W-APPO-CF-11-COD-UFF < 246    ) OR                       00190600
+190700        (W-APPO-CF-11-COD-UFF > 300 AND                           00190700
+190800         W-APPO-CF-11-COD-UFF < 767    ) OR                       00190800
+190900        (W-APPO-CF-11-COD-UFF > 899 AND                           00190900
+191000         W-APPO-CF-11-COD-UFF < 951    ) OR                       00191000
+191100        W-APPO-CF-11-COD-UFF  = ZERO                              00191100
+191200        MOVE 'PF '     TO W-PF-PNF.                               00191200
+191300     SKIP1                                                        00191300
+191400 F2-490.                                                          00191400
+191500*--- SE IL CODICE FISCALE NON E' ASSEGNATO NON ATTIVO LA ROUTINE  00191500
+191600*--- E LO CONSIDERO VALIDO                                        00191600
+191700     IF W-APPO-CF-11-COD-UFF  = ZERO AND                          00191700
+191800        W-APPO-CF-11-PROG     > ZERO AND                          00191800
+191900        W-APPO-CF-11-PROG     < 273961                            00191900
+192000        MOVE 1 TO W-FLAG-NO-BQVFB3                                00192000
+192100        GO TO F2-499.                                             00192100
+192200     SKIP1                                                        00192200
+192300 F2-492.                                                          00192300
+192400*--- SE IL CODICE UFFICIO O IL PROGRESSIVO NON SONO               00192400
+192500*--- VALIDI NON ATTIVO LA ROUTINE E IMPOSTO L'ERRORE              00192500
+192600     IF W-APPO-CF-11-COD-UFF = ZERO AND                           00192600
+192700        ((W-APPO-CF-11-PROG > 0273960 AND                         00192700
+192800          W-APPO-CF-11-PROG < 0400001   ) OR                      00192800
+192900         (W-APPO-CF-11-PROG > 1072480 AND                         00192900
+193000          W-APPO-CF-11-PROG < 1500001   ) OR                      00193000
+193100         (W-APPO-CF-11-PROG > 1828636 AND                         00193100
+193200          W-APPO-CF-11-PROG < 2000001   ) OR                      00193200
+193300          W-APPO-CF-11-PROG > 2054095       )                     00193300
+193400        MOVE 1    TO  W-BQVFB3-COD-RIT                            00193400
+193500        GO TO F2-499.                                             00193500
+193600     SKIP1                                                        00193600
+193700 F2-494.                                                          00193700
+193800*--- SE IL CODICE UFFICIO NON E' VALIDO NON ATTIVO LA ROUTINE     00193800
+193900*--- E IMPOSTO L'ERRORE                                           00193900
+194000     IF ((W-APPO-CF-11-COD-UFF  > 100 AND                         00194000
+194100          W-APPO-CF-11-COD-UFF  < 120    ) OR                     00194100
+194200         (W-APPO-CF-11-COD-UFF  > 121 AND                         00194200
+194300          W-APPO-CF-11-COD-UFF  < 151    ) OR                     00194300
+194400         (W-APPO-CF-11-COD-UFF  > 245 AND                         00194400
+194500          W-APPO-CF-11-COD-UFF  < 301    ) OR                     00194500
+194600         (W-APPO-CF-11-COD-UFF  > 766 AND                         00194600
+194700          W-APPO-CF-11-COD-UFF  NOT EQUAL 888 AND                 00194700
+194800          W-APPO-CF-11-COD-UFF  < 900    ) OR                     00194800
+194900         (W-APPO-CF-11-COD-UFF  > 950 AND                         00194900
+195000          W-APPO-CF-11-COD-UFF  NOT EQUAL 999)                    00195000
+195100          AND W-APPO-CF-11-PROG   < 8000000)                      00195100
+195200     OR                                                           00195200
+195300        W-APPO-CF-11-PROG      = ZERO                             00195300
+195400        MOVE 1 TO W-BQVFB3-COD-RIT                                00195400
+195500        GO TO F2-499.                                             00195500
+195600     SKIP1                                                        00195600
+195700 F2-496.                                                          00195700
+195800*--- SE IL CF E' P. IVA E IL PROGRESSIVO NON E' VALIDO NON        00195800
+195900*--- ATTIVO LA ROUTINE E IMPOSTO L'ERRORE                         00195900
+196000     IF W-APPO-CF-11-COD-UFF >  95 AND                            00196000
+196100        W-APPO-CF-11-PROG  NOT < 8000000                          00196100
+196200        MOVE 1 TO W-BQVFB3-COD-RIT.                               00196200
+196300     GO TO F2-499.                                                00196300
+196400     SKIP1                                                        00196400
+196500 F2-497.                                                          00196500
+196600*---                                                              00196600
+196700*--- CODICE FISCALE DI 16 CARATTERI                               00196700
+196800*--- MODIFICATO PERCHE' CONTROLLI ANCHE LA CONGRUENZA FRA         00196800
+196900*--- MESE E GIORNO                                                00196900
+197000*---                                                              00197000
+197100     MOVE W-APPO-CF TO W-CF.                                      00197100
+197200     IF W-COD-FISC-CATAST-OK        AND                           00197200
+197300        W-APPO-CF-DENOM ALPHABETIC  AND                           00197300
+197400                W-APPO-CF-DENOM-L1  NOT EQUAL SPACE AND           00197400
+197500                W-APPO-CF-DENOM-L2  NOT EQUAL SPACE AND           00197500
+197600                W-APPO-CF-DENOM-L3  NOT EQUAL SPACE AND           00197600
+197700                W-APPO-CF-DENOM-L4  NOT EQUAL SPACE AND           00197700
+197800                W-APPO-CF-DENOM-L5  NOT EQUAL SPACE AND           00197800
+197900                W-APPO-CF-DENOM-L6  NOT EQUAL SPACE AND           00197900
+198000        W-APPO-CF-ANNO      NUMERIC AND                           00198000
+198100        W-APPO-CF-MESE-OK           AND                           00198100
+198200        W-APPO-CF-GIORNO    NUMERIC AND                           00198200
+198300        ((((W-APPO-CF-GIORNO   > ZERO AND                         00198300
+198400            W-APPO-CF-GIORNO   < 32      ) OR                     00198400
+198500           (W-APPO-CF-GIORNO   > 40   AND                         00198500
+198600            W-APPO-CF-GIORNO   < 72      )) AND                   00198600
+198700            W-CF-MESE-31-OK)                      OR              00198700
+198800         (((W-APPO-CF-GIORNO   > ZERO AND                         00198800
+198900            W-APPO-CF-GIORNO   < 31      ) OR                     00198900
+199000           (W-APPO-CF-GIORNO   > 40   AND                         00199000
+199100            W-APPO-CF-GIORNO   < 71      )) AND                   00199100
+199200            W-CF-MESE-30-OK)                      OR              00199200
+199300         (((W-APPO-CF-GIORNO   > ZERO AND                         00199300
+199400            W-APPO-CF-GIORNO   < 30      ) OR                     00199400
+199500           (W-APPO-CF-GIORNO   > 40   AND                         00199500
+199600            W-APPO-CF-GIORNO   < 70      )) AND                   00199600
+199700            W-CF-MESE-28-OK))                                     00199700
+199800        MOVE W-APPO-CF TO W-BQVFB3-COD-FISC                       00199800
+199900        MOVE 'PF '     TO W-PF-PNF                                00199900
+200000        PERFORM R1-010-CATAST THRU R1-010-CATAST-EX               00200000
+200100        GO TO F2-499.                                             00200100
+200200     SKIP1                                                        00200200
+200300 F2-498.                                                          00200300
+200400*--- ERRORE DI CORRETTEZZA DEL CODICE FISCALE PER:                00200400
+200500*--- BYTE DA 1 A 6 NON TUTTI ALFABETICI O                         00200500
+200600*--- BYTE 7 E 8 NON NUMERICI O                                    00200600
+200700*--- BYTE 9 NON COMPRESO TRA I VALORI A,B,C,D,E,H,L,M,P,R,S,T O   00200700
+200800*--- BYTE 10 E 11 NON NUMERICI O NON COMPRESI TRA I VALORI AMMESSI00200800
+200900*--- BYTE 12, CORRISPONDENTE AL CODICE CATASTALE, FUORI SEQUENZA  00200900
+201000     MOVE 1 TO W-BQVFB3-COD-RIT.                                  00201000
+201100 F2-499.                                                          00201100
+201200*---                                                              00201200
+201300     IF W-BQVFB3-COD-RIT NOT = ZERO OR                            00201300
+201400        W-FLAG-NO-BQVFB3 NOT = ZERO                               00201400
+201500        GO TO F2-990.                                             00201500
+201600     SKIP1                                                        00201600
+201700 F2-500.                                                          00201700
+201800     CALL 'BQVFB3' USING W-PARAM-BQVFB3.                          00201800
+201900     SKIP1                                                        00201900
+202000*                                                                 00202000
+202100 F2-990.                                                          00202100
+202200*                                                                 00202200
+202300     EXIT.                                                        00202300
+202400     SKIP1                                                        00202400
+202500*                                                                 00202500
+202600*                                                                 00202600
+202700 R1-010-CATAST.                                                   00202700
+202800     MOVE BQVFB21-36-CF2 TO W-CF-CATAST.                          00202800
+202900     IF W-CATAST-SOTTO2 NUMERIC AND                               00202900
+203000        W-CATAST-SOTTO2 > '000' AND                               00203000
+203100        W-CATAST-SOTTO2 NOT > '999'                               00203100
+203200        GO TO R1-040.                                             00203200
+203300 R1-020.                                                          00203300
+203400     IF (W-CATAST-SOTTO21 NUMERIC OR                              00203400
+203500         W-CATAST-SOTTO21-OK)        AND                          00203500
+203600        (W-CATAST-SOTTO22 NUMERIC OR                              00203600
+203700         W-CATAST-SOTTO22-OK)        AND                          00203700
+203800        (W-CATAST-SOTTO23 NUMERIC OR                              00203800
+203900         W-CATAST-SOTTO23-OK)                                     00203900
+204000        GO TO R1-040.                                             00204000
+204100 R1-030.                                                          00204100
+204200     MOVE 1 TO W-BQVFB3-COD-RIT.                                  00204200
+204300 R1-040.                                                          00204300
+204400     IF W-CATAST-SOTTO1 NOT = 'M' OR                              00204400
+204500        W-BQVFB3-COD-RIT = 1                                      00204500
+204600        GO TO R1-010-CATAST-EX.                                   00204600
+204700 R1-050.                                                          00204700
+204800     IF W-CATAST-SOTTO21 NUMERIC AND                              00204800
+204900        W-CATAST-SOTTO21 < '4'                                    00204900
+205000        GO TO R1-010-CATAST-EX.                                   00205000
+205100 R1-060.                                                          00205100
+205200     IF W-CATAST-SOTTO21 = 'L' OR                                 00205200
+205300        W-CATAST-SOTTO21 = 'M' OR                                 00205300
+205400        W-CATAST-SOTTO21 = 'N' OR                                 00205400
+205500        W-CATAST-SOTTO21 = 'P'                                    00205500
+205600        GO TO R1-010-CATAST-EX.                                   00205600
+205700 R1-070.                                                          00205700
+205800     MOVE 1 TO W-BQVFB3-COD-RIT.                                  00205800
+205900 R1-010-CATAST-EX.                                                00205900
+206000     EXIT.                                                        00206000
+206100     EJECT                                                        00206100
+206200******************************************************************00206200
+206300*                                                                 00206300
+206400 IDENT-010.                                                       00206400
+206500*                                                                 00206500
+206600     SET W-PUNT-IDENT TO 1.                                       00206600
+206700     SEARCH W-TAB-IDENT-EL                                        00206700
+206800            AT END MOVE ZERO TO W-FLAG-TROVATO                    00206800
+206900     WHEN W-TAB-IDENT-COD(W-PUNT-IDENT)                           00206900
+207000                         = BQVFB21-36-COD-IDENT AND               00207000
+207100          W-TAB-IDENT-INIZIO-VAL(W-PUNT-IDENT)                    00207100
+207200                     NOT > BQVFB21-36-DATA-RISC AND               00207200
+207300          W-TAB-IDENT-FINE-VAL(W-PUNT-IDENT)                      00207300
+207400                     NOT < BQVFB21-36-DATA-RISC                   00207400
+207500     MOVE 1                               TO W-FLAG-TROVATO.      00207500
+207600*                                                                 00207600
+207700     IF W-FLAG-TROVATO = 0                                        00207700
+207800           MOVE 55  TO BQVFB21-36-ERR-COD-IDENT                   00207800
+207900           MOVE 'E' TO BQVFB21-36-ERR-COD-IDENT-A                 00207900
+208000           ADD 1 TO W-CTR2.                                       00208000
+208100 IDENT-EXIT.                                                      00208100
+208200*                                                                 00208200
+208300     EXIT.                                                        00208300
+208400*                                                                 00208400

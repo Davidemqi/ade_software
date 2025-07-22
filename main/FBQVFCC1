@@ -1,0 +1,30 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFCC1                             *
+000300*                                                      *
+000400* F.DE INNOCENTIIS- 08/04/2015                         *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*               CONTROLLO COMPENSAZIONI                *
+000800*                    TIPOLOGIE                         *
+000900*                                                      *
+000901* LUNGHEZZA RECORD: 50 BYTES                           *
+001100*                                                      *
+001200* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001300* BARG.BQVADX                                          *
+001400********************************************************
+001500 01 BQVFCC1.
+001600*      CHIAVE
+001700    03 BQVFCC1-KEY.
+001800*      CODICE COMPENSAZIONE
+001801       05 BQVFCC1-COD-COMP       PIC X(003).
+002000*      DATA INIZIO VALIDITA'
+002100       05 BQVFCC1-INIZIO-VAL     PIC X(008).
+002200*      DATA FINE VALIDITA'
+002300    03 BQVFCC1-FINE-VAL          PIC X(008).
+002400*      TIPO SEZIONE
+002500    03 BQVFCC1-SEZIONE           PIC X(001).
+002600*      IMPORTO 1
+002601    03 BQVFCC1-IMPORTO-1         PIC 9(015).
+002800*      IMPORTO 2
+002801    03 BQVFCC1-IMPORTO-2         PIC 9(015).
+

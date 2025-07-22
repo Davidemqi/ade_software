@@ -1,0 +1,34 @@
+000010********************************************************
+000020* COPY CATALOGATA FBQVFMA1.COBOL2                      *
+000030*                                                      *
+000040* C.RAGNO    - NETSIEL - 09/02/98                      *
+000050*                                                      *
+000060*              TRACCIATO RECORD ARCHIVIO               *
+000070*                 MATRICOLE INPS                       *
+000080* LUNGHEZZA RECORD: 23 BYTES                           *
+000090*                                                      *
+000100*                                                      *
+000110* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+000120* BARG.BQVB16                                          *
+000130********************************************************
+000140 01 BQVFMA1.
+000150*      CHIAVE
+000160    03 BQVFMA1-KEY.
+000170*      CODICE MATRICOLA
+000180       05 BQVFMA1-COD         PIC X(004).
+000190*      DATA INIZIO VALIDITA'
+000200       05 BQVFMA1-INIZ-VAL    PIC X(008).
+000210*      DATA FINE VALIDITA'
+000220    03 BQVFMA1-FINE-VAL       PIC X(008).
+000230*      FORMATO MATRICOLA
+000240    03 BQVFMA1-FORM           PIC X(001).
+000250*      TIPO INIZIO RIFERIMENTO
+000260    03 BQVFMA1-TIPO-INI       PIC X(001).
+000270*      TIPO FINE   RIFERIMENTO
+000280    03 BQVFMA1-TIPO-FINE      PIC X(001).
+000281*      DESCRIZIONE
+000282    03 BQVFMA1-DESCR          PIC X(060).
+000283*      DESCRIZIONE
+000284    03 BQVFMA1-FLAG-COMPEN    PIC X(1).
+000290
+

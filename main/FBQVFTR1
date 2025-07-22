@@ -1,0 +1,52 @@
+000010********************************************************          00000100
+000020* COPY CATALOGATA FBQVFTR1.COBOL2                      *          00000200
+000030*                                                      *          00000300
+000040* G.BARLETTA - NETSIEL - 06/02/98                      *          00000400
+000050*                                                      *          00000500
+000060*              TRACCIATO RECORD ARCHIVIO               *          00000600
+000070*                        TRIBUTO                       *          00000700
+000080* LUNGHEZZA RECORD: 69 BYTES                           *          00000800
+000090*                                                      *          00000900
+000100*                                                      *          00001000
+000110* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *          00001100
+000120* BARG.BQVB10                                          *          00001200
+000130********************************************************          00001300
+000140 01 BQVFTR1.                                                      00001400
+000150*      CHIAVE                                                     00001500
+000160    03 BQVFTR1-KEY.                                               00001600
+000170*      TIPO TRIBUTO                                               00001700
+000180*      F=FISCO / R=REGIONE / C=CAPITOLO                           00001800
+000190       05 BQVFTR1-TIPO-TRIB   PIC X(001).                         00001900
+000200*      CODICE TRIBUTO                                             00002000
+000210       05 BQVFTR1-COD         PIC X(004).                         00002100
+000220*      DATA INIZIO VALIDITA'                                      00002200
+000230       05 BQVFTR1-INIZ-VAL    PIC X(008).                         00002300
+000240*      DATA FINE VALIDITA'                                        00002400
+000250    03 BQVFTR1-FINE-VAL       PIC X(008).                         00002500
+000260*      DESCRIZIONE                                                00002600
+000270    03 BQVFTR1-DESCR          PIC X(080).                         00002700
+000280*      TIPO PERIODO                                               00002800
+000290    03 BQVFTR1-TIPO-PERIODO   PIC X(008).                         00002900
+000300*      FLAG COMPENSAZIONE                                         00003000
+000310    03 BQVFTR1-FLAG-COMPENS   PIC X(001).                         00003100
+000320*      FLAG TRIBUTO AGEVOLATO                                     00003200
+000330    03 BQVFTR1-FLAG-AGEV    PIC X(1).                             00003300
+000340*      FLAG TRIBUTO SOLO CONCESSIONARIO                           00003400
+000350    03 BQVFTR1-FLAG-CONC    PIC X(1).                             00003500
+000360*      FORMALISMO ELEMENTI IDENTIFICATIVI                         00003600
+000370    03 BQVFTR1-ELEM-IDENT   PIC X(1).                             00003700
+000380*      INDICAZIONE CODICE ATTO                                    00003800
+000390    03 BQVFTR1-COD-ATTO     PIC X(2).                             00003900
+000400*      INDICAZIONE CODICE UFFICIO                                 00004000
+000410    03 BQVFTR1-COD-UFF      PIC X(2).                             00004100
+000420*      ANNO RIFERIMENTO MASSIMO                                   00004200
+000430    03 BQVFTR1-ANNO-RIF     PIC 9(2).                             00004300
+000431*      IDENTIFICATIVO OPERAZIONE                                  00004400
+000432    03 BQVFTR1-IDENT-OPER   PIC X(2).                             00004500
+000433*      ENTE COMUNE 1                                              00004600
+000434    03 BQVFTR1-TAB-ENTE-COMUNE-1 PIC X(2).                        00004700
+000435*      ENTE COMUNE 2                                              00004800
+000436    03 BQVFTR1-TAB-ENTE-COMUNE-2 PIC X(2).                        00004900
+000437*      ENTE COMUNE 3                                              00005000
+000438    03 BQVFTR1-TAB-ENTE-COMUNE-3 PIC X(2).                        00005100
+

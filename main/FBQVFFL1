@@ -1,0 +1,28 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFFL1                             *
+000300*                                                      *
+000400*                                                      *
+000500*              TRACCIATO RECORD ARCHIVIO               *
+000600*                   DECODIFICA FLAG                    *
+000700*                                                      *
+000800* LUNGHEZZA RECORD: 84 BYTES                           *
+000900*                                                      *
+001000*                                                      *
+001100* L'ARCHIVIO DEVE RIPORTARE LA DECODIFICA DELLE        *
+001200* SEGNALAZIONI DI ERRORE, UTILI PER LE STAMPE          *
+001300*                                                      *
+001400* L'ARCHIVIO DEVE ESSERE ORDINATO PER CODICE.          *
+001500*                                                      *
+001600* TALE DECODIFICA VIENE RIPORTATA IN STAMPA SU DUE     *
+001700* RIGHE DI 40 BYTES, PER CUI E' OPPORTUNO VALORIZZARE  *
+001800* A SPACE IL 41-SIMO BYTES DELLA DESCRIZIONE           *
+001900* (CHE NON VERRA' STAMPATO)                            *
+002000********************************************************
+002100 01 BQVFFL1.
+002200*      CODICE SEGNALAZIONE DI ERRORE
+002300    03 BQVFFL1-COD              PIC X(003).
+002400*      DECODIFICA SEGNALAZIONE DI ERRORE
+002500    03 BQVFFL1-DESCR.
+002600       05 BQVFFL1-DESCR-1       PIC X(040).
+002700       05 FILLER                PIC X(001).
+002800       05 BQVFFL1-DESCR-2       PIC X(040).

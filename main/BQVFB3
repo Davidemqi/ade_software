@@ -1,0 +1,418 @@
+000100 IDENTIFICATION  DIVISION.
+000200     SKIP3
+000300 PROGRAM-ID. BQVFB3.
+000400 AUTHOR. BQO36
+000500 DATE-WRITTEN. 16/02/98.
+000600     SKIP2
+000700**************************************************************
+000800*$1 TITOLO: ROUTINE PER IL CALCOLO DEL CHECK DIGIT                      80
+000900**************************************************************
+001000     SKIP3
+001100*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE
+001200******************************************************************
+001300******************************************************************
+001400*              **  ENVIRONMENT  DIVISION  **                     *
+001500******************************************************************
+001600     SKIP3
+001700 ENVIRONMENT DIVISION.
+001800     SKIP2
+001900 CONFIGURATION SECTION.
+002000     SKIP2
+002100 SPECIAL-NAMES.
+002200     SKIP2
+002300     DECIMAL-POINT IS COMMA.
+002400     SKIP1
+002500 INPUT-OUTPUT SECTION.
+002600     SKIP1
+002700 FILE-CONTROL.
+002800******************************************************************
+002900*                **  DATA  DIVISION  **                          *
+003000******************************************************************
+003100     SKIP3
+003200 DATA DIVISION.
+003300     SKIP2
+003400 FILE SECTION.
+003500     SKIP1
+003600******************************************************************
+003700*                  WORKING-STORAGE SECTION
+003800******************************************************************
+003900     SKIP2
+004000 WORKING-STORAGE SECTION.
+004100 01   CTR-TOTALI                      PIC 9(5) VALUE ZERO.              36
+004200 01   RISULTATO                       PIC 9(5) VALUE ZERO.              36
+004300 01   CTR-DISP                        PIC 9(5) VALUE ZERO.              36
+004400 01   CTR-PARI                        PIC 9(5) VALUE ZERO.              36
+004500 01   RESTO                           PIC 99   VALUE ZERO.              36
+004600 01   CHECK                           PIC X    VALUE SPACE.             36
+004700 01   INDICE                          PIC 9  VALUE ZERO.                36
+004800 01   SOMMA                           PIC 99  VALUE ZERO.               36
+004900 01   DOPPIO                          PIC 99  VALUE ZERO.               36
+005000 01   COMPOSTO.                                                         36
+005100    03   DECINE                       PIC 9     VALUE ZERO.             36
+005200    03   UNITA                        PIC 9     VALUE ZERO.             36
+005300 01   COMPOSTO1.                                                        36
+005400    03   FILLER                       PIC 9(4)  VALUE ZERO.             36
+005500    03   UNITA-BIS                    PIC 9     VALUE ZERO.             36
+005600 01   SEDICI.                                                           36
+005700    03   QUINDICI                     PIC X(15) VALUE SPACES.           36
+005800    03   UNO                          PIC X     VALUE SPACES.           36
+005900 01   UNDICI.                                                           36
+006000    03   FILLER                       PIC X(10) VALUE SPACES.           36
+006100    03   UNO-BIS                      PIC 9     VALUE ZERO.             36
+006200 01   CAMPO-CF15.                                                       36
+006300    03   CAMPO-C1                     PIC X  VALUE  SPACES.             36
+006400    03   CAMPO-C2                     PIC X  VALUE  SPACES.             36
+006500    03   CAMPO-C3                     PIC X  VALUE  SPACES.             36
+006600    03   CAMPO-C4                     PIC X  VALUE  SPACES.             36
+006700    03   CAMPO-C5                     PIC X  VALUE  SPACES.             36
+006800    03   CAMPO-C6                     PIC X  VALUE  SPACES.             36
+006900    03   CAMPO-C7                     PIC X  VALUE  SPACES.             36
+007000    03   CAMPO-C8                     PIC X  VALUE  SPACES.             36
+007100    03   CAMPO-C9                     PIC X  VALUE  SPACES.             36
+007200    03   CAMPO-C10                    PIC X  VALUE  SPACES.             36
+007300    03   CAMPO-C11                    PIC X  VALUE  SPACES.             36
+007400    03   CAMPO-C12                    PIC X  VALUE  SPACES.             36
+007500    03   CAMPO-C13                    PIC X  VALUE  SPACES.             36
+007600    03   CAMPO-C14                    PIC X  VALUE  SPACES.             36
+007700    03   CAMPO-C15                    PIC X  VALUE  SPACES.             36
+007800     SKIP2
+007900 01   TABELLA-DISPARI.                                                  36
+008000    03   ELEM-DI  OCCURS  8           PIC X.                            36
+008100*
+008200 01   TABELLA-PARI.                                                     36
+008300    03   ELEM-PA  OCCURS  8           PIC X.                            36
+008400*
+008500 01   TABELLA-DISP.                                                     36
+008600    03   TAB-DI  OCCURS  5           PIC 9.                             36
+008700*
+008800 01   TABELLA-PA.                                                       36
+008900    03   TAB-PA  OCCURS  5           PIC 9.                             36
+009000*
+009100 01   COMODO-CF.                                                        36
+009200    03   COMODO-PRIMA                 PIC X(11) VALUE SPACES.           36
+009300    03   COMODO-SECONDA               PIC X(5)  VALUE SPACES.           36
+009400*************************************************************
+009500 LINKAGE SECTION.                                                       35
+009600*************************************************************
+009700 01   PARAM.                                                            36
+009800    03   CAMPO-CF                        PIC X(16).                     36
+009900    03   COD-RIT                         PIC 9.                         36
+010000     SKIP1
+010100*************************************************************
+010200 PROCEDURE DIVISION USING PARAM.
+010300*************************************************************
+010400     SKIP1
+010500 ML-010.                                                                38
+010600*    READY TRACE.                                                       39
+010700     MOVE   ZERO         TO   COD-RIT.                                  41
+010800     MOVE   CAMPO-CF     TO   COMODO-CF.                                41
+010900     MOVE   CAMPO-CF     TO   SEDICI.                                   41
+011000     MOVE   CAMPO-CF     TO   UNDICI.                                   41
+011100     SKIP2
+011200     IF COMODO-SECONDA   EQUAL  SPACES
+011300        GO  TO   ML-050.
+011400     SKIP1
+011500 ML-020.
+011600     SKIP1
+011700*    IN QUESTO RAMO SI TRATTANO I CODICI FISCALI DA 16.
+011800     MOVE  CAMPO-CF     TO    CAMPO-CF15.
+011900*
+012000     MOVE  CAMPO-C1     TO    ELEM-DI (1).
+012100     MOVE  CAMPO-C3     TO    ELEM-DI (2).
+012200     MOVE  CAMPO-C5     TO    ELEM-DI (3).
+012300     MOVE  CAMPO-C7     TO    ELEM-DI (4).
+012400     MOVE  CAMPO-C9     TO    ELEM-DI (5).
+012500     MOVE  CAMPO-C11    TO    ELEM-DI (6).
+012600     MOVE  CAMPO-C13    TO    ELEM-DI (7).
+012700     MOVE  CAMPO-C15    TO    ELEM-DI (8).
+012800*
+012900     MOVE  CAMPO-C2     TO    ELEM-PA (1).
+013000     MOVE  CAMPO-C4     TO    ELEM-PA (2).
+013100     MOVE  CAMPO-C6     TO    ELEM-PA (3).
+013200     MOVE  CAMPO-C8     TO    ELEM-PA (4).
+013300     MOVE  CAMPO-C10    TO    ELEM-PA (5).
+013400     MOVE  CAMPO-C12    TO    ELEM-PA (6).
+013500     MOVE  CAMPO-C14    TO    ELEM-PA (7).
+013600     MOVE  SPACES       TO    ELEM-PA (8).
+013700     MOVE  ZERO         TO    INDICE.
+013800     MOVE  ZERO         TO    CTR-DISP.
+013900     MOVE  ZERO         TO    CTR-PARI.
+014000     SKIP1
+014100 ML-030.
+014200     SKIP1
+014300     ADD        1       TO    INDICE.
+014400*
+014500     IF  ELEM-DI (INDICE)   EQUAL  'A'  OR  ZERO
+014600     ADD   1      TO  CTR-DISP.
+014700     IF  ELEM-PA (INDICE)   EQUAL  'A'  OR  ZERO
+014800     ADD   ZERO   TO  CTR-PARI.
+014900*
+015000     IF  ELEM-DI (INDICE)   EQUAL  'B'  OR  1
+015100     ADD   0      TO  CTR-DISP.
+015200     IF  ELEM-PA (INDICE)   EQUAL  'B'  OR  1
+015300     ADD   1      TO  CTR-PARI.
+015400*
+015500     IF  ELEM-DI (INDICE)   EQUAL  'C'  OR  2
+015600     ADD   5      TO  CTR-DISP.
+015700     IF  ELEM-PA (INDICE)   EQUAL  'C'  OR  2
+015800     ADD   2      TO  CTR-PARI.
+015900*
+016000     IF  ELEM-DI (INDICE)   EQUAL  'D'  OR  3
+016100     ADD   7      TO  CTR-DISP.
+016200     IF  ELEM-PA (INDICE)   EQUAL  'D'  OR  3
+016300     ADD   3      TO  CTR-PARI.
+016400*
+016500     IF  ELEM-DI (INDICE)   EQUAL  'E'  OR  4
+016600     ADD   9      TO  CTR-DISP.
+016700     IF  ELEM-PA (INDICE)   EQUAL  'E'  OR  4
+016800     ADD   4      TO  CTR-PARI.
+016900*
+017000     IF  ELEM-DI (INDICE)   EQUAL  'F'  OR  5
+017100     ADD   13     TO  CTR-DISP.
+017200     IF  ELEM-PA (INDICE)   EQUAL  'F'  OR  5
+017300     ADD   5      TO  CTR-PARI.
+017400*
+017500     IF  ELEM-DI (INDICE)   EQUAL  'G'  OR  6
+017600     ADD   15     TO  CTR-DISP.
+017700     IF  ELEM-PA (INDICE)   EQUAL  'G'  OR  6
+017800     ADD   6      TO  CTR-PARI.
+017900*
+018000     IF  ELEM-DI (INDICE)   EQUAL  'H'  OR  7
+018100     ADD   17     TO  CTR-DISP.
+018200     IF  ELEM-PA (INDICE)   EQUAL  'H'  OR  7
+018300     ADD   7      TO  CTR-PARI.
+018400*
+018500     IF  ELEM-DI (INDICE)   EQUAL  'I'  OR  8
+018600     ADD   19     TO  CTR-DISP.
+018700     IF  ELEM-PA (INDICE)   EQUAL  'I'  OR  8
+018800     ADD   8      TO  CTR-PARI.
+018900*
+019000     IF  ELEM-DI (INDICE)   EQUAL  'J'  OR  9
+019100     ADD   21     TO  CTR-DISP.
+019200     IF  ELEM-PA (INDICE)   EQUAL  'J'  OR  9
+019300     ADD   9      TO  CTR-PARI.
+019400*
+019500     IF  ELEM-DI (INDICE)   EQUAL  'K'
+019600     ADD   2      TO  CTR-DISP.
+019700     IF  ELEM-PA (INDICE)   EQUAL  'K'
+019800     ADD   10     TO  CTR-PARI.
+019900*
+020000     IF  ELEM-DI (INDICE)   EQUAL  'L'
+020100     ADD   4      TO  CTR-DISP.
+020200     IF  ELEM-PA (INDICE)   EQUAL  'L'
+020300     ADD   11     TO  CTR-PARI.
+020400*
+020500     IF  ELEM-DI (INDICE)   EQUAL  'M'
+020600     ADD   18     TO  CTR-DISP.
+020700     IF  ELEM-PA (INDICE)   EQUAL  'M'
+020800     ADD   12     TO  CTR-PARI.
+020900*
+021000     IF  ELEM-DI (INDICE)   EQUAL  'N'
+021100     ADD   20     TO  CTR-DISP.
+021200     IF  ELEM-PA (INDICE)   EQUAL  'N'
+021300     ADD   13     TO  CTR-PARI.
+021400*
+021500     IF  ELEM-DI (INDICE)   EQUAL  'O'
+021600     ADD   11     TO  CTR-DISP.
+021700     IF  ELEM-PA (INDICE)   EQUAL  'O'
+021800     ADD   14     TO  CTR-PARI.
+021900*
+022000     IF  ELEM-DI (INDICE)   EQUAL  'P'
+022100     ADD   3      TO  CTR-DISP.
+022200     IF  ELEM-PA (INDICE)   EQUAL  'P'
+022300     ADD   15     TO  CTR-PARI.
+022400*
+022500     IF  ELEM-DI (INDICE)   EQUAL  'Q'
+022600     ADD   6      TO  CTR-DISP.
+022700     IF  ELEM-PA (INDICE)   EQUAL  'Q'
+022800     ADD   16     TO  CTR-PARI.
+022900*
+023000     IF  ELEM-DI (INDICE)   EQUAL  'R'
+023100     ADD   8      TO  CTR-DISP.
+023200     IF  ELEM-PA (INDICE)   EQUAL  'R'
+023300     ADD   17     TO  CTR-PARI.
+023400*
+023500     IF  ELEM-DI (INDICE)   EQUAL  'S'
+023600     ADD   12     TO  CTR-DISP.
+023700     IF  ELEM-PA (INDICE)   EQUAL  'S'
+023800     ADD   18     TO  CTR-PARI.
+023900*
+024000     IF  ELEM-DI (INDICE)   EQUAL  'T'
+024100     ADD   14     TO  CTR-DISP.
+024200     IF  ELEM-PA (INDICE)   EQUAL  'T'
+024300     ADD   19     TO  CTR-PARI.
+024400*
+024500     IF  ELEM-DI (INDICE)   EQUAL  'U'
+024600     ADD   16     TO  CTR-DISP.
+024700     IF  ELEM-PA (INDICE)   EQUAL  'U'
+024800     ADD   20     TO  CTR-PARI.
+024900*
+025000     IF  ELEM-DI (INDICE)   EQUAL  'V'
+025100     ADD   10     TO  CTR-DISP.
+025200     IF  ELEM-PA (INDICE)   EQUAL  'V'
+025300     ADD   21     TO  CTR-PARI.
+025400*
+025500     IF  ELEM-DI (INDICE)   EQUAL  'W'
+025600     ADD   22     TO  CTR-DISP.
+025700     IF  ELEM-PA (INDICE)   EQUAL  'W'
+025800     ADD   22     TO  CTR-PARI.
+025900*
+026000     IF  ELEM-DI (INDICE)   EQUAL  'X'
+026100     ADD   25     TO  CTR-DISP.
+026200     IF  ELEM-PA (INDICE)   EQUAL  'X'
+026300     ADD   23     TO  CTR-PARI.
+026400*
+026500     IF  ELEM-DI (INDICE)   EQUAL  'Y'
+026600     ADD   24     TO  CTR-DISP.
+026700     IF  ELEM-PA (INDICE)   EQUAL  'Y'
+026800     ADD   24     TO  CTR-PARI.
+026900*
+027000     IF  ELEM-DI (INDICE)   EQUAL  'Z'
+027100     ADD   23     TO  CTR-DISP.
+027200     IF  ELEM-PA (INDICE)   EQUAL  'Z'
+027300     ADD   25     TO  CTR-PARI.
+027400     SKIP2
+027500     IF   INDICE   NOT  EQUAL  8
+027600     GO    TO   ML-030.
+027700     SKIP2
+027800 ML-040.
+027900     SKIP1
+028000     COMPUTE  CTR-TOTALI  =  CTR-DISP  +   CTR-PARI.
+028100     DIVIDE   26     INTO   CTR-TOTALI  GIVING RISULTATO
+028200          REMAINDER RESTO.
+028300*
+028400     IF   RESTO  EQUAL   ZERO
+028500     MOVE    'A'    TO   CHECK.
+028600*
+028700     IF   RESTO  EQUAL   1
+028800     MOVE    'B'    TO   CHECK.
+028900*
+029000     IF   RESTO  EQUAL   2
+029100     MOVE    'C'    TO   CHECK.
+029200*
+029300     IF   RESTO  EQUAL   3
+029400     MOVE    'D'    TO   CHECK.
+029500*
+029600     IF   RESTO  EQUAL   4
+029700     MOVE    'E'    TO   CHECK.
+029800*
+029900     IF   RESTO  EQUAL   5
+030000     MOVE    'F'    TO   CHECK.
+030100*
+030200     IF   RESTO  EQUAL   6
+030300     MOVE    'G'    TO   CHECK.
+030400*
+030500     IF   RESTO  EQUAL   7
+030600     MOVE    'H'    TO   CHECK.
+030700*
+030800     IF   RESTO  EQUAL   8
+030900     MOVE    'I'    TO   CHECK.
+031000*
+031100     IF   RESTO  EQUAL   9
+031200     MOVE    'J'    TO   CHECK.
+031300*
+031400     IF   RESTO  EQUAL   10
+031500     MOVE    'K'    TO   CHECK.
+031600*
+031700     IF   RESTO  EQUAL   11
+031800     MOVE    'L'    TO   CHECK.
+031900*
+032000     IF   RESTO  EQUAL   12
+032100     MOVE    'M'    TO   CHECK.
+032200*
+032300     IF   RESTO  EQUAL   13
+032400     MOVE    'N'    TO   CHECK.
+032500*
+032600     IF   RESTO  EQUAL   14
+032700     MOVE    'O'    TO   CHECK.
+032800*
+032900     IF   RESTO  EQUAL   15
+033000     MOVE    'P'    TO   CHECK.
+033100*
+033200     IF   RESTO  EQUAL   16
+033300     MOVE    'Q'    TO   CHECK.
+033400*
+033500     IF   RESTO  EQUAL   17
+033600     MOVE    'R'    TO   CHECK.
+033700*
+033800     IF   RESTO  EQUAL   18
+033900     MOVE    'S'    TO   CHECK.
+034000*
+034100     IF   RESTO  EQUAL   19
+034200     MOVE    'T'    TO   CHECK.
+034300*
+034400     IF   RESTO  EQUAL   20
+034500     MOVE    'U'    TO   CHECK.
+034600*
+034700     IF   RESTO  EQUAL   21
+034800     MOVE    'V'    TO   CHECK.
+034900*
+035000     IF   RESTO  EQUAL   22
+035100     MOVE    'W'    TO   CHECK.
+035200*
+035300     IF   RESTO  EQUAL   23
+035400     MOVE    'X'    TO   CHECK.
+035500*
+035600     IF   RESTO  EQUAL   24
+035700     MOVE    'Y'    TO   CHECK.
+035800*
+035900     IF   RESTO  EQUAL   25
+036000     MOVE    'Z'    TO   CHECK.
+036100*
+036200     IF     CHECK   NOT  EQUAL   UNO
+036300     MOVE   CHECK   TO   UNO
+036400     MOVE   SEDICI  TO   CAMPO-CF
+036500     MOVE   1       TO   COD-RIT.
+036600     GO   TO   ML-080.
+036700     SKIP1
+036800 ML-050.
+036900     SKIP1
+037000*    IN QUESTO RAMO SI TRATTANO I CODICI FISCALI DA 11.
+037100     MOVE  CAMPO-CF     TO    CAMPO-CF15.
+037200*
+037300     MOVE  CAMPO-C1     TO    TAB-DI (1).
+037400     MOVE  CAMPO-C3     TO    TAB-DI (2).
+037500     MOVE  CAMPO-C5     TO    TAB-DI (3).
+037600     MOVE  CAMPO-C7     TO    TAB-DI (4).
+037700     MOVE  CAMPO-C9     TO    TAB-DI (5).
+037800*
+037900*
+038000     MOVE  CAMPO-C2     TO    TAB-PA (1).
+038100     MOVE  CAMPO-C4     TO    TAB-PA (2).
+038200     MOVE  CAMPO-C6     TO    TAB-PA (3).
+038300     MOVE  CAMPO-C8     TO    TAB-PA (4).
+038400     MOVE  CAMPO-C10    TO    TAB-PA (5).
+038500     MOVE  ZERO         TO    CTR-DISP.
+038600*
+038700     COMPUTE   CTR-DISP =  TAB-DI(1)  + TAB-DI(2) +  TAB-DI(3) +
+038800      TAB-DI(4)  + TAB-DI(5).
+038900     MOVE  ZERO         TO    INDICE.
+039000     MOVE  ZERO         TO    DOPPIO.
+039100     MOVE  ZERO         TO    SOMMA.
+039200     MOVE  ZERO         TO    CTR-PARI.
+039300     MOVE  ZERO         TO    COMPOSTO.
+039400 ML-060.                                                                15
+039500*
+039600     ADD     1        TO   INDICE.                                      44
+039700     COMPUTE DOPPIO  = TAB-PA(INDICE) *  2.                             45
+039800     MOVE    DOPPIO  TO  COMPOSTO.                                      45
+039900     COMPUTE SOMMA   = DECINE  +  UNITA.                                45
+040000     ADD  SOMMA  TO   CTR-PARI.                                         45
+040100     IF  INDICE  NOT EQUAL  5
+040200     GO  TO  ML-060.
+040300 ML-070.                                                                15
+040400*
+040500     COMPUTE CTR-TOTALI =  CTR-DISP  +  CTR-PARI.                       45
+040600     MOVE    CTR-TOTALI TO   COMPOSTO1.                                 45
+040700     COMPUTE  SOMMA     = 10     -  UNITA-BIS.                          45
+040800     MOVE     SOMMA     TO   COMPOSTO.                                  45
+040900     MOVE     UNITA     TO   CHECK.                                     45
+041000*
+041100     IF   CHECK   NOT  EQUAL   UNO-BIS                                  45
+041200     MOVE   CHECK   TO   UNO-BIS
+041300     MOVE   UNDICI  TO   CAMPO-CF
+041400     MOVE   1       TO   COD-RIT.
+041500     SKIP1                                                              51
+041600 ML-080.                                                                15
+041700*
+041800     GOBACK.                                                            39

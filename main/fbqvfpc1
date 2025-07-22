@@ -1,0 +1,26 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFPC1.COBOL3                      *
+000300*                                                      *
+000400*              TRACCIATO RECORD ARCHIVIO               *
+000500*            PROVINCE PER DIRITTI CAMERALI             *
+000600* LUNGHEZZA RECORD: 38 BYTES                           *
+000700*                                                      *
+000800*                                                      *
+000900* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001000* BARG.BQVX43                                          *
+001100********************************************************
+001200 01 BQVFPC1.
+001300*      CHIAVE
+001400    03 BQVFPC1-KEY.
+001500*      CODICE PROVINCIA
+001600       05 BQVFPC1-COD         PIC X(002).
+001700*      DATA INIZIO VALIDITA'
+001800       05 BQVFPC1-INIZ-VAL    PIC X(008).
+001900*      DATA FINE VALIDITA'
+002000    03 BQVFPC1-FINE-VAL       PIC X(008).
+002100*      DIZIONE PROVINCIA
+002200    03 BQVFPC1-DESCR          PIC X(020).
+002300
+002400
+002500
+

@@ -1,0 +1,31 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFIC1                             *
+000300*                                                      *
+000400* F.DE INNOCENTIIS 13/03/2006                          *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*              INTERESSI COMMISSIONI                   *
+000800*                                                      *
+000900* LUNGHEZZA RECORD: 35 BYTES                           *
+001000*                                                      *
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001200* BARG.BQVX35                                          *
+001300********************************************************
+001400 01  BQVFIC1.
+001500*                       CHIAVE
+001600     03 BQVFIC1-KEY.
+001700*                       TIPO
+001800         07 BQVFIC1-TIPO         PIC X(3).
+001900*                       ENTE
+002000         07 BQVFIC1-ENTE         PIC X(1).
+002100*                       MOD_CONF
+002200         07 BQVFIC1-MOD-CONF     PIC X(1).
+002300*                       INIZIO_VAL
+002400         07 BQVFIC1-INIZIO-VAL   PIC X(8).
+002500*                       FINE_VAL
+002600     03 BQVFIC1-FINE-VAL     PIC X(8).
+002700*                       COMM
+002800     03 BQVFIC1-COMM         PIC 9(6)V9(2).
+002900*                       INTER
+003000     03 BQVFIC1-INTER        PIC 9(2)V9(4).
+

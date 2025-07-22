@@ -1,0 +1,63 @@
+000100******************************************************************00000100
+000200*                                                                *00000200
+000300*    TRACCIATO DELL'ARCHIVIO BQVFBS CONTENENTE LE SQUADRATURE    *00000300
+000400*    RILEVATE DAI CONTROLLI SUI FLUSSI BANCHE                    *00000400
+000500*    ---------------LUNGHEZZA---7290--BYTES-----------------     *00000500
+000600******************************************************************00000600
+000700     SKIP2                                                        00000700
+000800* 1. L'ARCHIVIO NEL SISTEMA                                       00000800
+000900*  L' ARCHIVIO CONTIENE I DATI IDENTIFICATIVI DI CIASCUN FLUSSO   00000900
+001000*  (TRASMISSIONE LOGICA) CONTENUTO IN UN ARCHIVIO CONTROLLATO.    00001000
+001100*  DI CIASCUN FLUSSO SONO RIPORTATI I DATI SUADRATI E NON PER     00001100
+001200*  OGNI PROVINCIA PER LA QUALE C'E' STATA ALMENO UNA SQUADRATURA. 00001200
+001300*                                                                 00001300
+001400     SKIP2                                                        00001400
+001500* 2. MODALITA' DI GESTIONE DELL'ARCHIVIO                          00001500
+001600   SKIP1                                                          00001600
+001700*  2.1 CREAZIONE                                                  00001700
+001800*        EFFETTUATA DAL PROGRAMMA *BQSFB0* CONTROLLO FLUSSI BANCHE00001800
+001900*                                                                 00001900
+002000*                                                                 00002000
+002100 01  BQVFBS1.                                                     00002100
+002200     03  BQVFBS1-KEY.                                             00002200
+002300         05  BQVFBS1-COD-ABI               PIC X(005).            00002300
+002400*       CODICE ABI DELLA BANCA                                    00002400
+002500         05  BQVFBS1-DATA-BONIF            PIC X(008).            00002500
+002600*     DATA BONIFICO ESPRESSA IN ANNO MESE E GIORNO                00002600
+002700         05  BQVFBS1-PROG-TRASM            PIC X(002).            00002700
+002800*     PROGRESSIVO TRASMISSIONE                                    00002800
+002900         05  BQVFBS1-TIPO-INVIO            PIC X(001).            00002900
+003000*     TIPO INVIO (O=ORDINARIO,C=CORRETTIVO,A=ANNULLAMENTO)        00003000
+003100         05  BQVFBS1-PROG-INVIO            PIC X(002).            00003100
+003200*     PROGRESSIVO INVIO                                           00003200
+003300     03  BQVFBS1-NUM-SQUADR                PIC 9(003).            00003300
+003400*        NUMERO DI ELEMENTI PRESENTI NELLA TABELLA                00003400
+003500     03  BQVFBS1-NUM-PROV                  PIC 9(003).            00003500
+003600*        NUMERO DI PROVINCE PRESENTI NELLA FLUSSO LOGICO          00003600
+003700     03  BQVFBS1-NUM-PROV-SQUADR           PIC 9(003).            00003700
+003800*        NUMERO DI PROVINCE CON SQUADRATURA PRESENTI NELLA TAB.   00003800
+003900*                                                                 00003900
+004000     03  BQVFBS1-TAB OCCURS 110 INDEXED BY SQ-IND.                00004000
+004100*        TABELLA                                                  00004100
+004200         05  BQVFBS1-PROV                  PIC X(002).            00004200
+004300*        SIGLA PROVINCIA                                          00004300
+004400         05  BQVFBS1-SALDO-TOT-DICH        PIC 9(015) COMP-3.     00004400
+004500*        SALDO TOTALE DICHIARATO                                  00004500
+004600         05  BQVFBS1-SALDO-TOT-CALC        PIC 9(015) COMP-3.     00004600
+004700*        SALDO TOTALE CALCOLATO                                   00004700
+004800         05  BQVFBS1-SALDO-ER-DICH         PIC S9(015) COMP-3.    00004800
+004900*        SALDO ERARIO DICHIARATO                                  00004900
+005000         05  BQVFBS1-SALDO-ER-CALC         PIC S9(015) COMP-3.    00005000
+005100*        SALDO ERARIO CALCOLATO                                   00005100
+005200         05  BQVFBS1-SALDO-NO-ER-DICH      PIC S9(015) COMP-3.    00005200
+005300*        SALDO ALTRE SEZIONI DICHIARATO                           00005300
+005400         05  BQVFBS1-SALDO-NO-ER-CALC      PIC S9(015) COMP-3.    00005400
+005500*        SALDO ALTRE SEZIONI CALCOLATO                            00005500
+005600         05  BQVFBS1-DELEGHE-ER-DICH       PIC  9(006) COMP-3.    00005600
+005700*        NUMERO DELEGHE ERARIO DICHIARATO                         00005700
+005800         05  BQVFBS1-DELEGHE-ER-CALC       PIC  9(006) COMP-3.    00005800
+005900*        NUMERO DELEGHE ERARIO CALCOLATO                          00005900
+006000         05  BQVFBS1-DELEGHE-NO-ER-DICH    PIC  9(006) COMP-3.    00006000
+006100*        NUMERO DELEGHE ALTRE SEZIONI DICHIARATO                  00006100
+006200         05  BQVFBS1-DELEGHE-NO-ER-CALC    PIC  9(006) COMP-3.    00006200
+006300*        NUMERO DELEGHE ALTRE SEZIONI CALCOLATO                   00006300

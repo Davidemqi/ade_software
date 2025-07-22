@@ -1,0 +1,214 @@
+000010******************************************************************00000100
+000020*                                                                *00000200
+000030*    TRACCIATO DELL'ARCHIVIO BQVFB3 CONTENENTE L'ESITO DEI       *00000300
+000040*    CONTROLLI EFFETTUATI SUI FLUSSI BANCHE PRESENTI IN          *00000400
+000050*    UNA TRASMISSIONE FISICA.                                    *00000500
+000051*    ---------------LUNGHEZZA---250--BYTES-----------------      *00000600
+000070******************************************************************00000700
+000080     SKIP2                                                        00000800
+000090* 1. L'ARCHIVIO NEL SISTEMA                                       00000900
+000100*  L' ARCHIVIO CONTIENE I DATI IDENTIFICATIVI DI CIASCUN FLUSSO   00001000
+000110*  (TRASMISSIONE LOGICA) CONTENUTO IN UN ARCHIVIO CONTROLLATO.    00001100
+000120*  DI CIASCUN FLUSSO E' RIPORTATO L'ESITO DEL CONTROLLO, OVVERO   00001200
+000130*  SE LA TRASMISSIONE E' STATA ACCETTATA ED IN TAL CASO, SE SONO  00001300
+000140*  STATI RISCONTRATI ERRORI.                                      00001400
+000150*                                                                 00001500
+000160     SKIP2                                                        00001600
+000170* 2. MODALITA' DI GESTIONE DELL'ARCHIVIO                          00001700
+000180   SKIP1                                                          00001800
+000190*  2.1 CREAZIONE                                                  00001900
+000200*        EFFETTUATA DAL PROGRAMMA *BQSFB0* CONTROLLO FLUSSI BANCHE00002000
+000210*                                                                 00002100
+000220*                                                                 00002200
+000230 01  BQVFB31.                                                     00002300
+000240*                                                                 00002400
+000250     03  BQVFB31-ID-FLUSSO.                                       00002500
+000260*        CHIAVE IDENTIFICATIVA DEL FLUSSO BANCHE ANALIZZATO       00002600
+000270*                                                                 00002700
+000280* 0-4                                                             00002800
+000290         05  BQVFB31-COD-ABI                   PIC X(005).        00002900
+000300*            BANCA ORDINANTE: CODICE ABI DELLA BANCA CHE RICEVE   00003000
+000310*            LE DELEGHE                                           00003100
+000320*                                                                 00003200
+000330* 5-12                                                            00003300
+000340         05  BQVFB31-DATA-BONIF                PIC X(008).        00003400
+000350*            DATA BONIFICO ESPRESSA IN ANNO MESE E GIORNO         00003500
+000360*                                                                 00003600
+000370* 13-14                                                           00003700
+000380         05  BQVFB31-PROG-TRASM                PIC X(002).        00003800
+000390*            PROGRESSIVO TRASMISSIONE:                            00003900
+000400*            VALE '01' PER LA PRIMA TRASMISSIONE DELLA BANCA      00004000
+000410                                                                  00004100
+000420*            NELLA DATA BONIFICO E SI INCREMENTA DI UNA UNITA'    00004200
+000430                                                                  00004300
+000440*            AD OGNI TRASMISSIONE SUCCESSIVA NELLA STESSA DATA    00004400
+000450                                                                  00004500
+000460*                                                                 00004600
+000470* 15-15                                                           00004700
+000480         05  BQVFB31-TIPO-INVIO                PIC X(001).        00004800
+000490*            TIPO INVIO. ASSUME I SEGUENTI VALORI:                00004900
+000500*            - 'O' PER INVIO ORDINARIO                            00005000
+000510*            - 'C' PER INVIO CORRETTIVO A SEGUITO DI SEGNALAZIONI 00005100
+000520*              DI ERRORE                                          00005200
+000530*            - 'A' PER INVIO ANNULLAMENTO                         00005300
+000540*                                                                 00005400
+000550* 16-17                                                           00005500
+000560         05  BQVFB31-PROG-INVIO                PIC X(002).        00005600
+000570*            PROGRESSIVO DI INVIO A CORREZIONE. ASSUME I SEGUENTI 00005700
+000580*            VALORI:                                              00005800
+000590*            - '01' PER IL PRIMO INVIO EFFETTUATO A FRONTE DI     00005900
+000591*              CORREZIONE DI FILE O DI ANNULLAMENTO E SIINCRE-    00006000
+000592*              MENTA DI UNA UNITA' PER TUTTI I SUCCESSIVIINVII;   00006100
+000620*            - '00' SE TIPO INVIO E' ORDINARIO                    00006200
+000621*                                                                 00006300
+000622* 18-21                                                           00006400
+000623     03  BQVFB31-PROG-FLUSSO-TRASM             PIC X(004).        00006500
+000624                                                                  00006600
+000625*        PROGRESSIVO DELLA TRASMISSIONE LOGICA ALL'INTERNO        00006700
+000626                                                                  00006800
+000627*        DELLA TRASMISSIONE FISICA                                00006900
+000628*                                                                 00007000
+000629* 22-29                                                           00007100
+000630     03  BQVFB31-DATA-ESITO                    PIC X(008).        00007200
+000631                                                                  00007300
+000632*        DATA IN CUI E' EFFETTUATO IL CONTROLLO IN AAAAMMGG       00007400
+000633                                                                  00007500
+000634*                                                                 00007600
+000635* 30-30                                                           00007700
+000636     03  BQVFB31-ESITO                         PIC X(001).        00007800
+000637                                                                  00007900
+000638*        ESITO DEL CONTROLLO; VALE:                               00008000
+000639*        - 0 PER ASSENZA DI ERRORI;                               00008100
+000640*        - 1 PER PRESENZA DI SOLI ERRORI NON BLOCCANTI;           00008200
+000641*        - 2 PER PRESENZA DI ERRORI BLOCCANTI;                    00008300
+000642*        - 3 PER PRESENZA DI ERRORI BLOCCANTI IN CHIAVE:          00008400
+000643*            SE E' IMPOSTATO IL FLAG-TIPO-ERR LA TRASMISSIONE     00008500
+000644*            LOGICA E' STATA INTERAMENTE RIFIUTATA;               00008600
+000645*        - 4 PER PRESENZA DI ERRORI BLOCCANTI TRA CUI SQUADRATURE.00008700
+000646*                                                                 00008800
+000647* 31-32                                                           00008900
+000648     03  BQVFB31-FLAG-TIPO-ERR                 PIC X(002).        00009000
+000649                                                                  00009100
+000650*        SE MAGGIORE DI ZERO, INDICA IL RIFIUTO DELLA INTERA      00009200
+000651*        TRASMISSIONE LOGICA. CIASCUN VALORE CORRISPONDE AD UNA   00009300
+000652*        DELLE SEGUENTI CONDIZIONI CHE DETERMINA LO SCARTO:       00009400
+000653*        01- MANCA RECORD DI INIZIO TRASMISSIONE                  00009500
+000654*        02- BANCA ORDINANTE ERRATA                               00009600
+000655*        03- DATA DI BONIFICO ERRATA                              00009700
+000656*        04- PROGRESSIVO TRASMISSIONE ERRATO                      00009800
+000657*        05- TIPO INVIO ERRATO                                    00009900
+000658*        06- PROGRESSIVO INVIO ERRATO                             00010000
+000659*        07- RELEASE ERRATA                                       00010100
+000660*                                                                 00010200
+000661* 33-42                                                           00010300
+000662     03  BQVFB31-TOT-REC-ERRATI                PIC 9(010).        00010400
+000663                                                                  00010500
+000664*        NUMERO TOTALE DI RECORDS ERRATI                          00010600
+000665*                                                                 00010700
+000666* 43-52                                                           00010800
+000667     03  BQVFB31-TOT-REC-ERR-BLOC              PIC 9(010).        00010900
+000668                                                                  00011000
+000669*        NUMERO TOTALE DI RECORDS CON ERRORI BLOCCANTI            00011100
+000670*                                                                 00011200
+000671* 53-62                                                           00011300
+000672     03  BQVFB31-NUM-ERR-TOT                   PIC 9(010).        00011400
+000673                                                                  00011500
+000674*        NUMERO DI ERRORI SEGNALATI                               00011600
+000675*                                                                 00011700
+000676* 63-72                                                           00011800
+000677     03  BQVFB31-NUM-ERR-BLOC                  PIC 9(010).        00011900
+000678                                                                  00012000
+000679*        NUMERO DI ERRORI BLOCCANTI                               00012100
+000680*                                                                 00012200
+000681* 73-82                                                           00012300
+000682     03  BQVFB31-REC-FISCO                     PIC 9(010).        00012400
+000683                                                                  00012500
+000684*        NUMERO TOTALE DI RECORDS FISCO (V01)                     00012600
+000685*                                                                 00012700
+000686* 83-92                                                           00012800
+000687     03  BQVFB31-REC-INPS                      PIC 9(010).        00012900
+000688                                                                  00013000
+000689*        NUMERO TOTALE DI RECORDS INPS (V02)                      00013100
+000690*                                                                 00013200
+000691* 93-102                                                          00013300
+000692     03  BQVFB31-REC-REG                       PIC 9(010).        00013400
+000693                                                                  00013500
+000694*        NUMERO TOTALE DI RECORDS REGIONE (V03)                   00013600
+000695*                                                                 00013700
+000696* 103-112                                                         00013800
+000697     03  BQVFB31-REC-ENTI                      PIC 9(010).        00013900
+000698                                                                  00014000
+000699*        NUMERO TOTALE DI RECORDS ENTI    (V04)                   00014100
+000700*                                                                 00014200
+000701* 113-122                                                         00014300
+000702     03  BQVFB31-REC-INAIL                     PIC 9(010).        00014400
+000703                                                                  00014500
+000704*        NUMERO TOTALE DI RECORDS INAIL   (V05)                   00014600
+000705*                                                                 00014700
+000706* 123-132                                                         00014800
+000707     03  BQVFB31-REC-ALTRI                     PIC 9(010).        00014900
+000708                                                                  00015000
+000709*        NUMERO TOTALE DI RECORDS ALTRI ENTI (V06)                00015100
+000710*                                                                 00015200
+000711* 132-142                                                         00015300
+000712     03  BQVFB31-REC-ACCISE                    PIC 9(010).        00015400
+000713                                                                  00015500
+000714*        NUMERO TOTALE DI RECORDS ACCISE (V07)                    00015600
+000715*                                                                 00015700
+000716* 143-152                                                         00015800
+000717     03  BQVFB31-REC-IVA-AUTO                  PIC 9(010).        00015900
+000718                                                                  00016000
+000719*        NUMERO TOTALE DI RECORDS IVA IMMATR. AUTO (V12)          00016100
+001660                                                                  00016200
+001661*                                                                 00016300
+001662* 153-162                                                         00016400
+001663     03  BQVFB31-REC-ANAG-PF                   PIC 9(010).        00016500
+001670                                                                  00016600
+001671*        NUMERO TOTALE DI RECORDS ANAGRAFICI PER P.F. (V14)       00016700
+001672                                                                  00016800
+001673*                                                                 00016900
+001674* 163-172                                                         00017000
+001675     03  BQVFB31-REC-ANAG-PNF                  PIC 9(010).        00017100
+001676                                                                  00017200
+001677*        NUMERO TOTALE DI RECORDS ANAGRAFICI PER P.N.F. (V15)     00017300
+001678*                                                                 00017400
+001679*                                                                 00017500
+001680* 173-182                                                         00017600
+001681     03  BQVFB31-REC-ATM                       PIC 9(010).        00017700
+001682                                                                  00017800
+001683*        NUMERO TOTALE DI RECORDS ATM  (V20)                      00017900
+001684*                                                                 00018000
+001910*                                                                 00018100
+001911* 183-192                                                         00018200
+001912     03  BQVFB31-REC-RIEPIL                    PIC 9(010).        00018300
+001940                                                                  00018400
+001941*        NUMERO TOTALE DI RECORDS RIEPILOGATIVI                   00018500
+001942*        DELLA DELEGA (V36)                                       00018600
+001943*                                                                 00018700
+001944* 193-202                                                         00018800
+001945     03  BQVFB31-REC-ACCRED                    PIC 9(010).        00018900
+001946                                                                  00019000
+001947*        NUMERO TOTALE DI RECORDS ACCREDITAMENTO (V37)            00019100
+001948*                                                                 00019200
+001949* 203-212                                                         00019300
+001950     03  BQVFB31-REC-BONIF                     PIC 9(010).        00019400
+001951                                                                  00019500
+001952*        NUMERO TOTALE DI RECORDS BONIFICI (V38)                  00019600
+001953*                                                                 00019700
+001954* 213-222                                                         00019800
+001955     03  BQVFB31-REC-ASS                       PIC 9(010).        00019900
+001956                                                                  00020000
+001957*        NUMERO TOTALE DI RECORDS ASSEGNI NON ANDATI              00020100
+001958*        A BUON FINE (V49)                                        00020200
+001959*                                                                 00020300
+001960* 223-232                                                         00020400
+001961     03  BQVFB31-NUM-REC-TOT                   PIC 9(010).        00020500
+001962                                                                  00020600
+001963*        TOTALE NUMERO RECORD                                     00020700
+001964*                                                                 00020800
+001965* 233-250                                                         00020900
+001966     03  FILLER                                PIC X(018).        00021000
+001967                                                                  00021100
+001968*                                                                 00021200
+001969                                                                  00021300
+

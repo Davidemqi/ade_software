@@ -1,0 +1,1850 @@
+000010 IDENTIFICATION DIVISION.                                         00000100
+000020 PROGRAM-ID.     BQVFE8.                                          00000200
+000030 AUTHOR.  BQH10.                                                  00000300
+000040 DATE-WRITTEN.  17/03/2004.                                       00000400
+000050*************************************************************     00000500
+000060*$1 TITOLO -  CONTROLLO TIPO RECORD 07  -  ACCISE                 00000600
+000070*************************************************************     00000700
+000080*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00000800
+000090*   IL COMPONENTE RICEVE IN INPUT I DATI RELATIVI AL RECORD       00000900
+000100*   DI TIPO 07 (TRAMITE MODULO DI COLLOQUIO FBQVFB21) E           00001000
+000110*   SVOLGE DEI CONTROLLI FORMALI E DI CONGRUENZA SUI CAMPI;       00001100
+000120*   IN CASO DI INCORRETTEZZE PROVVEDE AD IMPOSTARE (NELLO         00001200
+000130*   STESSO MODULO) DEI CODICI DI ERRORE ED INCREMENTA I           00001300
+000140*   CONTATORI RELATIVI AL TIPO DI ERRORE (BLOCCANTE/NON           00001400
+000150*   BLOCCANTE)                                                    00001500
+000160*                                                                 00001600
+000170* 2. ARCHIVI GESTITI                                              00001700
+000180*      NESSUNO                                                    00001800
+000190*                                                                 00001900
+000200* 3. SUBROUTINES RICHIAMATE                                       00002000
+000210*      NOME       DESCRIZIONE                                     00002100
+000220*                                                                 00002200
+000230 ENVIRONMENT DIVISION.                                            00002300
+000240 CONFIGURATION SECTION.                                           00002400
+000250 SPECIAL-NAMES.                                                   00002500
+000260     DECIMAL-POINT IS COMMA.                                      00002600
+000270 INPUT-OUTPUT SECTION.                                            00002700
+000280 FILE-CONTROL.                                                    00002800
+000290 DATA DIVISION.                                                   00002900
+000300 FILE SECTION.                                                    00003000
+000310***************  WORKING STORAGE SECTION  **********************  00003100
+000320 WORKING-STORAGE SECTION.                                         00003200
+000330*---                                                              00003300
+000340*---                                                              00003400
+000350 77  W-UFF-KO                       PIC X(002).                   00003500
+000360 77  W-NUM-KO                       PIC X(002).                   00003600
+000370 77  W-TIPO-TRIB-OUT                PIC X(001).                   00003700
+000380 77  W-KEY-UFF-OUT                  PIC X(011).                   00003800
+000390 77  COD-ATTO                       PIC X(002).                   00003900
+000400*---                                                              00004000
+000410 01  W-ABEND-CODE                   PIC 9(004).                   00004100
+000420 01  W-FLAG-TRIB-OK                 PIC X(001) VALUE '0'.         00004200
+000430 01  W-COD-ENTE-OK                  PIC X(001) VALUE '0'.         00004300
+000440 01  W-FLAG-UPS                     PIC X(001) VALUE '0'.         00004400
+000450*---                                                              00004500
+000460 01  W-FLAG-RUOL                    PIC X(001) VALUE '0'.         00004600
+000470*---                                                              00004700
+000480 01  W-APPO-TIPO-TRIB               PIC X(001) VALUE '0'.         00004800
+000490*---   CAMPI PER DATA RISCOSSIONE                                 00004900
+000500*---                                                              00005000
+000510 01  W-DATA-RISC                    PIC X(008).                   00005100
+000520 01  W-DATA-RISC1 REDEFINES W-DATA-RISC.                          00005200
+000530     03  W-DATA-RISC-AA             PIC 9(004).                   00005300
+000540     03  W-DATA-RISC-MM             PIC 9(002).                   00005400
+000550     03  W-DATA-RISC-GG             PIC 9(002).                   00005500
+000560 01  W-DATA-RISC2 REDEFINES W-DATA-RISC.                          00005600
+000570     03  W-DATA-RIS2-AA             PIC 9(004).                   00005700
+000580     03  W-DATA-RIS2-MM             PIC 9(002).                   00005800
+000590     03  W-DATA-RIS2-GG             PIC 9(002).                   00005900
+000600*---   CAMPI APPOGGIO PER CAMPI DEL FILE ESITO                    00006000
+000610*                                                                 00006100
+000620 01  W-COD-DITTA                    PIC X(009).                   00006200
+000630 01  W-FLAG-DITTA-OK                PIC X(001) VALUE '1'.         00006300
+000640 01  W-FLAG-DITTA                   PIC X(001).                   00006400
+000650 01  W-V07-REG                      PIC X(001).                   00006500
+000660 01  W-COD-DITTA-RED.                                             00006600
+000670     03  W-COD-DITTA-RED-CIN.                                     00006700
+000680         05  W-COD-PROV             PIC X(002).                   00006800
+000690         05  W-COD-IMPOSTA          PIC X(001).                   00006900
+000700         05  W-COD-PROG             PIC 9(005).                   00007000
+000710     03  W-CAR-CIN                  PIC X(001).                   00007100
+000720 01  W-PARAM-AWX101.                                              00007200
+000730     03  W-FISSI                    PIC X(007) VALUE ZERO.        00007300
+000740     03  W-COD-DITTA-CIN            PIC X(008).                   00007400
+000750*                                                                 00007500
+000760 01  W-CIN-OUT                      PIC X(001).                   00007600
+000770*                                                                 00007700
+000780 01  W-FLAG-TROVATO                 PIC 9(001) VALUE ZERO.        00007800
+000790*                                                                 00007900
+000800*01  W-ENTE                         PIC 9(002).                   00008000
+000810 01  W-ENTE                         PIC X(002).                   00008100
+000820 01  W-COD-PR                       PIC X(002).                   00008200
+000830 01  W-FLAG-PROV                    PIC X(001).                   00008300
+000840*01  W-COD-TRIB                     PIC X(005).                   00008400
+000850 01  W-COD-TRIB                     PIC X(004).                   00008500
+000860 01  W-FLAG-TRIB                    PIC X(001).                   00008600
+000870 01  W-COD-IDENT                    PIC X(014).                   00008700
+000880*F MODIFICA PER CODICE IDENTIFICATIVO TIPO 1                      00008800
+000890 01  W-COD-IDENT1 REDEFINES W-COD-IDENT.                          00008900
+000900     03  W-COD-IDEN1                PIC X(9).                     00009000
+000910     03  W-COD-IDEN1-FILLER         PIC X(5).                     00009100
+000920*F MODIFICA PER CODICE IDENTIFICATIVO TIPO 1                      00009200
+000930 01  W-COD-IDENT2 REDEFINES W-COD-IDENT.                          00009300
+000940     03  W-COD-IDEN2                PIC X(5).                     00009400
+000950     03  W-COD-IDEN2-FILLER         PIC X(9).                     00009500
+000960* INIZIO MODIFICA 12/2004                                         00009600
+000970*01  W-COD-IDENT3 REDEFINES W-COD-IDENT.                          00009700
+000980**** 03  W-COD-IDEN3-1              PIC X(4).                     00009800
+000990**** 03  W-COD-IDEN3-FILLER         PIC X(10).                    00009900
+001000 01  W-COD-IDENT3 REDEFINES W-COD-IDENT.                          00010000
+001010     03  W-COD-IDEN3                PIC X(5).                     00010100
+001020     03  W-COD-IDEN3-FILLER         PIC X(9).                     00010200
+001030*01  W-COD-IDENT4 REDEFINES W-COD-IDENT.                          00010300
+001040**** 03  W-COD-IDEN4                PIC 9(4).                     00010400
+001050**** 03  W-COD-IDEN4-X              PIC X(2).                     00010500
+001060**** 03  W-COD-IDEN4-N              PIC 9(7).                     00010600
+001070**** 03  W-COD-IDEN4-FILLER         PIC X.                        00010700
+001080 01  W-COD-IDENT4 REDEFINES W-COD-IDENT.                          00010800
+001090     03  W-COD-IDEN4                PIC X(13).                    00010900
+001100     03  W-COD-IDEN4-FILLER         PIC X.                        00011000
+001110 01  W-COD-IDENT5 REDEFINES W-COD-IDENT.                          00011100
+001120     03  W-COD-IDEN5                PIC X(6).                     00011200
+001130     03  W-COD-IDEN5-FILLER         PIC X(8).                     00011300
+001140 01  W-COD-IDENT6 REDEFINES W-COD-IDENT.                          00011400
+001150     03  W-COD-IDEN6-1-6            PIC X(6).                     00011500
+001160     03  W-COD-IDEN6-7              PIC X(1).                     00011600
+001170     03  W-COD-IDEN6-8-9            PIC X(2).                     00011700
+001180     03  W-COD-IDEN6-FILLER         PIC X(5).                     00011800
+001190* FINE MODIFICA 12/2004                                           00011900
+001200 01  W-FLAG-COD-IDENT               PIC X(001).                   00012000
+001210 01  W-RIFER-TRIB                   PIC X(006).                   00012100
+001220 01  W-FLAG-RIFER-TRIB              PIC X(001).                   00012200
+001230*                                                                 00012300
+001240 01  MEM-PROV                       PIC X(001).                   00012400
+001250 01  MEM-COD-IDENT                  PIC X(002).                   00012500
+001260 01  MEM-RIFER-TRIB.                                              00012600
+001270     03  MEM-RIFER-TRIB-1           PIC XX.                       00012700
+001280     03  MEM-RIFER-TRIB-2           PIC X(4).                     00012800
+001290*                                                                 00012900
+001300 01  MEM-COD-UFF                    PIC X(001).                   00013000
+001310 01  MEM-COD-ATTO                   PIC X(001).                   00013100
+001320 01  MEM-RATEAZIONE                 PIC X(001).                   00013200
+001330*                                                                 00013300
+001340 01  W-PARAM-BQVFB3.                                              00013400
+001350     03  W-BQVFB3-COD-FISC.                                       00013500
+001360         05  W-BQVFB3-FISSI         PIC X(007) VALUE ZERO.        00013600
+001370         05  W-BQVFB3-DITTA         PIC X(009).                   00013700
+001380     03  W-BQVFB3-COD-RIT           PIC X(001) VALUE ZERO.        00013800
+001390*                                                                 00013900
+001400 01  W-IMP-CRED                     PIC 9(015).                   00014000
+001410*                                                                 00014100
+001420 01  W-IMP-PAGAM                    PIC 9(015).                   00014200
+001430 01  W-IMP-PAGAM1 REDEFINES W-IMP-PAGAM.                          00014300
+001440     03  W-IMP-PAGAM1-12            PIC X(012).                   00014400
+001450     03  W-IMP-PAGAM1-03            PIC X(003).                   00014500
+001460 01  W-IMP-PAGAM2 REDEFINES W-IMP-PAGAM.                          00014600
+001470     03  W-IMP-PAGAM1-13            PIC X(013).                   00014700
+001480     03  W-IMP-PAGAM1-02            PIC X(002).                   00014800
+001490*                                                                 00014900
+001500*----------------------------------------------                   00015000
+001510 01  W-UFFICIO-RIF                  PIC X(003).                   00015100
+001520 01  W-NUMERO-RIF.                                                00015200
+001530     05 W-NUMERO-RIF-10             PIC X(010).                   00015300
+001540     05 W-NUMERO-RIF-CK             PIC X(001).                   00015400
+001550 01  W-RATEAZ                       PIC X(004).                   00015500
+001560 01  W-FLAG-ERR-UFFICIO             PIC X(001).                   00015600
+001570 01  W-FLAG-ERR-NUMERO              PIC X(001).                   00015700
+001580 01  W-FLAG-ERR-RATEAZ              PIC X(001).                   00015800
+001590*-----------------------------------------------                  00015900
+001600*                                                                 00016000
+001610*---   CAMPI APPOGGIO PER L'IMPOSTAZIONE DEI CODICI               00016100
+001620*---   DI ERRORE DEL FILE ESITI                                   00016200
+001630*                                                                 00016300
+001640 01  W-ERR.                                                       00016400
+001650     03  W-ERR-COD-ENTE                 PIC 9(003).               00016500
+001660     03  W-ERR-COD-PROV                 PIC 9(003).               00016600
+001670     03  W-ERR-FLAG-PROV                PIC 9(003).               00016700
+001680     03  W-ERR-COD-TRIBUTO              PIC 9(003).               00016800
+001690     03  W-ERR-FLAG-COD-TRIBUTO         PIC 9(003).               00016900
+001700     03  W-ERR-COD-IDENT                PIC 9(003).               00017000
+001710     03  W-ERR-FLAG-COD-IDENT           PIC 9(003).               00017100
+001720     03  W-ERR-RIFER                    PIC 9(003).               00017200
+001730     03  W-ERR-FLAG-RIFER               PIC 9(003).               00017300
+001740     03  W-ERR-PAGAM                    PIC 9(003).               00017400
+001750     03  W-ERR-CRED                     PIC 9(003).               00017500
+001760     03  W-ERR-UFFICIO-RIF              PIC 9(003).               00017600
+001770     03  W-ERR-FLAG-ERR-UFFICIO         PIC 9(003).               00017700
+001780     03  W-ERR-NUMERO-RIF               PIC 9(003).               00017800
+001790     03  W-ERR-FLAG-ERR-NUMERO          PIC 9(003).               00017900
+001800     03  W-ERR-RATEAZ                   PIC 9(003).               00018000
+001810     03  W-ERR-FLAG-ERR-RATEAZ          PIC 9(003).               00018100
+001820*---   CAMPI APPOGGIO PER SEGNALARE SE L'ERRORE E'                00018200
+001830*---   BLOCCANTE O MENO:                                          00018300
+001840*---   ...   IMPOSTATO A "E" NEL PRIMO CASO                       00018400
+001850*---   ...   IMPOSTATO A "W" NEL SECONDO                          00018500
+001860*---                                                              00018600
+001870 01  W-SEGNAL.                                                    00018700
+001880     03  W-SEGNAL-COD-ENTE              PIC X(001).               00018800
+001890     03  W-SEGNAL-COD-PROV              PIC X(001).               00018900
+001900     03  W-SEGNAL-FLAG-COD-PROV         PIC X(001).               00019000
+001910     03  W-SEGNAL-COD-TRIBUTO           PIC X(001).               00019100
+001920     03  W-SEGNAL-FLAG-TRIB             PIC X(001).               00019200
+001930     03  W-SEGNAL-COD-IDENT             PIC X(001).               00019300
+001940     03  W-SEGNAL-FLAG-COD-IDENT        PIC X(001).               00019400
+001950     03  W-SEGNAL-RIFER                 PIC X(001).               00019500
+001960     03  W-SEGNAL-FLAG-RIFER            PIC X(001).               00019600
+001970     03  W-SEGNAL-PAGAM                 PIC X(001).               00019700
+001980     03  W-SEGNAL-CRED                  PIC X(001).               00019800
+001990     03  W-SEGNAL-UFF-RIF               PIC X(001).               00019900
+002000     03  W-SEGNAL-FLAG-ERR-UFF          PIC X(001).               00020000
+002010     03  W-SEGNAL-NUM-RIF               PIC X(001).               00020100
+002020     03  W-SEGNAL-FLAG-ERR-NUM          PIC X(001).               00020200
+002030     03  W-SEGNAL-RATEAZ                PIC X(001).               00020300
+002040     03  W-SEGNAL-FLAG-ERR-RATEAZ       PIC X(001).               00020400
+002050*                                                                 00020500
+002060 01  W-DATA.                                                      00020600
+002070     03  W-DATA-MESE                        PIC 99.               00020700
+002080     03  W-DATA-ANNO                        PIC 9(4).             00020800
+002090*---               TRACCIATO RECORD "ESITI" - BANCA               00020900
+002100     COPY 'FBQVFB21'.                                             00021000
+002110*                                                                 00021100
+002120*---        TABELLA PER TOTALIZZARE                               00021200
+002130*                                                                 00021300
+002140 01  W-TAB.                                                       00021400
+002150     03  W-TAB-EL OCCURS 7.                                       00021500
+002160         05  W-TAB-EL-PAG          PIC 9(015).                    00021600
+002170         05  W-TAB-EL-RIM          PIC 9(015).                    00021700
+002180*                                                                 00021800
+002190 01  W-TIPO-TRIB-MIN               PIC X(01).                     00021900
+002200 01  W-TIPO-TRIB-MAX               PIC X(01).                     00022000
+002210 01  W-TIPO-TRIB                   PIC X(01).                     00022100
+002220*                                                                 00022200
+002230*---                                                              00022300
+002240 01  W-FLAG-OBBL-UFF               PIC X(001).                    00022400
+002250 01  W-FLAG-OBBL-NUM               PIC X(001).                    00022500
+002260 01  W-FLAG-OBBL-RAT               PIC X(001).                    00022600
+002270*---                                                              00022700
+002280 01  W-COD-NUM-RIF                 PIC X(001).                    00022800
+002290*---                                                              00022900
+002300 01  W-NUM-RIF-KO                  PIC X(01).                     00023000
+002310*---                                                              00023100
+002320*---                                                              00023200
+002330*                      LINKAGE SECTION                            00023300
+002340 LINKAGE SECTION.                                                 00023400
+002350*                                                                 00023500
+002360*---             AREA DI PASSAGGIO                                00023600
+002370*                                                                 00023700
+002380*---   FLAG INDICANTE LA PROVENIENZA:                             00023800
+002390*---   .. "B" BANCA                                               00023900
+002400*---   .. "C" CONCESSIONARIO                                      00024000
+002410*                                                                 00024100
+002420 01  W-FLAG-BANCA                  PIC X(001).                    00024200
+002430*                                                                 00024300
+002440*---   SEZIONE RELATIVA AI DATI DEL FILE ESITO                    00024400
+002450*                                                                 00024500
+002460 01  W-DATI                        PIC X(512).                    00024600
+002470*                                                                 00024700
+002480*---   TABELLA RELATIVA AGLI IMPORTI                              00024800
+002490*                                                                 00024900
+002500 01  W-TABELLA                     PIC X(210).                    00025000
+002510*                                                                 00025100
+002520*---   DIVISA                                                     00025200
+002530*                                                                 00025300
+002540 01  W-DIVISA                      PIC X(003).                    00025400
+002550*                                                                 00025500
+002560*---   CONTATORE ERRORI NON BLOCCANTI                             00025600
+002570*                                                                 00025700
+002580 01  W-CTR1                        PIC 9(009).                    00025800
+002590*                                                                 00025900
+002600*---   CONTATORE ERRORI BLOCCANTI                                 00026000
+002610*                                                                 00026100
+002620 01  W-CTR2                        PIC 9(009).                    00026200
+002630*                                                                 00026300
+002640*---                                                              00026400
+002650**TABELLA CONTENENTE I CODICI TRIBUTI PRELEVATI DAL FILE BQVFTR   00026500
+002660*---                                                              00026600
+002670 01  W-TAB-TRIBUTI.                                               00026700
+002680     03 W-TAB-TRIB-NUM-MAX     PIC 9(004) VALUE 6900.             00026800
+002690     03 W-TAB-TRIB-OCC.                                           00026900
+002700        05 W-TAB-TRIB-EL OCCURS 6900 TIMES                        00027000
+002710                              ASCENDING W-TAB-TRIB-KEY            00027100
+002720                              INDEXED BY W-PUNT-TRIB.             00027200
+002730           07 W-TAB-TRIB-KEY.                                     00027300
+002740              09 W-TAB-TRIB-TIPO-TR  PIC X(001).                  00027400
+002750              09 W-TAB-TRIB-COD      PIC X(004).                  00027500
+002760              09 W-TAB-TRIB-INI-VAL  PIC X(008).                  00027600
+002770           07 W-TAB-TRIB-FIN-VAL  PIC X(008).                     00027700
+002780           07 W-TAB-TRIB-TIPO-PE  PIC X(008).                     00027800
+002790           07 W-TAB-TRIB-FLAG-COMPEN  PIC X.                      00027900
+002800           07 W-TAB-TRIB-FLAG-AGEV    PIC X.                      00028000
+002810           07 W-TAB-TRIB-FLAG-CONC    PIC X.                      00028100
+002820           07 W-TAB-TRIB-ELEM-IDENT   PIC X.                      00028200
+002830           07 W-TAB-TRIB-COD-ATTO     PIC X(002).                 00028300
+002840           07 W-TAB-TRIB-COD-UFF      PIC X(002).                 00028400
+002850           07 W-TAB-TRIB-ANNO-RIF     PIC 9(002).                 00028500
+002860           07 W-TAB-TRIB-IDENT-OPER   PIC X(002).                 00028600
+002870           07 W-TAB-TRIB-TAB-ENTE-COMUNE-1  PIC X(002).           00028700
+002880           07 W-TAB-TRIB-TAB-ENTE-COMUNE-2  PIC X(002).           00028800
+002890           07 W-TAB-TRIB-TAB-ENTE-COMUNE-3  PIC X(002).           00028900
+002900*---                                                              00029000
+002910**TABELLA CONTENENTE I CODICI PROVINCE PRELEVATI DAL FILE BQVFPR  00029100
+002920*---                                                              00029200
+002930 01  W-TAB-PROV.                                                  00029300
+002940     03 W-TAB-PROV-NUM-MAX        PIC 9(003) VALUE 150.           00029400
+002950     03 W-TAB-PROV-OCC.                                           00029500
+002960        05 W-TAB-PROV-EL OCCURS   150 TIMES                       00029600
+002970                                    ASCENDING W-TAB-PROV-COD      00029700
+002980                                    INDEXED BY W-PUNT-PROV.       00029800
+002990           07 W-TAB-PROV-COD      PIC X(002).                     00029900
+003000*---                                                              00030000
+003010**TABELLA CONTENENTE ENTI E TRIBUTI  PRELEVATI DAL FILE BQVFTE    00030100
+003020*---                                                              00030200
+003030 01  W-TAB-ENTI.                                                  00030300
+003040     03 W-TAB-ENTI-NUM-MAX     PIC 9(004) VALUE 2000.             00030400
+003050     03 W-TAB-ENTI-OCC.                                           00030500
+003060        05 W-TAB-ENTI-EL OCCURS 2000 TIMES                        00030600
+003070                                    ASCENDING W-TAB-ENTE-KEY      00030700
+003080                                    INDEXED BY W-PUNT-ENTI.       00030800
+003090          07 W-TAB-ENTE-KEY.                                      00030900
+003100             09 W-TAB-COD-ENTE            PIC X(2).               00031000
+003110             09 W-TAB-COD-TRIB            PIC X(4).               00031100
+003120             09 W-TAB-INIZIO-VAL          PIC X(8).               00031200
+003130          07 W-TAB-FINE-VAL            PIC X(8).                  00031300
+003140          07 W-TAB-DESCR               PIC X(20).                 00031400
+003150          07 W-TAB-PR                  PIC X.                     00031500
+003160          07 W-TAB-COD-IDENT           PIC 9(2).                  00031600
+003170          07 W-TAB-RIFER-TRIB          PIC X(6).                  00031700
+003180          07 W-TAB-COD-UFF             PIC X(1).                  00031800
+003190          07 W-TAB-COD-ATTO            PIC X(1).                  00031900
+003200          07 W-TAB-RATEAZIONE          PIC X(1).                  00032000
+003210*                                                                 00032100
+003220**TABELLA CONTENETE GLI UFFICI PRELEVATI DA FILE BQVFUF           00032200
+003230 01  W-TAB-UFFICIO.                                               00032300
+003240     03 W-TAB-UFF-NUM-MAX              PIC 9(004) VALUE 3000.     00032400
+003250     03 W-TAB-UFF-OCC.                                            00032500
+003260        05 W-TAB-UFF-EL OCCURS 3000 TIMES                         00032600
+003270                                    ASCENDING W-TAB-UFF-KEY       00032700
+003280                                    INDEXED BY W-PUNT-UFF.        00032800
+003290           07 W-TAB-UFF-KEY.                                      00032900
+003300              09 W-TAB-UFF-COD         PIC X(003).                00033000
+003310              09 W-TAB-UFF-INI-VAL     PIC X(008).                00033100
+003320           07 W-TAB-UFF-SETTORE        PIC X(001).                00033200
+003330           07 W-TAB-UFF-DENOM          PIC X(039).                00033300
+003340           07 W-TAB-UFF-FINE-VAL       PIC X(008).                00033400
+003350*---                                                              00033500
+003360*                                                                 00033600
+003370*---                                                              00033700
+003380 01  W-UFF-RIF                     PIC X(003).                    00033800
+003390*---                                                              00033900
+003400 01  W-NUM-RIF                     PIC X(011).                    00034000
+003410*---                                                              00034100
+003420 01  W-COD-FISC-KO                 PIC X(001).                    00034200
+003430*---                                                              00034300
+003440 01  W-UFF-RIF-ERARIO              PIC X(01).                     00034400
+003450 01  W-NUM-RIF-ERARIO              PIC X(01).                     00034500
+003460*                                                                 00034600
+003470********************** PROCEDURE DIVISION ************************00034700
+003480*                                                                 00034800
+003490 PROCEDURE DIVISION   USING    W-FLAG-BANCA W-DATI  W-TABELLA     00034900
+003500               W-DIVISA W-CTR1 W-CTR2                             00035000
+003510               W-TAB-TRIBUTI W-TAB-PROV W-TAB-ENTI                00035100
+003520               W-TAB-UFFICIO                                      00035200
+003530               W-UFF-RIF W-NUM-RIF W-COD-FISC-KO                  00035300
+003540               W-UFF-RIF-ERARIO W-NUM-RIF-ERARIO.                 00035400
+003550*                                                                 00035500
+003560 ML-010-INIZIO.                                                   00035600
+003570*                                                                 00035700
+003580*---   INIZIALIZZAZIONE DELLE AREE DI LAVORO                      00035800
+003590*                                                                 00035900
+003600     MOVE ZERO                      TO W-ERR.                     00036000
+003610     MOVE ZERO                      TO W-SEGNAL.                  00036100
+003620     MOVE ZERO                      TO W-NUM-RIF-KO.              00036200
+003630     MOVE W-TABELLA                 TO W-TAB.                     00036300
+003640*                                                                 00036400
+003650*      IMPOSTAZIONE AREA DI PASSAGGIO RELATIVA AI DATI E          00036500
+003660*      ALLA TABELLA DI TOTALIZZAZIONE IN BASE AL FLAG DI          00036600
+003670*      PROVENIENZA                                                00036700
+003680*                                                                 00036800
+003690 ML-020.                                                          00036900
+003700*                                                                 00037000
+003710     MOVE W-DATI                       TO BQVFB21.                00037100
+003720*                                                                 00037200
+003730     MOVE BQVFB21-07-DATA-RISC         TO W-DATA-RISC.            00037300
+003740     MOVE BQVFB21-07-COD-ENTE          TO W-ENTE.                 00037400
+003750     MOVE BQVFB21-07-COD-PROV          TO W-COD-PR.               00037500
+003760     MOVE BQVFB21-07-FLAG-ERR-PROV     TO W-FLAG-PROV.            00037600
+003770     MOVE BQVFB21-07-COD-TRIBUTO       TO W-COD-TRIB.             00037700
+003780     MOVE BQVFB21-07-FLAG-ERR-TRIBUTO  TO W-FLAG-TRIB.            00037800
+003790     MOVE BQVFB21-07-COD-IDENT         TO W-COD-IDENT.            00037900
+003800     MOVE BQVFB21-07-FLAG-ERR-IDENT    TO W-FLAG-COD-IDENT.       00038000
+003810     MOVE BQVFB21-07-RIFER-TRIB        TO W-RIFER-TRIB.           00038100
+003820     MOVE BQVFB21-07-FLAG-ERR-RIFER    TO W-FLAG-RIFER-TRIB.      00038200
+003830     MOVE BQVFB21-07-IMP-DEB           TO W-IMP-PAGAM.            00038300
+003840     MOVE BQVFB21-07-IMP-CRED          TO W-IMP-CRED.             00038400
+003850*                                                                 00038500
+003860     MOVE BQVFB21-07-UFF-RIFER        TO W-UFFICIO-RIF.           00038600
+003870     MOVE BQVFB21-07-FLAG-ERR-UFF     TO W-FLAG-ERR-UFFICIO.      00038700
+003880     MOVE BQVFB21-07-NUM-RIFER        TO W-NUMERO-RIF.            00038800
+003890     MOVE BQVFB21-07-FLAG-ERR-NUMRIF  TO W-FLAG-ERR-NUMERO.       00038900
+003900     MOVE BQVFB21-07-RATEAZ           TO W-RATEAZ.                00039000
+003910     MOVE BQVFB21-07-FLAG-ERR-RATEAZ  TO W-FLAG-ERR-RATEAZ.       00039100
+003920*                                                                 00039200
+003930 ML-030.                                                          00039300
+003940*      ROUTINE DI CONTROLLO                                       00039400
+003950*                                                                 00039500
+003960*                   ROUTINE DI CONTROLLO DEL PARAMETRO TRIBUTO    00039600
+003970*                                                                 00039700
+003980     PERFORM E1-010-COD-TRIB THRU E1-990-COD-TRIB-EX.             00039800
+003990*                                                                 00039900
+004000*                   ROUTINE DI CONTROLLO DEL PARAMETRO ENTE       00040000
+004010*                                                                 00040100
+004020     PERFORM E2-010-COD-ENTE THRU E2-990-COD-ENTE-EX.             00040200
+004030     IF W-COD-ENTE-OK = '1'                                       00040300
+004040        GO TO ML-090.                                             00040400
+004050*                                                                 00040500
+004060*                   ROUTINE DI CONTROLLO DEL PARAMETRO PROVINCIA  00040600
+004070*                                                                 00040700
+004080     PERFORM E3-010-COD-PROV THRU E3-990-COD-PROV-EX.             00040800
+004090*                                                                 00040900
+004100*                   ROUTINE DI CONTROLLO DEL CODICE IDENTIFICATIVO00041000
+004110*                                                                 00041100
+004120     PERFORM B1-010-COD-IDEN THRU B1-990-COD-IDEN-EX.             00041200
+004130*                                                                 00041300
+004140*                   ROUTINE DI CONTROLLO DEI PAGAMENTI            00041400
+004150*                                                                 00041500
+004160     PERFORM C1-010-PAGA  THRU C1-990-PAGA-EX.                    00041600
+004170*                                                                 00041700
+004180*                   ROUTINE DI CONTROLLO DEL RIFER-TRIB           00041800
+004190*                                                                 00041900
+004200        PERFORM C2-010-RIFER THRU C2-990-EX.                      00042000
+004210*                                                                 00042100
+004220*---   ROUTINE DI CONTROLLO ESISTENZA CODICE UFFICIO  E           00042200
+004230*---   CONTROLLO FORMALE DEL CODICE ATTO                          00042300
+004240     PERFORM F1-010-UFF-NUM  THRU F1-010-UFF-NUM-EX.              00042400
+004250*---   ROUTINE DI CONTROLLO  CODICE UFFICIO E CODICE ATTO         00042500
+004260*---   PRESENTI SUL TIPO RECORD V07                               00042600
+004270     PERFORM G1-010-TRIB-UFFNUM  THRU G1-010-TRIB-UFFNUM-EX.      00042700
+004280*---   ROUTINE DI CONTROLLO CODICE FISCALE E CODICE ATTO          00042800
+004290*---   CONTEMPORANEAMENTE ERRATI                                  00042900
+004300     PERFORM H1-010-FISC-NUM  THRU H1-010-FISC-NUM-EX.            00043000
+004310*---   ROUTINE DI CONTROLLO RATEAZIONE                            00043100
+004320     PERFORM R1-010-RATE      THRU R1-010-RATE-EX.                00043200
+004330*---                                                              00043300
+004340*                                                                 00043400
+004350 ML-090.                                                          00043500
+004360*                                                                 00043600
+004370     MOVE W-TAB               TO W-TABELLA.                       00043700
+004380*                                                                 00043800
+004390     MOVE W-ERR-COD-ENTE      TO BQVFB21-07-ERR-COD-ENTE.         00043900
+004400     MOVE W-ERR-COD-PROV      TO BQVFB21-07-ERR-COD-REG.          00044000
+004410     MOVE W-ERR-FLAG-PROV     TO BQVFB21-07-ERR-FLAG-ERR-REG.     00044100
+004420     MOVE W-ERR-COD-TRIBUTO       TO BQVFB21-07-ERR-COD-TRIB.     00044200
+004430     MOVE W-ERR-FLAG-COD-TRIBUTO  TO BQVFB21-07-ERR-FLAG-ERR-TRIB.00044300
+004440     MOVE W-ERR-COD-IDENT         TO BQVFB21-07-ERR-COD-IDENT.    00044400
+004450     MOVE W-ERR-FLAG-COD-IDENT  TO BQVFB21-07-ERR-FLAG-ERR-ID.    00044500
+004460     MOVE W-ERR-RIFER         TO BQVFB21-07-ERR-RIFER-TRIB.       00044600
+004470     MOVE W-ERR-FLAG-RIFER    TO BQVFB21-07-ERR-FLAG-ERR-RIF.     00044700
+004480     MOVE W-ERR-PAGAM         TO BQVFB21-07-ERR-IMP-PAGAM.        00044800
+004490     MOVE W-ERR-CRED          TO BQVFB21-07-ERR-IMP-RIMB.         00044900
+004500*                                                                 00045000
+004510     MOVE W-ERR-UFFICIO-RIF                                       00045100
+004520                         TO BQVFB21-07-ERR-UFF-RIFER.             00045200
+004530     MOVE W-ERR-FLAG-ERR-UFFICIO                                  00045300
+004540                         TO BQVFB21-07-ERR-FLAG-ERR-UFF.          00045400
+004550     MOVE W-ERR-NUMERO-RIF                                        00045500
+004560                         TO BQVFB21-07-ERR-NUM-RIFER.             00045600
+004570     MOVE W-ERR-FLAG-ERR-NUMERO                                   00045700
+004580                         TO BQVFB21-07-ERR-FLAG-ERR-NRIF.         00045800
+004590     MOVE W-ERR-RATEAZ                                            00045900
+004600                         TO BQVFB21-07-ERR-RATEAZ.                00046000
+004610     MOVE W-ERR-FLAG-ERR-RATEAZ                                   00046100
+004620                         TO BQVFB21-07-ERR-FLAG-ERR-RATE.         00046200
+004630*                                                                 00046300
+004640*---   IMPOSTAZIONE SEGNALAZIONE TIPO ERRORE VERIFICATOSI         00046400
+004650     MOVE W-SEGNAL-COD-ENTE      TO BQVFB21-07-ERR-COD-ENTE-A.    00046500
+004660     MOVE W-SEGNAL-COD-PROV      TO BQVFB21-07-ERR-COD-REG-A.     00046600
+004670     MOVE W-SEGNAL-FLAG-COD-PROV TO BQVFB21-07-ERR-FLAG-ERR-REG-A.00046700
+004680     MOVE W-SEGNAL-COD-TRIBUTO   TO BQVFB21-07-ERR-COD-TRIB-A.    00046800
+004690     MOVE W-SEGNAL-FLAG-TRIB    TO BQVFB21-07-ERR-FLAG-ERR-TRIB-A.00046900
+004700     MOVE W-SEGNAL-COD-IDENT TO BQVFB21-07-ERR-COD-IDENT-A.       00047000
+004710     MOVE W-SEGNAL-FLAG-COD-IDENT TO BQVFB21-07-ERR-FLAG-ERR-ID-A.00047100
+004720     MOVE W-SEGNAL-RIFER      TO BQVFB21-07-ERR-RIFER-TRIB-A.     00047200
+004730     MOVE W-SEGNAL-FLAG-RIFER TO BQVFB21-07-ERR-FLAG-ERR-RIF-A.   00047300
+004740     MOVE W-SEGNAL-PAGAM      TO BQVFB21-07-ERR-IMP-PAGAM-A.      00047400
+004750     MOVE W-SEGNAL-CRED       TO BQVFB21-07-ERR-IMP-RIMB-A.       00047500
+004760*                                                                 00047600
+004770     MOVE W-SEGNAL-UFF-RIF                                        00047700
+004780                         TO BQVFB21-07-ERR-UFF-RIFER-A.           00047800
+004790     MOVE W-SEGNAL-FLAG-ERR-UFF                                   00047900
+004800                         TO BQVFB21-07-ERR-FLAG-ERR-UFF-A.        00048000
+004810     MOVE W-SEGNAL-NUM-RIF                                        00048100
+004820                         TO BQVFB21-07-ERR-NUM-RIFER-A.           00048200
+004830     MOVE W-SEGNAL-FLAG-ERR-NUM                                   00048300
+004840                         TO BQVFB21-07-ERR-FLAG-ERR-NRIF-A.       00048400
+004850     MOVE W-SEGNAL-RATEAZ                                         00048500
+004860                         TO BQVFB21-07-ERR-RATEAZ-A.              00048600
+004870     MOVE W-SEGNAL-FLAG-ERR-RATEAZ                                00048700
+004880                         TO BQVFB21-07-ERR-FLAG-ERR-RATE-A.       00048800
+004890*                                                                 00048900
+004900*                                                                 00049000
+004910     MOVE BQVFB21             TO W-DATI.                          00049100
+004920     GO TO ML-990.                                                00049200
+004930 ML-990.                                                          00049300
+004940     GOBACK.                                                      00049400
+004950*                                                                 00049500
+004960*            CONTROLLO IMPORTO                                    00049600
+004970*                                                                 00049700
+004980 C1-010-PAGA.                                                     00049800
+004990*                                                                 00049900
+005000     IF W-IMP-CRED NOT EQUAL ZERO                                 00050000
+005010        ADD 1                        TO W-CTR2                    00050100
+005020        MOVE 'E'                     TO W-SEGNAL-CRED             00050200
+005030        MOVE 96                      TO W-ERR-CRED.               00050300
+005040*                                                                 00050400
+005050     IF W-IMP-PAGAM1 NUMERIC                                      00050500
+005060       GO TO C1-030.                                              00050600
+005070*                                                                 00050700
+005080 C1-020.                                                          00050800
+005090*    ERRORE BLOCCANTE                                             00050900
+005100*                                                                 00051000
+005110     ADD 1                        TO W-CTR2.                      00051100
+005120     MOVE 'E'                     TO W-SEGNAL-PAGAM.              00051200
+005130     MOVE 39                      TO W-ERR-PAGAM.                 00051300
+005140     GO TO C1-990-PAGA-EX.                                        00051400
+005150*                                                                 00051500
+005160 C1-030.                                                          00051600
+005170*                                                                 00051700
+005180     IF W-IMP-PAGAM GREATER ZERO                                  00051800
+005190       GO TO C1-055.                                              00051900
+005200*                                                                 00052000
+005210 C1-050.                                                          00052100
+005220*                                                                 00052200
+005230     ADD 1                        TO W-CTR2.                      00052300
+005240     MOVE 39                      TO W-ERR-PAGAM.                 00052400
+005250     MOVE 'E'                     TO W-SEGNAL-PAGAM.              00052500
+005260     GO TO C1-990-PAGA-EX.                                        00052600
+005270 C1-055.                                                          00052700
+005280*---   S'INCREMENTA L'IMPORTO NELLA TABELLA DI TOTALIZZAZIONE     00052800
+005290*---                                                              00052900
+005300     ADD W-IMP-PAGAM           TO W-TAB-EL-PAG(7).                00053000
+005310     IF W-DIVISA = SPACE OR                                       00053100
+005320        W-DIVISA = LOW-VALUE                                      00053200
+005330        GO TO C1-990-PAGA-EX.                                     00053300
+005340*                                                                 00053400
+005350 C1-070.                                                          00053500
+005360*                                                                 00053600
+005370     IF W-DATA-RISC<= '20011231'                                  00053700
+005380        IF (W-DIVISA = 'ITL'    AND                               00053800
+005390            W-IMP-PAGAM1-03 =ZERO) OR                             00053900
+005400            (W-DIVISA = 'EUR' AND                                 00054000
+005410            (BQVFB21-DATA-BONIF > '20011231' OR                   00054100
+005420             W-IMP-PAGAM1-02 = ZERO))                             00054200
+005430            GO TO C1-990-PAGA-EX                                  00054300
+005440       ELSE                                                       00054400
+005450            GO TO C1-090                                          00054500
+005460            END-IF                                                00054600
+005470         END-IF.                                                  00054700
+005480           GO TO C1-990-PAGA-EX.                                  00054800
+005490 C1-090.                                                          00054900
+005500*---     ERRORE BLOCCANTE                                         00055000
+005510         ADD 1      TO W-CTR2.                                    00055100
+005520         MOVE 96    TO W-ERR-PAGAM.                               00055200
+005530         MOVE 'E'   TO W-SEGNAL-PAGAM.                            00055300
+005540*---                                                              00055400
+005550 C1-990-PAGA-EX.                                                  00055500
+005560     EXIT.                                                        00055600
+005570**************************************************************    00055700
+005580***    ROUTINE DI CONTROLLO DEL CODICE TRIBUTO                    00055800
+005590**************************************************************    00055900
+005600*                                                                 00056000
+005610 E1-010-COD-TRIB.                                                 00056100
+005620*                                                                 00056200
+005630     MOVE  '0'               TO W-FLAG-TRIB-OK.                   00056300
+005640     IF W-FLAG-TRIB = '0' OR                                      00056400
+005650        W-FLAG-TRIB = '1'                                         00056500
+005660        GO TO E1-035.                                             00056600
+005670*                                                                 00056700
+005680 E1-030.                                                          00056800
+005690*                                                                 00056900
+005700     MOVE 55                      TO W-ERR-FLAG-COD-TRIBUTO.      00057000
+005710     ADD 1                        TO W-CTR2.                      00057100
+005720     MOVE 'E'                     TO W-SEGNAL-FLAG-TRIB.          00057200
+005730*                                                                 00057300
+005740 E1-035.                                                          00057400
+005750*                                                                 00057500
+005760*      ACCESSO ALLA TABELLA DB2 TRIBUTI: SI ACCEDE CON IL CODICE  00057600
+005770*      TRIBUTO E CON DATA RISCOSSIONE COMPRESA TRA INIZIO-VAL E   00057700
+005780*      FINE-VAL, INDIPENDENTEMENTE DALLA SUA CORRETTA IMPOSTAZIONE00057800
+005790*      IN QUANTO:                                                 00057900
+005800*      .. SE ERRATA NON SARA' TROVATA ALCUNA OCCORRENZA (ED INFATT00058000
+005810*         NON AVENDO A DISPOSIZIONE UN DATA RISCOSSIONE CORRETTA N00058100
+005820*         POTREI CONTROLLARNE LA VALIDITA' CON LE DATE DI TABELLA)00058200
+005830*      .. SE CORRETTA SARA' TROVATA AL MASSIMO 1 OCCORRENZA.      00058300
+005840*                                                                 00058400
+005850     SET W-PUNT-TRIB        TO 1.                                 00058500
+005860     SEARCH W-TAB-TRIB-EL                                         00058600
+005870            AT END MOVE ZERO    TO W-FLAG-TROVATO                 00058700
+005880     WHEN W-TAB-TRIB-COD (W-PUNT-TRIB) = W-COD-TRIB               00058800
+005890*F    AND W-TAB-TRIB-TIPO-TR (W-PUNT-TRIB)= 'Q'                   00058900
+005900      AND (W-TAB-TRIB-TIPO-TR (W-PUNT-TRIB)= 'M' OR               00059000
+005910           W-TAB-TRIB-TIPO-TR (W-PUNT-TRIB)= 'N' OR               00059100
+005920           W-TAB-TRIB-TIPO-TR (W-PUNT-TRIB)= 'O' OR               00059200
+005930           W-TAB-TRIB-TIPO-TR (W-PUNT-TRIB)= 'Q')                 00059300
+005940      AND W-TAB-TRIB-INI-VAL (W-PUNT-TRIB) NOT > W-DATA-RISC      00059400
+005950      AND W-TAB-TRIB-FIN-VAL (W-PUNT-TRIB) NOT < W-DATA-RISC      00059500
+005960      MOVE W-TAB-TRIB-COD-ATTO(W-PUNT-TRIB) TO COD-ATTO           00059600
+005970      MOVE 1 TO W-FLAG-TROVATO.                                   00059700
+005980*                                                                 00059800
+005990*                                                                 00059900
+006000*      L'OCCORRENZA E' VALIDA QUANDO ESISTE IN BASE INFORMATIVA   00060000
+006010*      E CONTEMPORANEAENTE IL TIPO TRIBUTO E' CONGRUENTE CON      00060100
+006020*      IL TIPO RECORD CHE SI STA TRATTANDO                        00060200
+006030*                                                                 00060300
+006040     MOVE '0' TO W-FLAG-RUOL.                                     00060400
+006050     IF W-COD-TRIB EQUAL 'RUOL' AND                               00060500
+006051        W-DATA-RISC NOT LESS '20181029'                           00060600
+006070           MOVE '1' TO W-FLAG-RUOL                                00060700
+006080     END-IF.                                                      00060800
+006090     IF W-FLAG-TROVATO = 1 AND                                    00060900
+006100        W-FLAG-RUOL = '0'                                         00061000
+006110        GO TO E1-090.                                             00061100
+006120*                                                                 00061200
+006130 E1-040.                                                          00061300
+006140*                                                                 00061400
+006150*      SI CONTROLLA SE IL TRIBUTO NON E' STATO TROVATO IN         00061500
+006160*      TABELLA                                                    00061600
+006170*                                                                 00061700
+006180     PERFORM TRIB-010 THRU TRIB-EXIT.                             00061800
+006190*                                                                 00061900
+006200*      IL CODICE TRIBUTO NON ESISTE IN BASE INFORMATIVA;          00062000
+006210*      SI CONTROLLA SE L'ERRORE ERA STATO SEGNALATO NEL FLAG      00062100
+006220*      RELATIVO AL CODICE TRIBUTO                                 00062200
+006230*                                                                 00062300
+006240     IF W-FLAG-TRIB = '1'                                         00062400
+006250       GO TO E1-080.                                              00062500
+006260*                                                                 00062600
+006270 E1-070.                                                          00062700
+006280*                                                                 00062800
+006290*      ERRORI                                                     00062900
+006300     MOVE 504                     TO W-ERR-COD-TRIBUTO.           00063000
+006310     ADD 1                        TO W-CTR2.                      00063100
+006320     MOVE 'E'                     TO W-SEGNAL-COD-TRIBUTO.        00063200
+006330     IF W-ERR-FLAG-COD-TRIBUTO = ZERO                             00063300
+006340       MOVE 24                      TO W-ERR-FLAG-COD-TRIBUTO     00063400
+006350       ADD 1                        TO W-CTR2                     00063500
+006360       MOVE 'E'                     TO W-SEGNAL-FLAG-TRIB.        00063600
+006370     GO TO E1-990-COD-TRIB-EX.                                    00063700
+006380*                                                                 00063800
+006390 E1-080.                                                          00063900
+006400*                                                                 00064000
+006410*      OMOGENEITA'                                                00064100
+006420*    ADD 1                        TO W-CTR4.                      00064200
+006430     GO TO E1-990-COD-TRIB-EX.                                    00064300
+006440*                                                                 00064400
+006450 E1-090.                                                          00064500
+006460*                                                                 00064600
+006470*      IL CODICE TRIBUTO ESISTE IN BASE INFORMATIVA;              00064700
+006480*      SI CONTROLLA SE ERA STATO SEGNALATO UN ERRORE NEL FLAG     00064800
+006490*      RELATIVO AL CODICE TRIBUTO                                 00064900
+006500*                                                                 00065000
+006510     IF W-FLAG-TRIB = '0'                                         00065100
+006520        GO TO E1-990-COD-TRIB-EX.                                 00065200
+006530*                                                                 00065300
+006540 E1-100.                                                          00065400
+006550*                                                                 00065500
+006560     IF W-FLAG-TRIB NOT = '1'                                     00065600
+006570       GO TO E1-990-COD-TRIB-EX.                                  00065700
+006580*                                                                 00065800
+006590 E1-110.                                                          00065900
+006600*                                                                 00066000
+006610*      ERRORE NON BLOCCANTE                                       00066100
+006620     ADD 1                        TO W-CTR1.                      00066200
+006630     MOVE 24                      TO W-ERR-FLAG-COD-TRIBUTO.      00066300
+006640     MOVE 'W'                     TO W-SEGNAL-FLAG-TRIB.          00066400
+006650*                                                                 00066500
+006660 E1-990-COD-TRIB-EX.                                              00066600
+006670     EXIT.                                                        00066700
+006680*                                                                 00066800
+006690***************************************************************   00066900
+006700****   ROUTINE DI CONTROLLO DEL CODICE ENTE                       00067000
+006710*                                                                 00067100
+006720 E2-010-COD-ENTE.                                                 00067200
+006730*                                                                 00067300
+006740*F MODIFICA PER INIZIALIZZAZIONE CAMPO ENTE OK                    00067400
+006750     MOVE '0' TO W-COD-ENTE-OK.                                   00067500
+006760*F MODIFICA PER INIZIALIZZAZIONE CAMPO ENTE OK                    00067600
+006770     MOVE BQVFB21-07-COD-ENTE     TO W-ENTE.                      00067700
+006780     MOVE BQVFB21-07-COD-TRIBUTO  TO W-COD-TRIB.                  00067800
+006790     SET W-PUNT-ENTI        TO 1.                                 00067900
+006800     SEARCH W-TAB-ENTI-EL                                         00068000
+006810            AT END MOVE ZERO    TO W-FLAG-TROVATO                 00068100
+006820     WHEN W-TAB-COD-ENTE (W-PUNT-ENTI) = W-ENTE                   00068200
+006830      AND W-TAB-COD-TRIB (W-PUNT-ENTI) = W-COD-TRIB               00068300
+006840      AND W-TAB-INIZIO-VAL (W-PUNT-ENTI) NOT > W-DATA-RISC        00068400
+006850      AND W-TAB-FINE-VAL (W-PUNT-ENTI) NOT < W-DATA-RISC          00068500
+006860      MOVE 1 TO W-FLAG-TROVATO.                                   00068600
+006870*                                                                 00068700
+006880*                                                                 00068800
+006890     IF W-FLAG-TROVATO = 1                                        00068900
+006900       MOVE W-TAB-PR(W-PUNT-ENTI)            TO MEM-PROV          00069000
+006910       MOVE W-TAB-COD-IDENT(W-PUNT-ENTI)     TO MEM-COD-IDENT     00069100
+006920       MOVE W-TAB-RIFER-TRIB(W-PUNT-ENTI)    TO MEM-RIFER-TRIB    00069200
+006930       MOVE W-TAB-COD-UFF(W-PUNT-ENTI)       TO MEM-COD-UFF       00069300
+006940       MOVE W-TAB-COD-ATTO(W-PUNT-ENTI)      TO MEM-COD-ATTO      00069400
+006950       MOVE W-TAB-RATEAZIONE(W-PUNT-ENTI)    TO MEM-RATEAZIONE    00069500
+006960       GO TO E2-990-COD-ENTE-EX.                                  00069600
+006970*                                                                 00069700
+006980 E2-060.                                                          00069800
+006990*    ERRORE BLOCCANTE                                             00069900
+007000     ADD 1                        TO W-CTR2.                      00070000
+007010     MOVE 24                      TO W-ERR-COD-ENTE.              00070100
+007020     MOVE 'E'                     TO W-SEGNAL-COD-ENTE.           00070200
+007030*                                                                 00070300
+007040*     E POI GESTIRE SOLO CONTROLLO DI NUMERICITà DEGLI IMPORTI    00070400
+007050     PERFORM C1-010-PAGA THRU C1-990-PAGA-EX.                     00070500
+007060     MOVE 1 TO W-COD-ENTE-OK.                                     00070600
+007070*                                                                 00070700
+007080 E2-990-COD-ENTE-EX.                                              00070800
+007090*                                                                 00070900
+007100     EXIT.                                                        00071000
+007110****************************************************************  00071100
+007120*                                                                 00071200
+007130 E3-010-COD-PROV.                                                 00071300
+007140*                                                                 00071400
+007150     IF W-FLAG-PROV = '0' OR                                      00071500
+007160        W-FLAG-PROV = '1'                                         00071600
+007170       GO TO E3-035.                                              00071700
+007180*                                                                 00071800
+007190 E3-030.                                                          00071900
+007200*                                                                 00072000
+007210     MOVE 55                      TO W-ERR-FLAG-PROV.             00072100
+007220     ADD 1                        TO W-CTR2.                      00072200
+007230     MOVE 'E'                     TO W-SEGNAL-FLAG-COD-PROV.      00072300
+007240*                                                                 00072400
+007250 E3-035.                                                          00072500
+007260*                                                                 00072600
+007270     IF BQVFB21-07-COD-ENTE NOT EQUAL 'D' AND                     00072700
+007280        BQVFB21-07-COD-ENTE NOT EQUAL 'M' AND                     00072800
+007290        BQVFB21-07-COD-ENTE NOT EQUAL 'G' AND                     00072900
+007300        BQVFB21-07-COD-ENTE NOT EQUAL 'P'                         00073000
+007310           MOVE ZERO TO W-FLAG-PROV.                              00073100
+007320     IF MEM-PROV = '1'                                            00073200
+007330        GO TO E3-037.                                             00073300
+007340*                                                                 00073400
+007350 E3-036.                                                          00073500
+007360*                                                                 00073600
+007370     IF (BQVFB21-07-COD-PROV = '00' OR                            00073700
+007380        BQVFB21-07-COD-PROV = SPACE) AND                          00073800
+007390        W-ERR-FLAG-PROV = ZERO AND                                00073900
+007400        W-FLAG-PROV = '1'                                         00074000
+007410        ADD 1                        TO W-CTR1                    00074100
+007420        MOVE 24                      TO W-ERR-FLAG-PROV           00074200
+007430        MOVE 'W'                     TO W-SEGNAL-FLAG-COD-PROV    00074300
+007440        GO TO E3-990-COD-PROV-EX.                                 00074400
+007450*                                                                 00074500
+007460     IF BQVFB21-07-COD-PROV NOT = '00' AND                        00074600
+007470        BQVFB21-07-COD-PROV NOT = SPACE AND                       00074700
+007480        W-FLAG-PROV = '0'                                         00074800
+007490        MOVE 24                      TO W-ERR-COD-PROV            00074900
+007500        ADD 1                        TO W-CTR2                    00075000
+007510        MOVE 'E'                     TO W-SEGNAL-COD-PROV         00075100
+007520        MOVE 24                   TO W-ERR-FLAG-PROV              00075200
+007530        ADD 1                     TO W-CTR2                       00075300
+007540        MOVE 'E'                  TO W-SEGNAL-FLAG-COD-PROV       00075400
+007550        GO TO E3-990-COD-PROV-EX.                                 00075500
+007560*                                                                 00075600
+007570     GO TO E3-990-COD-PROV-EX.                                    00075700
+007580*                                                                 00075800
+007590 E3-037.                                                          00075900
+007600*                                                                 00076000
+007610     IF (BQVFB21-07-COD-PROV = '00' OR                            00076100
+007620        BQVFB21-07-COD-PROV  = SPACE) AND                         00076200
+007630        W-FLAG-PROV = '0'                                         00076300
+007640        MOVE 24                      TO W-ERR-COD-PROV            00076400
+007650        ADD 1                        TO W-CTR2                    00076500
+007660        MOVE 'E'                     TO W-SEGNAL-COD-PROV         00076600
+007670        ADD 1                        TO W-CTR2                    00076700
+007680        MOVE 24                      TO W-ERR-FLAG-PROV           00076800
+007690        MOVE 'E'                     TO W-SEGNAL-FLAG-COD-PROV    00076900
+007700        GO TO E3-990-COD-PROV-EX.                                 00077000
+007710*                                                                 00077100
+007720     SET W-PUNT-PROV        TO 1.                                 00077200
+007730     SEARCH W-TAB-PROV-EL                                         00077300
+007740            AT END MOVE ZERO    TO W-FLAG-TROVATO                 00077400
+007750     WHEN W-TAB-PROV-COD (W-PUNT-PROV) = BQVFB21-07-COD-PROV      00077500
+007760            MOVE 1 TO W-FLAG-TROVATO.                             00077600
+007770*                                                                 00077700
+007780     IF W-FLAG-TROVATO = 1 AND                                    00077800
+007790        W-FLAG-PROV = '1'                                         00077900
+007800        ADD 1                        TO W-CTR1                    00078000
+007810        MOVE 24                      TO W-ERR-FLAG-PROV           00078100
+007820        MOVE 'W'                     TO W-SEGNAL-FLAG-COD-PROV    00078200
+007830        GO TO E3-990-COD-PROV-EX.                                 00078300
+007840*                                                                 00078400
+007850     IF W-FLAG-TROVATO = 1 AND                                    00078500
+007860        W-FLAG-PROV = '0'                                         00078600
+007870        GO TO E3-990-COD-PROV-EX.                                 00078700
+007880*                                                                 00078800
+007890     IF W-FLAG-TROVATO = 0 AND                                    00078900
+007900         W-FLAG-PROV = '0'                                        00079000
+007910         MOVE 24                TO W-ERR-COD-PROV                 00079100
+007920         ADD  1                 TO W-CTR2                         00079200
+007930         MOVE 'E'               TO W-SEGNAL-COD-PROV              00079300
+007940         ADD 1                        TO W-CTR2                   00079400
+007950         MOVE 24                      TO W-ERR-FLAG-PROV          00079500
+007960         MOVE 'E'                     TO W-SEGNAL-FLAG-COD-PROV.  00079600
+007970*                                                                 00079700
+007980 E3-990-COD-PROV-EX.                                              00079800
+007990*                                                                 00079900
+008000     EXIT.                                                        00080000
+008010*                                                                 00080100
+008020*                                                                 00080200
+008030* ROUTINE DI CONTROLLO DEL CODICE IDENTIFICATIVO                  00080300
+008040*                                                                 00080400
+008050 B1-010-COD-IDEN.                                                 00080500
+008060*      SI CONTROLLA L'ESATTA IMPOSTAZIONE DEL FLAG CODICE         00080600
+008070*      IDENTIFICATIVO                                             00080700
+008080*                                                                 00080800
+008090     IF W-FLAG-COD-IDENT   = '0' OR                               00080900
+008100        W-FLAG-COD-IDENT   = '1'                                  00081000
+008110       GO TO B1-025.                                              00081100
+008120*                                                                 00081200
+008130 B1-020.                                                          00081300
+008140*      FLAG COD. IDENTIFICATIVO ERRATO                            00081400
+008150*                                                                 00081500
+008160     MOVE 55                      TO W-ERR-FLAG-COD-IDENT.        00081600
+008170     ADD 1                        TO W-CTR2.                      00081700
+008180     MOVE 'E'                     TO W-SEGNAL-FLAG-COD-IDENT.     00081800
+008190*                                                                 00081900
+008200 B1-025.                                                          00082000
+008210*                                                                 00082100
+008220     IF MEM-COD-IDENT =  '00' AND                                 00082200
+008230        W-COD-IDENT NOT EQUAL SPACES AND                          00082300
+008240        W-FLAG-COD-IDENT = '0'                                    00082400
+008250        MOVE 24                      TO W-ERR-COD-IDENT           00082500
+008260        ADD 1                        TO W-CTR2                    00082600
+008270        MOVE 'E'                     TO W-SEGNAL-COD-IDENT        00082700
+008280        MOVE 24                      TO W-ERR-FLAG-COD-IDENT      00082800
+008290        ADD 1                        TO W-CTR2                    00082900
+008300        MOVE 'E'                     TO W-SEGNAL-FLAG-COD-IDENT   00083000
+008310        GO TO B1-990-COD-IDEN-EX.                                 00083100
+008320*                                                                 00083200
+008330     IF MEM-COD-IDENT =  '00' AND                                 00083300
+008340        W-COD-IDENT NOT EQUAL SPACES AND                          00083400
+008350        W-FLAG-COD-IDENT = '1'                                    00083500
+008360*       ADD 1 TO W-CTR5                                           00083600
+008370        GO TO B1-990-COD-IDEN-EX.                                 00083700
+008380*                                                                 00083800
+008390     IF MEM-COD-IDENT = '00' AND                                  00083900
+008400        W-COD-IDENT EQUAL SPACES AND                              00084000
+008410        W-FLAG-COD-IDENT = '1'                                    00084100
+008420        MOVE 24                      TO W-ERR-FLAG-COD-IDENT      00084200
+008430        ADD 1                        TO W-CTR1                    00084300
+008440        MOVE 'W'                     TO W-SEGNAL-FLAG-COD-IDENT   00084400
+008450        GO TO B1-990-COD-IDEN-EX.                                 00084500
+008460                                                                  00084600
+008470*                                                                 00084700
+008480     IF MEM-COD-IDENT =  '01'                                     00084800
+008490        PERFORM B2-010-VER-DITTA THRU B2-990-VER-DITTA-EX.        00084900
+008500*                                                                 00085000
+008510*                                                                 00085100
+008520*  COD.IDENT=1 ERRATO E FLAG = '0'                                00085200
+008530*                                                                 00085300
+008540     IF W-FLAG-DITTA-OK = '0' AND MEM-COD-IDENT =  '01' AND       00085400
+008550        W-FLAG-COD-IDENT = '0'                                    00085500
+008560        MOVE 24                      TO W-ERR-COD-IDENT           00085600
+008570        ADD 1                        TO W-CTR2                    00085700
+008580        MOVE 'E'                     TO W-SEGNAL-COD-IDENT        00085800
+008590        MOVE 24                      TO W-ERR-FLAG-COD-IDENT      00085900
+008600        ADD 1                        TO W-CTR2                    00086000
+008610        MOVE 'E'                     TO W-SEGNAL-FLAG-COD-IDENT   00086100
+008620        GO TO B1-990-COD-IDEN-EX.                                 00086200
+008630*                                                                 00086300
+008640*                                                                 00086400
+008650*  COD IDENT=1 OK E FLAG = '1'                                    00086500
+008660*                                                                 00086600
+008670     IF W-FLAG-DITTA-OK = '1' AND MEM-COD-IDENT =  '01' AND       00086700
+008680        W-FLAG-COD-IDENT = '1'                                    00086800
+008690        MOVE 24                      TO W-ERR-FLAG-COD-IDENT      00086900
+008700        ADD 1                        TO W-CTR1                    00087000
+008710        MOVE 'W'                     TO W-SEGNAL-FLAG-COD-IDENT   00087100
+008720        GO TO B1-990-COD-IDEN-EX.                                 00087200
+008730*                                                                 00087300
+008740*                                                                 00087400
+008750*  COD IDENT=1  ERRATO E FLAG = '1'                               00087500
+008760*  OMOGENEITA'                                                    00087600
+008770*                                                                 00087700
+008780     IF W-FLAG-DITTA-OK = '0' AND MEM-COD-IDENT =  '01' AND       00087800
+008790        W-FLAG-COD-IDENT = '1'                                    00087900
+008800*       ADD 1 TO W-CTR5                                           00088000
+008810        GO TO B1-990-COD-IDEN-EX.                                 00088100
+008820*                                                                 00088200
+008830*                                                                 00088300
+008840*                                                                 00088400
+008850*  COD IDENT=1  OK     E FLAG = '0'                               00088500
+008860*      CASO OK                                                    00088600
+008870*                                                                 00088700
+008880     IF W-FLAG-DITTA-OK = '1' AND MEM-COD-IDENT = '01' AND        00088800
+008890        W-FLAG-COD-IDENT = '0'                                    00088900
+008900        GO TO B1-990-COD-IDEN-EX.                                 00089000
+008910*                                                                 00089100
+008920*                                                                 00089200
+008930 B1-036.                                                          00089300
+008940*                                                                 00089400
+008950*F INIZIO MODIFICA CODICE A BARRE - 12/2004                       00089500
+008960     IF (MEM-COD-IDENT = '02' AND                                 00089600
+008970         ((W-COD-IDEN2 LESS '00001' OR GREATER '29200')  OR       00089700
+008980          (W-COD-IDEN2        NOT NUMERIC) OR                     00089800
+008990          (W-COD-IDEN2-FILLER NOT EQUAL SPACES)))                 00089900
+009000     OR (MEM-COD-IDENT =  '03' AND                                00090000
+009010******** ((W-COD-IDEN3-1  EQUAL ZERO) OR                          00090100
+009020         ((W-COD-IDEN3 LESS '00001' OR GREATER '00420')  OR       00090200
+009030          (W-COD-IDEN3        NOT NUMERIC) OR                     00090300
+009040          (W-COD-IDEN3-FILLER NOT EQUAL SPACES))) OR              00090400
+009050        (MEM-COD-IDENT =  '05' AND                                00090500
+009060         ((W-COD-IDEN5 LESS '000001' OR GREATER '999999')  OR     00090600
+009070          (W-COD-IDEN5        NOT NUMERIC) OR                     00090700
+009080          (W-COD-IDEN5-FILLER NOT EQUAL SPACES))) OR              00090800
+009090        (MEM-COD-IDENT =  '06' AND                                00090900
+009100        (W-COD-IDEN6-1-6    NOT NUMERIC  OR                       00091000
+009110         W-COD-IDEN6-7      LESS 'A'     OR                       00091100
+009120         W-COD-IDEN6-7     EQUAL 'I'     OR                       00091200
+009130         W-COD-IDEN6-7     EQUAL 'O'     OR                       00091300
+009140         W-COD-IDEN6-7     EQUAL 'è'     OR                       00091400
+009150         W-COD-IDEN6-7     EQUAL 'ç'     OR                       00091500
+009160         W-COD-IDEN6-7   GREATER 'Z'     OR                       00091600
+009170*F       W-COD-IDEN6-8-9    NOT NUMERIC  OR                       00091700
+009180         W-COD-IDEN6-FILLER NOT EQUAL SPACES))                    00091800
+009190**** OR (MEM-COD-IDENT =  '04'  AND                               00091900
+009200******* ((W-COD-IDEN4    NOT NUMERIC) OR                          00092000
+009210******** (W-COD-IDEN4-N  NOT  NUMERIC) OR                         00092100
+009220******** (W-COD-IDEN4-FILLER NOT EQUAL SPACE )))                  00092200
+009230*F FINE MODIFICA CODICE A BARRE - 12/2004                         00092300
+009240       GO TO B1-050.                                              00092400
+009250*                                                                 00092500
+009260*    IF MEM-COD-IDENT =  '02'  AND                                00092600
+009270*      ((W-COD-IDEN2 LESS '00001' OR GREATER '29000')  OR         00092700
+009280*      (W-COD-IDEN2-FILLER NOT EQUAL SPACES))                     00092800
+009290*      GO TO B1-050.                                              00092900
+009300*    IF MEM-COD-IDENT =  '03' AND                                 00093000
+009310*       ((W-COD-IDEN3-1  EQUAL ZERO) OR                           00093100
+009320*        (W-COD-IDEN3-FILLER NOT EQUAL SPACES))                   00093200
+009330*      GO TO B1-050.                                              00093300
+009340*    IF MEM-COD-IDENT =  '04'  AND                                00093400
+009350*       ((W-COD-IDEN4    NOT NUMERIC) OR                          00093500
+009360*        (W-COD-IDEN4-N  NOT  NUMERIC) OR                         00093600
+009370*        (W-COD-IDEN4-FILLER NOT EQUAL SPACE ))                   00093700
+009380*      GO TO B1-050.                                              00093800
+009390*                                                                 00093900
+009400 B1-040.                                                          00094000
+009410*                                                                 00094100
+009420* CAMPO CORRETTO E FLAG=1                                         00094200
+009430*                                                                 00094300
+009440     IF  W-FLAG-COD-IDENT = '1'                                   00094400
+009450        MOVE 24                      TO W-ERR-FLAG-COD-IDENT      00094500
+009460        ADD 1                        TO W-CTR1                    00094600
+009470        MOVE 'W'                     TO W-SEGNAL-FLAG-COD-IDENT.  00094700
+009480     GO TO B1-060.                                                00094800
+009490*                                                                 00094900
+009500*                                                                 00095000
+009510 B1-050.                                                          00095100
+009520*                                                                 00095200
+009530*                                                                 00095300
+009540* CAMPO ERRATO                                                    00095400
+009550*                                                                 00095500
+009560     IF  W-FLAG-COD-IDENT = '0'                                   00095600
+009570       MOVE 24                      TO W-ERR-COD-IDENT            00095700
+009580       ADD 1                        TO W-CTR2                     00095800
+009590       MOVE 'E'                     TO W-SEGNAL-COD-IDENT         00095900
+009600       MOVE 24                      TO W-ERR-FLAG-COD-IDENT       00096000
+009610       ADD 1                        TO W-CTR2                     00096100
+009620       MOVE 'E'                     TO W-SEGNAL-FLAG-COD-IDENT.   00096200
+009630*    IF W-FLAG-COD-IDENT  = '1'                                   00096300
+009640*       ADD 1                        TO W-CTR5.                   00096400
+009650*                                                                 00096500
+009660 B1-060.                                                          00096600
+009670*                                                                 00096700
+009680*                                                                 00096800
+009690 B1-990-COD-IDEN-EX.                                              00096900
+009700     EXIT.                                                        00097000
+009710*                                                                 00097100
+009720*                                                                 00097200
+009730* ALGORITMO PROPRETARIO PER LA VERIFICA DEL CODICE DITTA          00097300
+009740*                                                                 00097400
+009750 B2-010-VER-DITTA.                                                00097500
+009760     MOVE '1'                     TO W-FLAG-DITTA-OK.             00097600
+009770     MOVE W-COD-IDENT1            TO W-COD-DITTA-RED.             00097700
+009780*F MODIFICA PER CODICE IDENTIFICATIVO TIPO 1                      00097800
+009790* VERIFICA NUMERICITA' DEL PROGRESSIVO DITTA E NON IMPOSTAZIONE   00097900
+009800* DEL CAMPO RICHIESTO A BLANK                                     00098000
+009810     IF (W-COD-PROG NOT NUMERIC) OR                               00098100
+009820        (W-COD-IDEN1-FILLER NOT EQUAL SPACES)                     00098200
+009830        GO TO B2-110.                                             00098300
+009840*                                                                 00098400
+009850 B2-020.                                                          00098500
+009860* VERIFICA CHE CODICE IMPOSTA SIA UN VALORE AMMISSIBILE           00098600
+009870     IF W-COD-IMPOSTA NOT = 'A' AND 'B' AND 'C' AND 'E' AND       00098700
+009880                            'F' AND                               00098800
+009890                            'O' AND                               00098900
+009900                            'P' AND 'S' AND 'T' AND               00099000
+009910                            'V' AND 'X' AND 'Y' AND               00099100
+009920                            'R' AND '9' AND                       00099200
+009930                            'G' AND 'W' AND 'D' AND 'K'           00099300
+009940        GO TO B2-100.                                             00099400
+009950*                                                                 00099500
+009960 B2-030.                                                          00099600
+009970     SET W-PUNT-PROV        TO 1.                                 00099700
+009980     SEARCH W-TAB-PROV-EL                                         00099800
+009990            AT END MOVE ZERO    TO W-FLAG-TROVATO                 00099900
+010000     WHEN W-TAB-PROV-COD (W-PUNT-PROV) = W-COD-PROV               00100000
+010010            MOVE 1 TO W-FLAG-TROVATO.                             00100100
+010020     IF W-FLAG-TROVATO = ZERO                                     00100200
+010030        GO TO B2-080.                                             00100300
+010040*                                                                 00100400
+010050 B2-040.                                                          00100500
+010060*                                                                 00100600
+010070 B2-050.                                                          00100700
+010080*                                                                 00100800
+010090     MOVE ZERO                       TO W-BQVFB3-FISSI.           00100900
+010100     MOVE W-COD-DITTA-RED            TO W-BQVFB3-DITTA.           00101000
+010110     CALL 'BQVFB3' USING W-PARAM-BQVFB3.                          00101100
+010120*                                                                 00101200
+010130     IF W-BQVFB3-COD-RIT NOT EQUAL ZERO                           00101300
+010140       GO TO B2-070.                                              00101400
+010150     GO TO B2-990-VER-DITTA-EX.                                   00101500
+010160*                                                                 00101600
+010170 B2-070.                                                          00101700
+010180*                                                                 00101800
+010190     MOVE '0'                        TO W-FLAG-DITTA-OK.          00101900
+010200     GO TO B2-990-VER-DITTA-EX.                                   00102000
+010210*                                                                 00102100
+010220 B2-080.                                                          00102200
+010230*                                                                 00102300
+010240     MOVE '0'                        TO W-FLAG-DITTA-OK.          00102400
+010250     GO TO B2-990-VER-DITTA-EX.                                   00102500
+010260                                                                  00102600
+010270*                                                                 00102700
+010280*                                                                 00102800
+010290 B2-100.                                                          00102900
+010300     MOVE '0'                        TO W-FLAG-DITTA-OK.          00103000
+010310     GO TO B2-990-VER-DITTA-EX.                                   00103100
+010320*                                                                 00103200
+010330 B2-110.                                                          00103300
+010340     MOVE '0'                        TO W-FLAG-DITTA-OK.          00103400
+010350*                                                                 00103500
+010360 B2-990-VER-DITTA-EX.                                             00103600
+010370     EXIT.                                                        00103700
+010380***************************************************************** 00103800
+010390*                                                                 00103900
+010400* ROUTINE DI CONTROLLO DEL RIFERIMENTO (MESE-ANNO)                00104000
+010410*                                                                 00104100
+010420 C2-010-RIFER.                                                    00104200
+010430*      SI CONTROLLA L'ESATTA IMPOSTAZIONE DEL FLAG                00104300
+010440*                                                                 00104400
+010450     IF W-FLAG-RIFER-TRIB  = '0' OR                               00104500
+010460        W-FLAG-RIFER-TRIB  = '1'                                  00104600
+010470       GO TO C2-025.                                              00104700
+010480*                                                                 00104800
+010490 C2-020.                                                          00104900
+010500*      FLAG RIFERIMENTO ERRATO                                    00105000
+010510*                                                                 00105100
+010520     MOVE 55                      TO W-ERR-FLAG-RIFER.            00105200
+010530     ADD 1                        TO W-CTR2.                      00105300
+010540     MOVE 'E'                     TO W-SEGNAL-FLAG-RIFER.         00105400
+010550*                                                                 00105500
+010560 C2-025.                                                          00105600
+010570*                                                                 00105700
+010580     MOVE W-RIFER-TRIB            TO W-DATA.                      00105800
+010590*                                                                 00105900
+010600     IF  MEM-RIFER-TRIB        EQUAL '000000'                     00106000
+010610*                                                                 00106100
+010620         IF W-RIFER-TRIB          NOT EQUAL '000000' AND          00106200
+010630            W-FLAG-RIFER-TRIB  = '0'                              00106300
+010640              MOVE 96          TO W-ERR-RIFER                     00106400
+010650              ADD 1            TO W-CTR2                          00106500
+010660              MOVE 'E'         TO W-SEGNAL-RIFER                  00106600
+010670              MOVE 24          TO W-ERR-FLAG-RIFER                00106700
+010680              ADD 1            TO W-CTR2                          00106800
+010690              MOVE 'E'         TO W-SEGNAL-FLAG-RIFER             00106900
+010700         END-IF                                                   00107000
+010710*                                                                 00107100
+010720         IF W-RIFER-TRIB         EQUAL '000000' AND               00107200
+010730              W-FLAG-RIFER-TRIB  = '1'                            00107300
+010740              MOVE 24           TO W-ERR-FLAG-RIFER               00107400
+010750              ADD 1             TO W-CTR1                         00107500
+010760              MOVE 'W'          TO W-SEGNAL-FLAG-RIFER            00107600
+010770         END-IF                                                   00107700
+010780*                                                                 00107800
+010790     END-IF.                                                      00107900
+010800*                                                                 00108000
+010810 C2-030.                                                          00108100
+010820*                                                                 00108200
+010830     IF MEM-RIFER-TRIB-1 EQUAL '00' AND                           00108300
+010840        MEM-RIFER-TRIB-2 EQUAL 'AAAA'                             00108400
+010850*                                                                 00108500
+010860         IF (W-DATA-MESE NOT EQUAL '00' OR                        00108600
+010870             W-DATA-ANNO LESS    '1900')  AND                     00108700
+010880             W-FLAG-RIFER-TRIB  = '0'                             00108800
+010890                  MOVE 96          TO W-ERR-RIFER                 00108900
+010900                  ADD 1            TO W-CTR2                      00109000
+010910                  MOVE 'E'         TO W-SEGNAL-RIFER              00109100
+010920                  MOVE 24          TO W-ERR-FLAG-RIFER            00109200
+010930                  ADD 1            TO W-CTR2                      00109300
+010940                  MOVE 'E'         TO W-SEGNAL-FLAG-RIFER         00109400
+010950         END-IF                                                   00109500
+010960*                                                                 00109600
+010970         IF W-DATA-MESE EQUAL '00' AND                            00109700
+010980            W-DATA-ANNO NOT LESS '1900' AND                       00109800
+010990            W-FLAG-RIFER-TRIB  = '1'                              00109900
+011000                  MOVE 24          TO W-ERR-FLAG-RIFER            00110000
+011010                  ADD 1            TO W-CTR1                      00110100
+011020                  MOVE 'W'         TO W-SEGNAL-FLAG-RIFER         00110200
+011030         END-IF                                                   00110300
+011040*                                                                 00110400
+011050     END-IF.                                                      00110500
+011060*                                                                 00110600
+011070 C2-040.                                                          00110700
+011080*                                                                 00110800
+011090     IF MEM-RIFER-TRIB-1 EQUAL 'MM' AND                           00110900
+011100        MEM-RIFER-TRIB-2 EQUAL '0000'                             00111000
+011110*                                                                 00111100
+011120         IF (W-DATA-MESE LESS     '01'  OR                        00111200
+011130             W-DATA-MESE GREATER  '12'  OR                        00111300
+011140             W-DATA-ANNO NOT EQUAL '0000')   AND                  00111400
+011150             W-FLAG-RIFER-TRIB  = '0'                             00111500
+011160                MOVE 96          TO W-ERR-RIFER                   00111600
+011170                ADD 1            TO W-CTR2                        00111700
+011180                MOVE 'E'         TO W-SEGNAL-RIFER                00111800
+011190                MOVE 24          TO W-ERR-FLAG-RIFER              00111900
+011200                ADD 1            TO W-CTR2                        00112000
+011210                MOVE 'E'         TO W-SEGNAL-FLAG-RIFER           00112100
+011220         END-IF                                                   00112200
+011230*                                                                 00112300
+011240         IF W-DATA-MESE NOT LESS    '01'  AND                     00112400
+011250            W-DATA-MESE NOT GREATER '12'  AND                     00112500
+011260            W-DATA-ANNO EQUAL '0000'      AND                     00112600
+011270            W-FLAG-RIFER-TRIB  = '1'                              00112700
+011280              MOVE 24                TO W-ERR-FLAG-RIFER          00112800
+011290              ADD 1                  TO W-CTR1                    00112900
+011300              MOVE 'W'               TO W-SEGNAL-FLAG-RIFER       00113000
+011310         END-IF                                                   00113100
+011320*                                                                 00113200
+011330     END-IF.                                                      00113300
+011340*                                                                 00113400
+011350 C2-050.                                                          00113500
+011360*                                                                 00113600
+011370     IF MEM-RIFER-TRIB-1 EQUAL 'MM' AND                           00113700
+011380        MEM-RIFER-TRIB-2 EQUAL 'AAAA'                             00113800
+011390*                                                                 00113900
+011400         IF ((W-DATA-MESE LESS '01'  AND                          00114000
+011410              W-COD-TRIB NOT = '5185' AND                         00114100
+011420              W-COD-TRIB NOT = '5186') OR                         00114200
+011430             W-DATA-MESE  GREATER '12' OR                         00114300
+011440             W-DATA-ANNO LESS '1900')  AND                        00114400
+011450             W-FLAG-RIFER-TRIB = '0'                              00114500
+011460              MOVE 96          TO W-ERR-RIFER                     00114600
+011470              ADD 1            TO W-CTR2                          00114700
+011480              MOVE 'E'         TO W-SEGNAL-RIFER                  00114800
+011490              MOVE 24          TO W-ERR-FLAG-RIFER                00114900
+011500              ADD 1            TO W-CTR2                          00115000
+011510              MOVE 'E'         TO W-SEGNAL-FLAG-RIFER             00115100
+011520         END-IF                                                   00115200
+011530*                                                                 00115300
+011540         IF W-DATA-MESE NOT LESS '01'  AND                        00115400
+011550            W-DATA-MESE  NOT GREATER '12' AND                     00115500
+011560            W-DATA-ANNO NOT LESS '1900' AND                       00115600
+011570            W-FLAG-RIFER-TRIB = '1'                               00115700
+011580              MOVE 24          TO W-ERR-FLAG-RIFER                00115800
+011590              ADD 1            TO W-CTR1                          00115900
+011600              MOVE 'W'         TO W-SEGNAL-FLAG-RIFER             00116000
+011610         END-IF                                                   00116100
+011620*                                                                 00116200
+011630     END-IF.                                                      00116300
+011640*                                                                 00116400
+011650 C2-990-EX.                                                       00116500
+011660     EXIT.                                                        00116600
+011670*                                                                 00116700
+011680***********************************************************       00116800
+011690* RICERCA CODICI TRIBUTO                                          00116900
+011700***********************************************************       00117000
+011710*                                                                 00117100
+011720 TRIB-010.                                                        00117200
+011730*                                                                 00117300
+011740     SET W-PUNT-TRIB        TO 1.                                 00117400
+011750     SEARCH W-TAB-TRIB-EL                                         00117500
+011760            AT END MOVE ZERO    TO W-FLAG-TROVATO                 00117600
+011770     WHEN W-TAB-TRIB-COD (W-PUNT-TRIB) = W-COD-TRIB               00117700
+011780      AND W-TAB-TRIB-INI-VAL (W-PUNT-TRIB) NOT > W-DATA-RISC      00117800
+011790      AND W-TAB-TRIB-FIN-VAL (W-PUNT-TRIB) NOT < W-DATA-RISC      00117900
+011800      MOVE 1 TO W-FLAG-TROVATO.                                   00118000
+011810*                                                                 00118100
+011820     IF W-FLAG-TROVATO = 0                                        00118200
+011830        GO TO TRIB-EXIT.                                          00118300
+011840*                                                                 00118400
+011850 TRIB-020.                                                        00118500
+011860*                                                                 00118600
+011870     IF W-FLAG-TROVATO = 1                                        00118700
+011880        MOVE '0' TO W-FLAG-TRIB                                   00118800
+011890        GO TO TRIB-EXIT.                                          00118900
+011900*                                                                 00119000
+011910 TRIB-EXIT.                                                       00119100
+011920*                                                                 00119200
+011930     EXIT.                                                        00119300
+011940************************************************************      00119400
+011950*----                                                             00119500
+011960*--- PERFORM DI CONTROLLO PER IL CODICE UFFICIO E IL              00119600
+011970*--- NUMERO UFFICIO                                               00119700
+011980 F1-010-UFF-NUM.                                                  00119800
+011990     MOVE SPACES                  TO W-UFF-KO.                    00119900
+012000     MOVE SPACES                  TO W-NUM-KO.                    00120000
+012010*---   CONTROLLO SE SI TRATTA DI TIPO RECORD V01                  00120100
+012020*---                                                              00120200
+012030 F1-020.                                                          00120300
+012040*---                                                              00120400
+012050*---   CONTROLLO CORRETTEZZA DEL FLAG UFFICIO.                    00120500
+012060*---                                                              00120600
+012070     IF W-FLAG-ERR-UFFICIO EQUAL '0' OR                           00120700
+012080        W-FLAG-ERR-UFFICIO EQUAL '1'                              00120800
+012090        GO TO F1-050.                                             00120900
+012100*---                                                              00121000
+012110 F1-030.                                                          00121100
+012120*---   ERRORE BLOCCANTE                                           00121200
+012130     MOVE 55                      TO W-ERR-FLAG-ERR-UFFICIO.      00121300
+012140     ADD 1                        TO W-CTR2.                      00121400
+012150     MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-UFF.       00121500
+012160*---                                                              00121600
+012170 F1-050.                                                          00121700
+012180*---   CONTROLLO CORRETTEZZA DEL FLAG NUMERO UFFICIO              00121800
+012190*---                                                              00121900
+012200     IF W-FLAG-ERR-NUMERO  EQUAL '0' OR                           00122000
+012210        W-FLAG-ERR-NUMERO  EQUAL '1'                              00122100
+012220        GO TO F1-080.                                             00122200
+012230 F1-060.                                                          00122300
+012240*---   ERRORE BLOCCANTE                                           00122400
+012250     MOVE 55                      TO W-ERR-FLAG-ERR-NUMERO.       00122500
+012260     ADD 1                        TO W-CTR2.                      00122600
+012270     MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-NUM.       00122700
+012280*---                                                              00122800
+012290 F1-080.                                                          00122900
+012300*--                                                               00123000
+012310     MOVE   ZERO             TO   W-COD-NUM-RIF.                  00123100
+012320*---                                                              00123200
+012330*--- CONTROLLO ESISTENZA DEL CODICE UFFICIO                       00123300
+012340*--- ACCEDO ALLA TABELLA UFFICI BQVX29                            00123400
+012350*---                                                              00123500
+012360     IF W-UFFICIO-RIF NOT EQUAL SPACES   AND                      00123600
+012370        W-UFFICIO-RIF NOT EQUAL ZERO                              00123700
+012380        GO TO F1-100.                                             00123800
+012390*---                                                              00123900
+012400 F1-090.                                                          00124000
+012410*--                                                               00124100
+012420*--   PASSO AL CONTROLLO DEL NUMERO RIFERIMENTO                   00124200
+012430*--                                                               00124300
+012440     GO TO F1-230.                                                00124400
+012450*---                                                              00124500
+012460 F1-100.                                                          00124600
+012470*---                                                              00124700
+012480*--- CONTROLLO ESISTENZA DEL CODICE UFFICIO                       00124800
+012490*--- NEL CAMPO DI LINK  W-UFF-RIF.                                00124900
+012500*--- ACCEDO ALLA TABELLA UFFICI BQVX29                            00125000
+012510*---                                                              00125100
+012520     IF W-UFF-RIF  NOT EQUAL SPACES   AND                         00125200
+012530        W-UFF-RIF  NOT EQUAL ZERO                                 00125300
+012540        GO TO F1-200.                                             00125400
+012550*---                                                              00125500
+012560 F1-110.                                                          00125600
+012570     SET W-PUNT-UFF TO 1.                                         00125700
+012580     SEARCH W-TAB-UFF-EL                                          00125800
+012590            AT END MOVE ZERO TO W-FLAG-TROVATO                    00125900
+012600     WHEN W-TAB-UFF-COD(W-PUNT-UFF)     = W-UFFICIO-RIF   AND     00126000
+012610          W-TAB-UFF-INI-VAL(W-PUNT-UFF) NOT > W-DATA-RISC AND     00126100
+012620          W-TAB-UFF-FINE-VAL(W-PUNT-UFF) NOT < W-DATA-RISC        00126200
+012630     MOVE W-TAB-UFF-KEY(W-PUNT-UFF)     TO W-KEY-UFF-OUT          00126300
+012640     MOVE 1                                TO W-FLAG-TROVATO.     00126400
+012650*---                                                              00126500
+012660*---  TROVATO                                                     00126600
+012670     IF W-FLAG-TROVATO = 1                                        00126700
+012680        GO TO F1-180.                                             00126800
+012690*---                                                              00126900
+012700 F1-140.                                                          00127000
+012710     MOVE W-UFFICIO-RIF      TO   W-UFF-RIF.                      00127100
+012720     MOVE 'KO'                    TO W-UFF-KO.                    00127200
+012730*---                                                              00127300
+012740*---   IL CODICE UFFICIO                                          00127400
+012750*---   NON ESISTE IN BASE INFORMATIVA;                            00127500
+012760*---   SI CONTROLLA SE L'ERRORE ERA STATO SEGNALATO NEL FLAG      00127600
+012770*---   RELATIVO AL CODICE UFFICIO                                 00127700
+012780*---                                                              00127800
+012790     IF W-FLAG-ERR-UFFICIO EQUAL '1'                              00127900
+012800        GO TO F1-160.                                             00128000
+012810*---                                                              00128100
+012820 F1-150.                                                          00128200
+012830*---   ERRORI                                                     00128300
+012840*---                                                              00128400
+012850     MOVE 504                     TO W-ERR-UFFICIO-RIF.           00128500
+012860     ADD 1                        TO W-CTR2                       00128600
+012870     MOVE 'E'                     TO W-SEGNAL-UFF-RIF.            00128700
+012880*---                                                              00128800
+012890*--- CONTROLLO SE IL CAMPO ERRORE DEL FLAG                        00128900
+012900*--- E' IMPOSTATO O NO.                                           00129000
+012910     IF W-ERR-FLAG-ERR-UFFICIO EQUAL ZERO                         00129100
+012920        MOVE 24                      TO W-ERR-FLAG-ERR-UFFICIO    00129200
+012930        ADD 1                        TO W-CTR2                    00129300
+012940        MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-UFF.    00129400
+012950     GO TO F1-230.                                                00129500
+012960*---                                                              00129600
+012970 F1-160.                                                          00129700
+012980*---                                                              00129800
+012990     GO TO F1-230.                                                00129900
+013000*---                                                              00130000
+013010 F1-180.                                                          00130100
+013020*---                                                              00130200
+013030*---   MEMORIZZO IL CODICE UFFICIO IN AREA DI LINK                00130300
+013040*---   IL CODICE UFFICIO                                          00130400
+013050*---   ESISTE IN BASE INFORMATIVA;                                00130500
+013060*---   SI CONTROLLA SE ERA STATO SEGNALATO UN ERRORE NEL FLAG     00130600
+013070*---                                                              00130700
+013080     MOVE W-UFFICIO-RIF      TO   W-UFF-RIF.                      00130800
+013090*---                                                              00130900
+013100     GO TO F1-230.                                                00131000
+013110*---                                                              00131100
+013120 F1-200.                                                          00131200
+013130*---                                                              00131300
+013140     PERFORM CONTR-UFF-010 THRU CONTR-UFF-EXIT.                   00131400
+013150*---                                                              00131500
+013160     IF  W-UFFICIO-RIF   EQUAL   W-UFF-RIF                        00131600
+013170*         GO TO F1-220.                                           00131700
+013180         GO TO F1-230.                                            00131800
+013190*---                                                              00131900
+013200 F1-210.                                                          00132000
+013210*---   ERRORE BLOCCANTE                                           00132100
+013220     MOVE  '1'                    TO W-COD-NUM-RIF.               00132200
+013230*---                                                              00132300
+013240     MOVE 509                     TO W-ERR-UFFICIO-RIF.           00132400
+013250     ADD 1                        TO W-CTR2.                      00132500
+013260     MOVE 'E'                     TO W-SEGNAL-UFF-RIF.            00132600
+013270     GO TO F1-230.                                                00132700
+013280*---                                                              00132800
+013290 F1-230.                                                          00132900
+013300*---                                                              00133000
+013310     IF W-NUMERO-RIF NUMERIC                                      00133100
+013320       GO TO F1-250.                                              00133200
+013330*---                                                              00133300
+013340 F1-240.                                                          00133400
+013350*---   ERRORE BLOCCANTE                                           00133500
+013360     ADD 1                        TO W-CTR2.                      00133600
+013370     MOVE 'E'                     TO W-SEGNAL-NUM-RIF.            00133700
+013380     MOVE 33                      TO W-ERR-NUMERO-RIF.            00133800
+013390     MOVE '1'                     TO W-NUM-RIF-KO.                00133900
+013400     GO TO F1-010-UFF-NUM-EX.                                     00134000
+013410*---                                                              00134100
+013420 F1-250.                                                          00134200
+013430*---   ERRORE NON BLOCCANTE                                       00134300
+013440*--- CONTROLLO ESISTENZA DEL NUMERO UFFICIO                       00134400
+013450*--- UTILIZZO LA ROUTINE ASSEMBLER  XAWX107A                      00134500
+013460*---                                                              00134600
+013470     IF W-NUMERO-RIF  NOT EQUAL SPACES   AND                      00134700
+013480        W-NUMERO-RIF  NOT EQUAL ZERO                              00134800
+013490        GO TO F1-270.                                             00134900
+013500*---                                                              00135000
+013510 F1-260.                                                          00135100
+013520*---                                                              00135200
+013530     GO TO F1-010-UFF-NUM-EX.                                     00135300
+013540*---                                                              00135400
+013550 F1-270.                                                          00135500
+013560*---                                                              00135600
+013570*--- CONTROLLO ESISTENZA DEL NUMERO UFFICIO                       00135700
+013580*--- DEL CAMPO DI LINK  W-NUM-RIF.                                00135800
+013590*---                                                              00135900
+013600     IF W-NUM-RIF  NOT EQUAL SPACES   AND                         00136000
+013610        W-NUM-RIF  NOT EQUAL ZERO                                 00136100
+013620        GO TO F1-340.                                             00136200
+013630*---                                                              00136300
+013640 F1-280.                                                          00136400
+013650*---                                                              00136500
+013660*--- CONTROLLO FORMALE DEL CAMPO NUMERO RIFERIMENTO               00136600
+013670*---                                                              00136700
+013680     MOVE SPACE                TO  W-BQVFB3-COD-FISC.             00136800
+013690     MOVE W-NUMERO-RIF         TO  W-BQVFB3-COD-FISC.             00136900
+013700     CALL 'BQVFB3'        USING    W-PARAM-BQVFB3.                00137000
+013710*---                                                              00137100
+013720     IF W-BQVFB3-COD-RIT  EQUAL    ZERO                           00137200
+013730        GO TO F1-320.                                             00137300
+013740*---                                                              00137400
+013750 F1-290.                                                          00137500
+013760*---                                                              00137600
+013770*---   IL NUMERO RIFERIMENTO                                      00137700
+013780*---   NON E' CORRETTO                                            00137800
+013790*---   SI CONTROLLA SE L'ERRORE ERA STATO SEGNALATO NEL FLAG      00137900
+013800*---   RELATIVO AL NUMERO RIFERIMENTO                             00138000
+013810*---                                                              00138100
+013820     MOVE    W-NUMERO-RIF        TO  W-NUM-RIF.                   00138200
+013830     MOVE 'KO'                    TO W-NUM-KO.                    00138300
+013840*---                                                              00138400
+013850     MOVE '1'                     TO W-NUM-RIF-KO.                00138500
+013860     IF W-FLAG-ERR-NUMERO  EQUAL '1'                              00138600
+013870        MOVE    W-NUMERO-RIF      TO  W-NUM-RIF                   00138700
+013880        GO TO F1-310.                                             00138800
+013890 F1-300.                                                          00138900
+013900*---   ERRORI                                                     00139000
+013910     MOVE 36                      TO W-ERR-NUMERO-RIF.            00139100
+013920     ADD 1                        TO W-CTR2.                      00139200
+013930     MOVE 'E'                     TO W-SEGNAL-NUM-RIF.            00139300
+013940*---                                                              00139400
+013950*--- CONTROLLO SE IL CAMPO ERRORE DEL FLAG                        00139500
+013960*--- E' IMPOSTATO O NO.                                           00139600
+013970     IF W-ERR-FLAG-ERR-NUMERO EQUAL ZERO                          00139700
+013980       MOVE 24                      TO W-ERR-FLAG-ERR-NUMERO      00139800
+013990       ADD 1                        TO W-CTR2                     00139900
+014000       MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-NUM.     00140000
+014010     GO TO F1-010-UFF-NUM-EX.                                     00140100
+014020*---                                                              00140200
+014030 F1-310.                                                          00140300
+014040*---   OMOGENEITA'                                                00140400
+014050     GO TO F1-010-UFF-NUM-EX.                                     00140500
+014060*---                                                              00140600
+014070*---                                                              00140700
+014080 F1-320.                                                          00140800
+014090*---                                                              00140900
+014100*---   MEMORIZZO IL NUMERO UFFICIO IN AREA DI LINK                00141000
+014110*---   IL NUMERO UFFICIO                                          00141100
+014120*---   ESISTE IN BASE INFORMATIVA;                                00141200
+014130*---   SI CONTROLLA SE ERA STATO SEGNALATO UN ERRORE NEL FLAG     00141300
+014140*---                                                              00141400
+014150     MOVE    W-NUMERO-RIF        TO  W-NUM-RIF.                   00141500
+014160     GO TO F1-010-UFF-NUM-EX.                                     00141600
+014170 F1-340.                                                          00141700
+014180*---                                                              00141800
+014190     PERFORM CONTR-ATTO-010 THRU CONTR-ATTO-EXIT.                 00141900
+014200     IF  W-NUMERO-RIF   EQUAL   W-NUM-RIF                         00142000
+014210         GO TO F1-010-UFF-NUM-EX.                                 00142100
+014220*---                                                              00142200
+014230 F1-350.                                                          00142300
+014240*---   ERRORE BLOCCANTE                                           00142400
+014250     MOVE '1'                     TO W-NUM-RIF-KO.                00142500
+014260     MOVE  '1'                    TO W-COD-NUM-RIF.               00142600
+014270*---                                                              00142700
+014280     MOVE 509                     TO W-ERR-NUMERO-RIF.            00142800
+014290     ADD 1                        TO W-CTR2.                      00142900
+014300     MOVE 'E'                     TO W-SEGNAL-NUM-RIF.            00143000
+014310     GO TO F1-010-UFF-NUM-EX.                                     00143100
+014320*---                                                              00143200
+014330 F1-010-UFF-NUM-EX.                                               00143300
+014340     EXIT.                                                        00143400
+014350*-----------------------------------------------------------      00143500
+014360*---      NUOVA PERFORM PER IL CONTROLLO DEL TIPO TRIBUTO         00143600
+014370*----------------------------------------------------------       00143700
+014380 G1-010-TRIB-UFFNUM.                                              00143800
+014390*----                                                             00143900
+014400*----                                                             00144000
+014410     IF W-COD-NUM-RIF      EQUAL  '1'    OR                       00144100
+014420        W-FLAG-TROVATO     EQUAL  'NO'                            00144200
+014430        GO TO G1-010-TRIB-UFFNUM-EX.                              00144300
+014440*---                                                              00144400
+014450 G1-020.                                                          00144500
+014460     IF MEM-COD-UFF = '1'                                         00144600
+014470        MOVE 'S'           TO W-FLAG-OBBL-UFF                     00144700
+014480           ELSE                                                   00144800
+014490        MOVE 'N'           TO W-FLAG-OBBL-UFF.                    00144900
+014500*---                                                              00145000
+014510 G1-030.                                                          00145100
+014520     IF MEM-COD-ATTO = '1'                                        00145200
+014530        MOVE 'S'           TO W-FLAG-OBBL-NUM                     00145300
+014540           ELSE                                                   00145400
+014550        MOVE 'N'           TO W-FLAG-OBBL-NUM.                    00145500
+014560*---                                                              00145600
+014570 G1-040.                                                          00145700
+014580     IF MEM-RATEAZIONE = '1'                                      00145800
+014590        MOVE 'S'           TO W-FLAG-OBBL-RAT                     00145900
+014600           ELSE                                                   00146000
+014610        MOVE 'N'           TO W-FLAG-OBBL-RAT.                    00146100
+014620*---                                                              00146200
+014630 G1-050.                                                          00146300
+014640*---                                                              00146400
+014650     PERFORM A2-010-OBBL-UFF THRU A2-010-OBBL-UFF-EX.             00146500
+014660     PERFORM B3-010-OBBL-NUM THRU B3-010-OBBL-NUM-EX.             00146600
+014670*                                                                 00146700
+014680*---                                                              00146800
+014690*---                                                              00146900
+014700 G1-010-TRIB-UFFNUM-EX.                                           00147000
+014710     EXIT.                                                        00147100
+014720*-----------------------------------------------------------      00147200
+014730*---      PERFORM PER IL CONTROLLO DEL CODICE FISCALE E           00147300
+014740*---      NUMERO DI RIFERIMENTO CONTEMPORANEAMENTE ERRATI         00147400
+014750*----------------------------------------------------------       00147500
+014760 H1-010-FISC-NUM.                                                 00147600
+014770*----                                                             00147700
+014780*--- SE IL TIPO TRIBUTO NON PREVEDE IL NUMERO DI RIFERIMENTO      00147800
+014790*--- NON SI EFFETTUA IL CONTROLLO                                 00147900
+014800 H1-020.                                                          00148000
+014810     IF W-TIPO-TRIB-OUT  EQUAL 'V' OR                             00148100
+014820        W-TIPO-TRIB-OUT  EQUAL 'U' OR                             00148200
+014830        W-TIPO-TRIB-OUT  EQUAL SPACE                              00148300
+014840        GO TO H1-010-FISC-NUM-EX.                                 00148400
+014850*---                                                              00148500
+014860*--- SE IL CODICE FISCALE E IL NUMERO RIFERIMENTO SONO ERRATI     00148600
+014870*--- ERRORE                                                       00148700
+014880 H1-030.                                                          00148800
+014890     IF W-COD-FISC-KO NOT = '1' OR                                00148900
+014900        W-NUM-RIF-KO  NOT = '1'                                   00149000
+014910        GO TO H1-010-FISC-NUM-EX.                                 00149100
+014920 H1-040.                                                          00149200
+014930     IF W-SEGNAL-NUM-RIF EQUAL '0' OR SPACE                       00149300
+014940        ADD 1                     TO W-CTR2.                      00149400
+014950     MOVE 888                     TO W-ERR-NUMERO-RIF             00149500
+014960     MOVE 'E'                     TO W-SEGNAL-NUM-RIF.            00149600
+014970*---                                                              00149700
+014980 H1-010-FISC-NUM-EX.                                              00149800
+014990     EXIT.                                                        00149900
+015000*---                                                              00150000
+015010 A2-010-OBBL-UFF.                                                 00150100
+015020*----                                                             00150200
+015030     IF W-UFF-RIF-ERARIO = '1' AND                                00150300
+015040        W-UFFICIO-RIF NOT EQUAL SPACES AND                        00150400
+015050        W-UFFICIO-RIF NOT EQUAL ZERO                              00150500
+015060           MOVE 96                TO W-ERR-UFFICIO-RIF            00150600
+015070           ADD 1                  TO W-CTR2                       00150700
+015080           MOVE 'E'               TO W-SEGNAL-UFF-RIF             00150800
+015090           GO TO A2-010-OBBL-UFF-EX.                              00150900
+015100     IF W-FLAG-OBBL-UFF = 'S'                                     00151000
+015110         GO TO A2-070.                                            00151100
+015120 A2-020.                                                          00151200
+015130*----                                                             00151300
+015140     IF W-UFFICIO-RIF EQUAL SPACES  OR                            00151400
+015150        W-UFFICIO-RIF EQUAL ZERO                                  00151500
+015160        GO TO A2-050.                                             00151600
+015170*---                                                              00151700
+015180 A2-030.                                                          00151800
+015190*---                                                              00151900
+015200     IF W-FLAG-ERR-UFFICIO EQUAL '1'                              00152000
+015210        GO TO A2-010-OBBL-UFF-EX.                                 00152100
+015220*---                                                              00152200
+015230 A2-040.                                                          00152300
+015240*---   ERRORE NON BLOCCANTE                                       00152400
+015250     IF W-ERR-FLAG-ERR-UFFICIO EQUAL ZERO                         00152500
+015260        MOVE 24                      TO W-ERR-FLAG-ERR-UFFICIO    00152600
+015270        ADD 1                        TO W-CTR1                    00152700
+015280        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-UFF.    00152800
+015290     GO TO A2-010-OBBL-UFF-EX.                                    00152900
+015300*---                                                              00153000
+015310 A2-050.                                                          00153100
+015320*---                                                              00153200
+015330     IF W-FLAG-ERR-UFFICIO EQUAL ZERO                             00153300
+015340        GO TO A2-010-OBBL-UFF-EX.                                 00153400
+015350 A2-060.                                                          00153500
+015360*---   ERRORE NON BLOCCANTE                                       00153600
+015370     IF W-ERR-FLAG-ERR-UFFICIO EQUAL ZERO                         00153700
+015380        MOVE 24                      TO W-ERR-FLAG-ERR-UFFICIO    00153800
+015390        ADD 1                        TO W-CTR1                    00153900
+015400        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-UFF.    00154000
+015410     GO TO A2-010-OBBL-UFF-EX.                                    00154100
+015420*----                                                             00154200
+015430 A2-070.                                                          00154300
+015440*---                                                              00154400
+015450     IF W-UFFICIO-RIF NOT EQUAL SPACES  AND                       00154500
+015460        W-UFFICIO-RIF NOT EQUAL ZERO                              00154600
+015470        GO TO A2-100.                                             00154700
+015480*---                                                              00154800
+015490 A2-080.                                                          00154900
+015500*---                                                              00155000
+015510     IF W-FLAG-ERR-UFFICIO   EQUAL  '1'                           00155100
+015520        GO TO A2-010-OBBL-UFF-EX.                                 00155200
+015530*---                                                              00155300
+015540 A2-090.                                                          00155400
+015550*---                                                              00155500
+015560*     EVIDENZIARE L'ERRORE                                        00155600
+015570*---   ERRORI                                                     00155700
+015580     MOVE 96                      TO W-ERR-UFFICIO-RIF.           00155800
+015590     ADD 1                        TO W-CTR2.                      00155900
+015600     MOVE 'E'                     TO W-SEGNAL-UFF-RIF.            00156000
+015610     IF W-ERR-FLAG-ERR-UFFICIO EQUAL ZERO                         00156100
+015620       MOVE 24                      TO W-ERR-FLAG-ERR-UFFICIO     00156200
+015630       ADD 1                        TO W-CTR2                     00156300
+015640       MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-UFF.     00156400
+015650     GO TO A2-010-OBBL-UFF-EX.                                    00156500
+015660*---                                                              00156600
+015670 A2-100.                                                          00156700
+015680*---                                                              00156800
+015690     IF W-FLAG-ERR-UFFICIO EQUAL ZERO                             00156900
+015700        GO TO A2-010-OBBL-UFF-EX.                                 00157000
+015710*---                                                              00157100
+015720 A2-110.                                                          00157200
+015730*---   ERRORE NON BLOCCANTE                                       00157300
+015740     IF W-ERR-FLAG-ERR-UFFICIO EQUAL ZERO AND                     00157400
+015750        W-UFF-KO           NOT EQUAL 'KO'                         00157500
+015760        MOVE 24                      TO W-ERR-FLAG-ERR-UFFICIO    00157600
+015770        ADD 1                        TO W-CTR1                    00157700
+015780        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-UFF.    00157800
+015790*---                                                              00157900
+015800 A2-010-OBBL-UFF-EX.                                              00158000
+015810     EXIT.                                                        00158100
+015820 B3-010-OBBL-NUM.                                                 00158200
+015830*----                                                             00158300
+015840     IF W-NUMERO-RIF NOT NUMERIC                                  00158400
+015850        GO TO B3-010-OBBL-NUM-EX.                                 00158500
+015860 B3-020.                                                          00158600
+015870*----                                                             00158700
+015880     IF W-NUM-RIF-ERARIO = '1' AND                                00158800
+015890        W-NUMERO-RIF NOT EQUAL SPACES AND                         00158900
+015900        W-NUMERO-RIF NOT EQUAL ZERO                               00159000
+015910           MOVE 96                TO W-ERR-NUMERO-RIF             00159100
+015920           ADD 1                  TO W-CTR2                       00159200
+015930           MOVE 'E'               TO W-SEGNAL-NUM-RIF             00159300
+015940           GO TO B3-010-OBBL-NUM-EX.                              00159400
+015950     IF W-FLAG-OBBL-NUM = 'S'                                     00159500
+015960        GO TO B3-080.                                             00159600
+015970 B3-030.                                                          00159700
+015980*----                                                             00159800
+015990     IF W-NUMERO-RIF EQUAL ZERO                                   00159900
+016000        GO TO B3-060.                                             00160000
+016010*---                                                              00160100
+016020 B3-040.                                                          00160200
+016030*---                                                              00160300
+016040*---   SI CONTROLLA SE ERA STATO SEGNALATO UN ERRORE NEL FLAG     00160400
+016050*---   RELATIVO AL NUMERO                                         00160500
+016060     IF W-FLAG-ERR-NUMERO EQUAL '1'                               00160600
+016070        GO TO B3-010-OBBL-NUM-EX.                                 00160700
+016080*---                                                              00160800
+016090 B3-050.                                                          00160900
+016100*---   ERRORE NON BLOCCANTE                                       00161000
+016110     IF W-ERR-FLAG-ERR-NUMERO EQUAL ZERO                          00161100
+016120        MOVE 24                      TO W-ERR-FLAG-ERR-NUMERO     00161200
+016130        ADD 1                        TO W-CTR1                    00161300
+016140        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-NUM.    00161400
+016150     GO TO B3-010-OBBL-NUM-EX.                                    00161500
+016160*---                                                              00161600
+016170 B3-060.                                                          00161700
+016180*---                                                              00161800
+016190*---   SI CONTROLLA SE ERA STATO SEGNALATO UN ERRORE NEL FLAG     00161900
+016200*---   RELATIVO AL NUMERO                                         00162000
+016210*---                                                              00162100
+016220     IF W-FLAG-ERR-NUMERO EQUAL ZERO                              00162200
+016230        GO TO B3-010-OBBL-NUM-EX.                                 00162300
+016240 B3-070.                                                          00162400
+016250*---   ERRORE NON BLOCCANTE                                       00162500
+016260     IF W-ERR-FLAG-ERR-NUMERO EQUAL ZERO                          00162600
+016270        MOVE 24                      TO W-ERR-FLAG-ERR-NUMERO     00162700
+016280        ADD 1                        TO W-CTR1                    00162800
+016290        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-NUM.    00162900
+016300     GO TO B3-010-OBBL-NUM-EX.                                    00163000
+016310*---                                                              00163100
+016320 B3-080.                                                          00163200
+016330     IF W-NUMERO-RIF NOT EQUAL ZERO OR                            00163300
+016340        COD-ATTO = 'FA'                                           00163400
+016350        GO TO B3-110                                              00163500
+016360     END-IF.                                                      00163600
+016370*---                                                              00163700
+016380 B3-090.                                                          00163800
+016390*---                                                              00163900
+016400     MOVE '1'                     TO W-NUM-RIF-KO.                00164000
+016410     IF W-FLAG-ERR-NUMERO  EQUAL '1'                              00164100
+016420        GO TO B3-010-OBBL-NUM-EX.                                 00164200
+016430*---                                                              00164300
+016440 B3-100.                                                          00164400
+016450*---   ERRORI                                                     00164500
+016460     MOVE 96                      TO W-ERR-NUMERO-RIF.            00164600
+016470     ADD 1                        TO W-CTR2.                      00164700
+016480     MOVE 'E'                     TO W-SEGNAL-NUM-RIF.            00164800
+016490*---                                                              00164900
+016500*--- CONTROLLO SE IL CAMPO ERRORE DEL FLAG                        00165000
+016510*--- E' IMPOSTATO O NO.                                           00165100
+016520     IF W-ERR-FLAG-ERR-NUMERO EQUAL ZERO                          00165200
+016530        MOVE 24                      TO W-ERR-FLAG-ERR-NUMERO     00165300
+016540        ADD 1                        TO W-CTR2                    00165400
+016550        MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-NUM.    00165500
+016560     GO TO B3-010-OBBL-NUM-EX.                                    00165600
+016570*---                                                              00165700
+016580 B3-110.                                                          00165800
+016590     IF W-FLAG-ERR-NUMERO EQUAL ZERO                              00165900
+016600        GO TO B3-010-OBBL-NUM-EX.                                 00166000
+016610*---                                                              00166100
+016620 B3-120.                                                          00166200
+016630*---   ERRORE NON BLOCCANTE                                       00166300
+016640     IF W-ERR-FLAG-ERR-NUMERO EQUAL ZERO AND                      00166400
+016650        W-NUM-KO          NOT EQUAL 'KO'                          00166500
+016660        MOVE 24                      TO W-ERR-FLAG-ERR-NUMERO     00166600
+016670        ADD 1                        TO W-CTR1                    00166700
+016680        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-NUM.    00166800
+016690*---                                                              00166900
+016700 B3-010-OBBL-NUM-EX.                                              00167000
+016710     EXIT.                                                        00167100
+016720*---                                                              00167200
+016730 R1-010-RATE.                                                     00167300
+016740*---                                                              00167400
+016750*---   CONTROLLO CORRETTEZZA DEL FLAG RATE                        00167500
+016760*---                                                              00167600
+016770     IF W-FLAG-ERR-RATEAZ  EQUAL '0' OR                           00167700
+016780        W-FLAG-ERR-RATEAZ  EQUAL '1'                              00167800
+016790        GO TO R1-018.                                             00167900
+016800*---                                                              00168000
+016810 R1-015.                                                          00168100
+016820*---   ERRORE BLOCCANTE                                           00168200
+016830     MOVE 55                      TO W-ERR-FLAG-ERR-RATEAZ.       00168300
+016840     ADD 1                        TO W-CTR2.                      00168400
+016850     MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-RATEAZ.    00168500
+016860*---                                                              00168600
+016870 R1-018.                                                          00168700
+016880*---                                                              00168800
+016890*----                                                             00168900
+016900     IF W-FLAG-OBBL-RAT = 'S'                                     00169000
+016910        GO TO R1-070.                                             00169100
+016920 R1-020.                                                          00169200
+016930*----                                                             00169300
+016940*F   IF W-RATEAZ EQUAL SPACES       OR                            00169400
+016950     IF W-RATEAZ EQUAL ZERO                                       00169500
+016960        GO TO R1-050.                                             00169600
+016970*---                                                              00169700
+016980 R1-030.                                                          00169800
+016990*---                                                              00169900
+017000     IF W-FLAG-ERR-RATEAZ EQUAL '1'                               00170000
+017010        GO TO R1-010-RATE-EX.                                     00170100
+017020*---                                                              00170200
+017030 R1-040.                                                          00170300
+017040*---   ERRORE NON BLOCCANTE                                       00170400
+017050     IF W-ERR-FLAG-ERR-RATEAZ EQUAL ZERO                          00170500
+017060        MOVE 24                      TO W-ERR-FLAG-ERR-RATEAZ     00170600
+017070        ADD 1                        TO W-CTR1                    00170700
+017080        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-RATEAZ. 00170800
+017090     GO TO R1-010-RATE-EX.                                        00170900
+017100*---                                                              00171000
+017110 R1-050.                                                          00171100
+017120*---                                                              00171200
+017130     IF W-FLAG-ERR-RATEAZ EQUAL ZERO                              00171300
+017140        GO TO R1-010-RATE-EX.                                     00171400
+017150 R1-060.                                                          00171500
+017160*---   ERRORE NON BLOCCANTE                                       00171600
+017170     IF W-ERR-FLAG-ERR-RATEAZ EQUAL ZERO                          00171700
+017180        MOVE 24                      TO W-ERR-FLAG-ERR-RATEAZ     00171800
+017190        ADD 1                        TO W-CTR1                    00171900
+017200        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-RATEAZ. 00172000
+017210     GO TO R1-010-RATE-EX.                                        00172100
+017220*----                                                             00172200
+017230 R1-070.                                                          00172300
+017240*---                                                              00172400
+017250*F   IF W-RATEAZ NOT EQUAL SPACES       AND                       00172500
+017260*F      W-RATEAZ NOT EQUAL ZERO                                   00172600
+017270     IF W-RATEAZ GREATER ZERO                                     00172700
+017280        GO TO R1-100.                                             00172800
+017290*---                                                              00172900
+017300 R1-080.                                                          00173000
+017310*---                                                              00173100
+017320     IF W-FLAG-ERR-RATEAZ    EQUAL  '1'                           00173200
+017330        GO TO R1-010-RATE-EX.                                     00173300
+017340*---                                                              00173400
+017350 R1-090.                                                          00173500
+017360*---                                                              00173600
+017370*     EVIDENZIARE L'ERRORE                                        00173700
+017380*---   ERRORI                                                     00173800
+017390     MOVE 96                      TO W-ERR-RATEAZ.                00173900
+017400     ADD 1                        TO W-CTR2.                      00174000
+017410     MOVE 'E'                     TO W-SEGNAL-RATEAZ.             00174100
+017420     IF W-ERR-FLAG-ERR-RATEAZ EQUAL ZERO                          00174200
+017430       MOVE 24                      TO W-ERR-FLAG-ERR-RATEAZ      00174300
+017440       ADD 1                        TO W-CTR2                     00174400
+017450       MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-RATEAZ.  00174500
+017460     GO TO R1-010-RATE-EX.                                        00174600
+017470*---                                                              00174700
+017480 R1-100.                                                          00174800
+017490*---                                                              00174900
+017500     IF W-FLAG-ERR-RATEAZ EQUAL ZERO                              00175000
+017510        GO TO R1-010-RATE-EX.                                     00175100
+017520*---                                                              00175200
+017530 R1-110.                                                          00175300
+017540*---   ERRORE NON BLOCCANTE                                       00175400
+017550     IF W-ERR-FLAG-ERR-RATEAZ EQUAL ZERO   AND                    00175500
+017560        W-UFF-KO           NOT EQUAL 'KO'                         00175600
+017570        MOVE 24                      TO W-ERR-FLAG-ERR-RATEAZ     00175700
+017580        ADD 1                        TO W-CTR1                    00175800
+017590        MOVE 'W'                     TO W-SEGNAL-FLAG-ERR-RATEAZ. 00175900
+017600*---                                                              00176000
+017610 R1-010-RATE-EX.                                                  00176100
+017620     EXIT.                                                        00176200
+017630*---                                                              00176300
+017640 CONTR-UFF-010.                                                   00176400
+017650*---                                                              00176500
+017660     SET W-PUNT-UFF TO 1.                                         00176600
+017670     SEARCH W-TAB-UFF-EL                                          00176700
+017680            AT END MOVE ZERO TO W-FLAG-TROVATO                    00176800
+017690     WHEN W-TAB-UFF-COD(W-PUNT-UFF)     = W-UFFICIO-RIF   AND     00176900
+017700          W-TAB-UFF-INI-VAL(W-PUNT-UFF) NOT > W-DATA-RISC AND     00177000
+017710          W-TAB-UFF-FINE-VAL(W-PUNT-UFF) NOT < W-DATA-RISC        00177100
+017720     MOVE W-TAB-UFF-KEY(W-PUNT-UFF)     TO W-KEY-UFF-OUT          00177200
+017730     MOVE 1                                TO W-FLAG-TROVATO.     00177300
+017740*---                                                              00177400
+017750*---  TROVATO                                                     00177500
+017760     IF W-FLAG-TROVATO = 1                                        00177600
+017770        GO TO CONTR-UFF-EXIT.                                     00177700
+017780*---                                                              00177800
+017790 CONTR-UFF-020.                                                   00177900
+017800*---                                                              00178000
+017810     MOVE 'KO'                    TO W-UFF-KO.                    00178100
+017820*---                                                              00178200
+017830*---   IL CODICE UFFICIO                                          00178300
+017840*---   NON ESISTE IN BASE INFORMATIVA;                            00178400
+017850*---   SI CONTROLLA SE L'ERRORE ERA STATO SEGNALATO NEL FLAG      00178500
+017860*---   RELATIVO AL CODICE UFFICIO                                 00178600
+017870*---                                                              00178700
+017880     IF W-FLAG-ERR-UFFICIO EQUAL '1'                              00178800
+017890        GO TO CONTR-UFF-EXIT.                                     00178900
+017900*---                                                              00179000
+017910 CONTR-UFF-030.                                                   00179100
+017920*---   ERRORI                                                     00179200
+017930*---                                                              00179300
+017940     MOVE 504                     TO W-ERR-UFFICIO-RIF.           00179400
+017950     ADD 1                        TO W-CTR2                       00179500
+017960     MOVE 'E'                     TO W-SEGNAL-UFF-RIF.            00179600
+017970*---                                                              00179700
+017980*--- CONTROLLO SE IL CAMPO ERRORE DEL FLAG                        00179800
+017990*--- E' IMPOSTATO O NO.                                           00179900
+018000     IF W-ERR-FLAG-ERR-UFFICIO EQUAL ZERO                         00180000
+018010        MOVE 24                      TO W-ERR-FLAG-ERR-UFFICIO    00180100
+018020        ADD 1                        TO W-CTR2                    00180200
+018030        MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-UFF.    00180300
+018040*---                                                              00180400
+018050 CONTR-UFF-EXIT.                                                  00180500
+018060*---                                                              00180600
+018070     EXIT.                                                        00180700
+018080*---                                                              00180800
+018090 CONTR-ATTO-010.                                                  00180900
+018100*---                                                              00181000
+018110*--- CONTROLLO FORMALE DEL CAMPO NUMERO RIFERIMENTO               00181100
+018120*---                                                              00181200
+018130     MOVE SPACE                TO  W-BQVFB3-COD-FISC.             00181300
+018140     MOVE W-NUMERO-RIF         TO  W-BQVFB3-COD-FISC.             00181400
+018150     CALL 'BQVFB3'        USING    W-PARAM-BQVFB3.                00181500
+018160*---                                                              00181600
+018170     IF W-BQVFB3-COD-RIT  EQUAL    ZERO                           00181700
+018180        GO TO CONTR-ATTO-EXIT.                                    00181800
+018190*---                                                              00181900
+018200 CONTR-ATTO-020.                                                  00182000
+018210*---                                                              00182100
+018220*---   IL NUMERO RIFERIMENTO                                      00182200
+018230*---   NON E' CORRETTO                                            00182300
+018240*---   SI CONTROLLA SE L'ERRORE ERA STATO SEGNALATO NEL FLAG      00182400
+018250*---   RELATIVO AL NUMERO RIFERIMENTO                             00182500
+018260*---                                                              00182600
+018270     MOVE 'KO'                    TO W-NUM-KO.                    00182700
+018280*---                                                              00182800
+018290     MOVE '1'                     TO W-NUM-RIF-KO.                00182900
+018300     IF W-FLAG-ERR-NUMERO  EQUAL '1'                              00183000
+018310        GO TO CONTR-ATTO-EXIT.                                    00183100
+018320 CONTR-ATTO-030.                                                  00183200
+018330*---   ERRORI                                                     00183300
+018340     MOVE 36                      TO W-ERR-NUMERO-RIF.            00183400
+018350     ADD 1                        TO W-CTR2.                      00183500
+018360     MOVE 'E'                     TO W-SEGNAL-NUM-RIF.            00183600
+018370*---                                                              00183700
+018380*--- CONTROLLO SE IL CAMPO ERRORE DEL FLAG                        00183800
+018390*--- E' IMPOSTATO O NO.                                           00183900
+018400     IF W-ERR-FLAG-ERR-NUMERO EQUAL ZERO                          00184000
+018410       MOVE 24                      TO W-ERR-FLAG-ERR-NUMERO      00184100
+018420       ADD 1                        TO W-CTR2                     00184200
+018430       MOVE 'E'                     TO W-SEGNAL-FLAG-ERR-NUM.     00184300
+018440     GO TO CONTR-ATTO-EXIT.                                       00184400
+018450*---                                                              00184500
+018460 CONTR-ATTO-EXIT.                                                 00184600
+018470*---   OMOGENEITA'                                                00184700
+018480     EXIT.                                                        00184800
+018490*---                                                              00184900
+018500****************************************************************  00185000

@@ -1,0 +1,2180 @@
+000010 IDENTIFICATION DIVISION.                                         00000100
+000020 PROGRAM-ID.     BQVFB8.                                          00000200
+000030 AUTHOR. N9143 - R. D'ELIA.                                       00000300
+000040 DATE-WRITTEN.  05/04/2000.                                       00000400
+000050*************************************************************     00000500
+000060*$1 TITOLO - CONTROLLI FORMALI E QUADRATURA - RECORD V38          00000600
+000070*************************************************************     00000700
+000080*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00000800
+000090*   IL COMPONENTE RICEVE IN INPUT I DATI RELATIVI AL RECORD       00000900
+000100*   DI TIPO V08 E LE INFORMAZIONI SUGLI ACCREDITAMENTI DA         00001000
+000110*   EFFETTUARE.                                                   00001100
+000120*   SVOLGE DEI CONTROLLI FORMALI E DI QUADRATURA SUI CAMPI;       00001200
+000130*   IN CASO DI INCORRETTEZZE PROVVEDE AD IMPOSTARE (NELLO         00001300
+000140*   STESSO MODULO) DEI CODICI DI ERRORE ED INCREMENTA I           00001400
+000150*   CONTATORI RELATIVI AL TIPO DI ERRORE (BLOCCANTE)              00001500
+000160*                                                                 00001600
+000170* 2. ARCHIVI GESTITI                                              00001700
+000180*      NESSUNO                                                    00001800
+000190*                                                                 00001900
+000200* 3. SUBROUTINES RICHIAMATE                                       00002000
+000210*      NOME       DESCRIZIONE                                     00002100
+000220*    BQVFDA   ROUTINE CONTROLLO DATE                              00002200
+000230*                                                                 00002300
+000240 ENVIRONMENT DIVISION.                                            00002400
+000250 CONFIGURATION SECTION.                                           00002500
+000260 SPECIAL-NAMES.                                                   00002600
+000270     DECIMAL-POINT IS COMMA.                                      00002700
+000280 INPUT-OUTPUT SECTION.                                            00002800
+000290 FILE-CONTROL.                                                    00002900
+000300 DATA DIVISION.                                                   00003000
+000310 FILE SECTION.                                                    00003100
+000320***************  WORKING STORAGE SECTION  **********************  00003200
+000330 WORKING-STORAGE SECTION.                                         00003300
+000340 77  W-S                           PIC X(8) VALUE 'BQVFB8WS'.     00003400
+000350*--- CODICE DI ABEND                                              00003500
+000360 77  ABEND-CODE                    PIC 9(004) VALUE ZERO.         00003600
+000370*--- CAMPO D'APPOGGIO PER CODICE PROVINCIA                        00003700
+000380 77  W-COD-PROV                    PIC  X(002).                   00003800
+000390*--- INDICE PER SCANSIONE TABELLA DEI SALDI                       00003900
+000400 77  W-IND                         PIC  9(003).                   00004000
+000410*--- FLAG PER INDICARE LA PRESENZA DELLA PROVINCIA ELABORATA      00004100
+000420*--- SULLA TABELLA DEI SALDI                                      00004200
+000430 77  W-FLAG-NO-ELEM                PIC 9(001).                    00004300
+000440*--- SI IMPOSTA IL VALORE DELL'IMPORTO BONIFICO DICHIARATO        00004400
+000450*--- AI FINI DEL TEST PER CONTROLLI DI CONGURNZA.                 00004500
+000460*--- IN CASO DI VALORE ALFANUMERICO SI MUOVE 1 NELL'IMPORTO       00004600
+000470 77  W-APP-IMP-BONIF               PIC 9(015).                    00004700
+000480*--- SI IMPOSTA LA DATA BONIFICO PER PROGRESSIVO = 1, LA DATA     00004800
+000490*--- BONIFICO COMPENSATIVO PER PROGRESSIVO > 1.                   00004900
+000500 77  W-APPO-DATA-BON               PIC X(08).                     00005000
+000510* IMPORTO SALDO CASSA PER TUTTE LE PROVINCE                       00005100
+000520 77  W-SALDO-CASSA                 PIC  S9(015).                  00005200
+000530 77  W-SALDO-PARZ                  PIC  S9(015).                  00005300
+000540 77  W-COMM-I-R                    PIC  S9(015).                  00005400
+000550 77  W-COMM-I-R-PARZ               PIC  S9(015)V99.               00005500
+000560 77  W-COMM-I-R-APPO               PIC  S9(015)V99.               00005600
+000570 77  W-IMP-DELEGA                  PIC   9(006)V99.               00005700
+000580 77  W-IMP-DELEGA-EUR              PIC   9(006)V99.               00005800
+000590*---        CAMPO D'APPOGGIO PER IMPOSTAZIONE CODICI ABEND        00005900
+000600 77  W-ABEND-CODE                  PIC 9(004).                    00006000
+000610*---------------------------------------------------------*       00006100
+000620*-- CAMPI D'APPOGGIO PER CONTROLLI QUADRATURA           --*       00006200
+000630*---------------------------------------------------------*       00006300
+000640* ACCANTONAMENTO CASSA                                            00006400
+000650 77  W-C                           PIC S9(015).                   00006500
+000660*--- CAMPI UTILIZZATI PER LE QUADRATURE PER L'INTRODUZIONE DELL'  00006600
+000670*--- ANTICIPO                                                     00006700
+000680 77  W-RISULT2                     PIC S9(015).                   00006800
+000690 77  W-RISULT3                     PIC S9(015).                   00006900
+000700 77  W-RISULT4                     PIC S9(015).                   00007000
+000710*--    INTERESSI ANTICIPO CALCOLATI                               00007100
+000720 77  W-INT-ANTIC-CALC              PIC S9(015).                   00007200
+000730 77  W-INTERESSI-ANTIC             PIC S9(14)V9999.               00007300
+000740* INIZIO MODIFICA 12/12/2002 -CAMPO APPOGGIO PER CALCOLO INT.ANTIC00007400
+000750 77  W-TASSO-INT-ANTIC             PIC 9(2)V9999.                 00007500
+000760* FINE MODIFICA 12/12/2002                                        00007600
+000770*--                                                               00007700
+000780 77  W-GG-ANTIC                    PIC -9(006).                   00007800
+000790*---                                                              00007900
+000800 77  W-RISULT1-80                  PIC S9(015).                   00008000
+000810*---                                                              00008100
+000820* TOTALE COMMISSIONI DICHIARATE                                   00008200
+000830 77  W-TOT-COMM-DICH               PIC S9(015).                   00008300
+000840* TOTALE BONIFICI DICHIARATI E CALCOLATI                          00008400
+000850 77  W-TOT-BON-DICH                PIC S9(015).                   00008500
+000860 77  W-TOT-BON-CALC                PIC S9(015).                   00008600
+000870 77  W-TOT-BON-APPO                PIC  9(015).                   00008700
+000880*--                                                               00008800
+000890 77  W-IC-TIPO                    PIC X(003).                     00008900
+000900*---------------------------------------------------------*       00009000
+000910*-- CAMPI D'APPOGGIO PER LA SEARCH SU AZIENDE           --*       00009100
+000920*---------------------------------------------------------*       00009200
+000930 77  W-FLAG-TROVATO                PIC 9(001).                    00009300
+000940 77  W-AZIENDA-INP                 PIC X(005).                    00009400
+000950*---                                                              00009500
+000960 01  W-FLAG-DECOD                      PIC X(1).                  00009600
+000970*---                                                              00009700
+000980 01  W-IND-CRO                         PIC 9(2).                  00009800
+000990*---                                                              00009900
+001000 01  W-CRO-TAB.                                                   00010000
+001010     03  W-CRO-TAB-ELEM OCCURS 11.                                00010100
+001020         05  W-CRO-ALFA                PIC X(1).                  00010200
+001030*---                                                              00010300
+001040 01  W-CRO-TAB-DECOD.                                             00010400
+001050     03  W-CRO-TAB-DECOD-ELEM OCCURS 11.                          00010500
+001060         05  W-CRO-ALFA-DECOD          PIC X(1).                  00010600
+001070*---               TRACCIATO RECORD "ESITI" - BANCA               00010700
+001080     COPY 'FBQVFB21'.                                             00010800
+001090*----      ROUTINE PER IL CONTROLLO DATE                          00010900
+001100*                                                                 00011000
+001110     COPY 'FBQVFDA1'.                                             00011100
+001120*----      IMPORTO COMMISSIONI IN LIRE ED EURO                    00011200
+001130*                                                                 00011300
+001140     COPY 'FBQVFCO1'.                                             00011400
+001150********************** LINKAGE SECTION ***************************00011500
+001160*                                                                 00011600
+001170 LINKAGE SECTION.                                                 00011700
+001180*------------------------------------------------------*          00011800
+001190*---               AREA DI COLLOQUIO               ----*          00011900
+001200*------------------------------------------------------*          00012000
+001210*--- TIPO DI CHIAMATA PER IL PROGRAMMA:                           00012100
+001220*--- "Q" = SI EFFETTUANO I CONTROLLI DI QUADRATURA VERTICALE      00012200
+001230*--- " " = SI EFFETTUANO I CONTROLLI FORMALI                      00012300
+001240 01  W-TIPO-CHIAMATA               PIC X(001).                    00012400
+001250*---     AREA DATI RELATIVA AL FILE ESITO                         00012500
+001260 01  W-DATI                        PIC X(440).                    00012600
+001270*---                                                              00012700
+001280*---   TABELLA DI APPOGGIO DEGLI ESITI PER PROVICIA UGUALE        00012800
+001290*---                                                              00012900
+001300 01  W-TAB-MEM-BQVFB21.                                           00013000
+001310     03  W-MEM-BQVFB21 OCCURS 99 INDEXED BY M.                    00013100
+001320         05  FILLER                PIC  X(003).                   00013200
+001330         05  W-MEM-COD-ABI         PIC  X(005).                   00013300
+001340         05  W-MEM-DATA-BONIF      PIC  X(008).                   00013400
+001350         05  FILLER                PIC  X(013).                   00013500
+001360         05  W-MEM-DATA-BONIF-COMP PIC  X(008).                   00013600
+001370         05  W-MEM-CRO             PIC  X(011).                   00013700
+001380         05  W-MEM-MITT            PIC  X(005).                   00013800
+001390         05  FILLER                PIC  X(312).                   00013900
+001400         05  W-MEM-CRO-NEW         PIC  X(011).                   00014000
+001410         05  FILLER                PIC  X(136).                   00014100
+001420 01  W-TAB-SALDI.                                                 00014200
+001430     03  W-EL-SALDI OCCURS 130 INDEXED BY P.                      00014300
+001440         05  W-PROV                PIC  X(002).                   00014400
+001450         05  W-SALDO-FISCO         PIC S9(015).                   00014500
+001460         05  W-FLAG-FISCO          PIC  9(001).                   00014600
+001470         05  W-SALDO-INPS          PIC S9(015).                   00014700
+001480         05  W-SALDO-REG           PIC S9(015).                   00014800
+001490         05  W-SALDO-ENTI          PIC S9(015).                   00014900
+001500         05  W-SALDO-INAIL         PIC S9(015).                   00015000
+001510         05  W-SALDO-ALTRI         PIC S9(015).                   00015100
+001520         05  W-SALDO-ACCISE        PIC S9(015).                   00015200
+001530         05  FILLER                PIC  9(001).                   00015300
+001540         05  W-NUM-DEL-F           PIC  9(006).                   00015400
+001550         05  W-NUM-DEL-NO-F        PIC  9(006).                   00015500
+001560*---   DIVISA                                                     00015600
+001570 01  W-DIVISA                      PIC X(003).                    00015700
+001580*---   CONTATORE ERRORI NON BLOCCANTI                             00015800
+001590 01  W-CTR1                        PIC 9(009).                    00015900
+001600*---   CONTATORE ERRORI BLOCCANTI                                 00016000
+001610 01  W-CTR2                        PIC 9(009).                    00016100
+001620 01  W-ALTRI-PARAM.                                               00016200
+001630* CONDIZIONE DI ERRORE SUI TIPI RECORD V08                        00016300
+001640* E' DI INPUT-OUTPUT                                              00016400
+001650    03  W-FLAG-NO-QUAD                PIC 9(001).                 00016500
+001660* COMMISSIONE RESIDUA                                             00016600
+001670* E' DI OUTPUT                                                    00016700
+001680    03  W-COMR                        PIC  9(015).                00016800
+001690* AREA NON UTILIZZATA                                             00016900
+001700    03  FILLER                        PIC  9(015).                00017000
+001710* IMPORTO COMMISSIONI CALCOLATO                                   00017100
+001720* E' DI OUTPUT                                                    00017200
+001730    03  W-COMM-CALC                   PIC  9(015).                00017300
+001740* IMPORTO BONIFICI COMPENSATIVI DICHIARATI                        00017400
+001750* E' DI INPUT-OUTPUT                                              00017500
+001760    03  W-ACCR-BON-COMP               PIC  9(015).                00017600
+001770* IMPORTO BONIFICI COMPENSATIVI CALCOLATI                         00017700
+001780* E' DI INPUT-OUTPUT                                              00017800
+001790    03  W-ACCR-BON-COMP-CALC          PIC  9(015).                00017900
+001800* NUMERO BONIFICI COMPENSATIVI DICHIARATI                         00018000
+001810* E' DI INPUT-OUTPUT                                              00018100
+001820    03  W-NUMR-COMP                   PIC  9(002).                00018200
+001830* NUMERO BONIFICI COMPENSATIVI CALCOLATI                          00018300
+001840* E' DI INPUT-OUTPUT                                              00018400
+001850    03  W-NUMR-COMP-CALC              PIC  9(002).                00018500
+001860* FLAG INDICANTE LA PRESENZA DI RECORD ACCREDITAMENTI             00018600
+001870* DRATURA                                                         00018700
+001880    03  FILLER                        PIC  9(001).                00018800
+001890*---                                                              00018900
+001900**TABELLA CONTENETE I CODICI AZIENDA PRELEVATI DAL FILE SEQ.      00019000
+001910**BQVFAZ  (PER I CONTROLLI CUI CODICI ABI)                        00019100
+001920*---                                                              00019200
+001930 01  W-TAB-AZIENDE.                                               00019300
+001940     03 W-TAB-AZIENDE-NUM-MAX    PIC 9(004).                      00019400
+001950     03 W-TAB-AZIENDE-OCC.                                        00019500
+001951        05 W-TAB-AZIENDE-EL      OCCURS 2000 TIMES                00019600
+001970                                 ASCENDING W-TAB-AZ-COD-NUM       00019700
+001980                                 INDEXED BY W-PUNT-AZIENDE.       00019800
+001990           07 W-TAB-AZ-COD-NUM PIC 9(005).                        00019900
+002000           07 W-TAB-AZ-COD-ALF   REDEFINES                        00020000
+002010                    W-TAB-AZ-COD-NUM   PIC X(005).                00020100
+002020**MODIFICA 13/03/2006                                             00020200
+002030**TABELLA CONTENENTE I VALORI PER IL CALCOLO DI INTERESSI E       00020300
+002040**COMMISSIONI PRELEVATI DAL FILE BQVFIC                           00020400
+002050 01  W-TAB-IC.                                                    00020500
+002051     03 W-TAB-IC-NUM-MAX            PIC 9(003) VALUE 200.         00020600
+002070     03 W-TAB-IC-OCC.                                             00020700
+002071        05 W-TAB-IC-EL OCCURS 200 TIMES                           00020800
+002090                                    ASCENDING W-TAB-IC-KEY        00020900
+002100                                    INDEXED BY W-PUNT-IC.         00021000
+002110           07 W-TAB-IC-KEY.                                       00021100
+002120              09 W-TAB-IC-TIPO        PIC X(003).                 00021200
+002130              09 W-TAB-IC-ENTE        PIC X(001).                 00021300
+002140              09 W-TAB-IC-MOD-CONF    PIC X(001).                 00021400
+002150              09 W-TAB-IC-INIZIO-VAL  PIC X(008).                 00021500
+002160           07 W-TAB-IC-FINE-VAL       PIC X(008).                 00021600
+002170           07 W-TAB-IC-COMM           PIC 9(6)V9(2).              00021700
+002180           07 W-TAB-IC-INTER          PIC 9(2)V9(4).              00021800
+002190*---   PROVENIENZA                                                00021900
+002200 01  W-PROVEN                      PIC X(001).                    00022000
+002210*--    SALDO AGEVOLAZIONI                                         00022100
+002220 01  W-SALDO-AGEV                  PIC S9(015).                   00022200
+002230*--    VERSIONE MODELLO F24: PUO' VALERE 'R03' O 'R04', INTRODOTTO00022300
+002240*--    PER GESTIRE L'ANTICIPO SUL BONIFICO                        00022400
+002250 01  W-VERS                        PIC  X(003).                   00022500
+002260*--    DATA ANTICIPO                                              00022600
+002270 01  W-DATA-ANTIC                  PIC  X(008).                   00022700
+002280*--    ANTICIPO CALCOLATO                                         00022800
+002290 01  W-ANTIC-CALC                  PIC S9(015).                   00022900
+002300*--    ANTICIPO I24 CALCOLATO                                     00023000
+002310 01  W-ANTIC-I24-CALC              PIC S9(015).                   00023100
+002320*---                                                              00023200
+002330********************** PROCEDURE DIVISION **********************  00023300
+002340*                                                                 00023400
+002350 PROCEDURE DIVISION   USING W-TIPO-CHIAMATA                       00023500
+002360                            W-DATI                                00023600
+002370                            W-TAB-MEM-BQVFB21                     00023700
+002380                            W-TAB-SALDI                           00023800
+002390                            W-DIVISA                              00023900
+002400                            W-CTR1                                00024000
+002410                            W-CTR2                                00024100
+002420                            W-ALTRI-PARAM                         00024200
+002430                            W-TAB-AZIENDE                         00024300
+002440                            W-PROVEN                              00024400
+002450                            W-SALDO-AGEV                          00024500
+002460*--- ANTICIPO                                                     00024600
+002470                            W-VERS                                00024700
+002480                            W-DATA-ANTIC                          00024800
+002490                            W-ANTIC-CALC                          00024900
+002500                            W-TAB-IC                              00025000
+002510                            W-ANTIC-I24-CALC.                     00025100
+002520 ML-010-INIZIO.                                                   00025200
+002530*---   INIZIALIZZAZIONE DELLE AREE DI LAVORO                      00025300
+002540*---                                                              00025400
+002550     PERFORM RZ-010-INIZIA THRU RZ-010-INIZIA-EX.                 00025500
+002560*---                                                              00025600
+002570*---   IMPOSTAZIONE AREA DI LAVORO PER CONTROLLI                  00025700
+002580*---                                                              00025800
+002590     MOVE W-DATI    TO BQVFB21.                                   00025900
+002600*---                                                              00026000
+002610*--- NEL CASO DI RELEASE 'R03'                                    00026100
+002620*--- SI INIZIALIZZANO I CAMPI RELATIVI ALL'ANTICIPO, INTRODOTTI   00026200
+002630*--- CON LA VERSIONE 'R04'                                        00026300
+002640*---                                                              00026400
+002650*                                                                 00026500
+002660      IF W-VERS = 'R03'                                           00026600
+002670         MOVE ZERO   TO BQVFB21-38-FLAG-ANTIC                     00026700
+002680         MOVE ZERO   TO BQVFB21-38-IMP-ANTIC                      00026800
+002690         MOVE ZERO   TO BQVFB21-38-IMP-INT-ANTIC                  00026900
+002700         MOVE ZERO   TO BQVFB21-38-INT-ANTIC-RES                  00027000
+002710         MOVE ZERO   TO BQVFB21-38-IMP-ANTIC-I24                  00027100
+002720      END-IF.                                                     00027200
+002730*---                                                              00027300
+002740*---   IMPOSTAZIONE IMPORTO COMMISSIONI PER DELEGA                00027400
+002750*---   (ASTERISCATO)                                              00027500
+002760*                                                                 00027600
+002770*--- LE IMPOSTAZIONI CHE SEGUONO NON HANNO PIU' ALCUN UTILIZZO    00027700
+002780*--- NEL SEGUITO, PERCHE' IL TRATTAMENTO DI CALCOLO DELLE         00027800
+002790*--- COMMISSIONI, PER ALTRO CAMBIATO DAL 14/5/2001, E' STATO      00027900
+002800*--- CENTRALIZZATO NEL PROGRAMMA MAIN BQVFB0                      00028000
+002810***  MOVE BQVFCO1-COM-DEL-LIRE TO W-IMP-DELEGA.                   00028100
+002820***  MOVE BQVFCO1-COM-DEL-EUR  TO W-IMP-DELEGA-EUR.               00028200
+002830***  IF BQVFB21-COD-ABI = 7601                                    00028300
+002840******  MOVE BQVFCO1-COM-DEL-LIRE-PT  TO W-IMP-DELEGA             00028400
+002850******  MOVE BQVFCO1-COM-DEL-EUR-PT   TO W-IMP-DELEGA-EUR.        00028500
+002860 ML-020.                                                          00028600
+002870     IF W-TIPO-CHIAMATA = 'Q'                                     00028700
+002880        GO TO ML-650.                                             00028800
+002890 ML-025.                                                          00028900
+002900     PERFORM C1-010-ALTRO THRU C1-010-ALTRO-EX.                   00029000
+002910*-----------------------------------------------------------*     00029100
+002920*             CONTROLLO IMPORTO BONIFICO                    *     00029200
+002930*-----------------------------------------------------------*     00029300
+002940*--- DEVE ESSERE NUMERICO                                         00029400
+002950     IF BQVFB21-38-IMP-BONIFA   IS NUMERIC                        00029500
+002960        GO TO ML-035.                                             00029600
+002970 ML-030.                                                          00029700
+002980*-- IMPORTO BONIF.    NON NUMERICO:  ERRORE BLOCCANTE             00029800
+002990     MOVE 33     TO BQVFB21-38-ERR-IMP-BONIF.                     00029900
+003000     MOVE 'E'    TO BQVFB21-38-ERR-IMP-BONIF-A.                   00030000
+003010     ADD  1      TO W-CTR2.                                       00030100
+003020*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00030200
+003030*-- QUADRATURA                                                    00030300
+003040     MOVE 1      TO W-FLAG-NO-QUAD.                               00030400
+003050*-- SI IMPOSTA LA VARIABILE D'APPOGGIO SU CUI SI EFFETTUANO       00030500
+003060*-- I SUCCESSIVI CONTROLLI DI CONGRUENZA TRA I DATI DICHIARATI    00030600
+003070     MOVE 1      TO W-APP-IMP-BONIF.                              00030700
+003080     GO TO ML-040.                                                00030800
+003090 ML-035.                                                          00030900
+003100* SI CONTROLLA SE PROSEGUIRE NEI CONTROLLI DI CONGRUENZA          00031000
+003110     MOVE BQVFB21-38-IMP-BONIF      TO W-APP-IMP-BONIF.           00031100
+003120*---                                                              00031200
+003130*--- I CONTROLLI CHE SEGUONO SONO STATI ASTERISCATI PER RECEPIRE I00031300
+003140*--- NUOVI CONTROLLI SUI CAMPI ANTICIPI E SONO STATI INGLOBATI    00031400
+003150*--- NELLA PERFORM D2-010-CTR-ANTICIPO                            00031500
+003160*---                                                              00031600
+003170 ML-040.                                                          00031700
+003180*--- L'IMPORTO BONIFICO DEVE ESSERE MAGGIORE DI ZERO PER          00031800
+003190*--- PROGRESSIVO BONIF. MAGGIORE DI 1                             00031900
+003200*    IF W-APP-IMP-BONIF          > ZERO                           00032000
+003210*       GO TO ML-070.                                             00032100
+003220*ML-050.                                                          00032200
+003230*--- IMPORTO = ZERO                                               00032300
+003240*    IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                     00032400
+003250*       BQVFB21-38-PROG-ACCR-BON  = 1                             00032500
+003260*       GO TO ML-062.                                             00032600
+003270*ML-060.                                                          00032700
+003280*--- IMPORTO = ZERO E PROGRESSIVO BONIFICO  > 1 : ERRORE          00032800
+003290*    MOVE 39     TO BQVFB21-38-ERR-IMP-BONIF.                     00032900
+003300*    MOVE 'E'    TO BQVFB21-38-ERR-IMP-BONIF-A.                   00033000
+003310*    ADD  1      TO W-CTR2.                                       00033100
+003320*    IF BQVFB21-38-ERR-PROG-ACCR-BON-A NOT = 'E'                  00033200
+003330*       MOVE 55  TO BQVFB21-38-ERR-PROG-ACCR-BON                  00033300
+003340*       MOVE 'E' TO BQVFB21-38-ERR-PROG-ACCR-BON-A                00033400
+003350*       ADD  1   TO W-CTR2.                                       00033500
+003360*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00033600
+003370*-- QUADRATURA                                                    00033700
+003380*    MOVE 1      TO W-FLAG-NO-QUAD.                               00033800
+003390*    GO TO ML-070.                                                00033900
+003400*ML-062.                                                          00034000
+003410*--- IMPORTO = ZERO                                               00034100
+003420*    IF BQVFB21-38-IMP-COMPENA IS NUMERIC AND                     00034200
+003430*       BQVFB21-38-IMP-COMPEN = ZERO                              00034300
+003440*       GO TO ML-070.                                             00034400
+003450*ML-064.                                                          00034500
+003460*--- IMPORTO BONIFICO > ZERO E IMPORTO PRINCIPALE = 0: ERRORE     00034600
+003470*    MOVE 24     TO BQVFB21-38-ERR-IMP-COMPEN.                    00034700
+003480*    MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMPEN-A.                  00034800
+003490*    ADD  1      TO W-CTR2.                                       00034900
+003500*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00035000
+003510*-- QUADRATURA                                                    00035100
+003520*    MOVE 1      TO W-FLAG-NO-QUAD.                               00035200
+003530*ML-070.                                                          00035300
+003540*-----------------------------------------------------------*     00035400
+003550*             CONTROLLO DATA BONIFICO                       *     00035500
+003560*-----------------------------------------------------------*     00035600
+003570*--- DEVE ESSERE NUMERICA                                         00035700
+003580     IF BQVFB21-38-DATA-BONIF-COMP IS NUMERIC                     00035800
+003590        GO TO ML-090.                                             00035900
+003600 ML-080.                                                          00036000
+003610* DATA BONIFICO NON NUMERICA:        ERRORE BLOCCANTE             00036100
+003620     MOVE 33     TO BQVFB21-38-ERR-DATA-BONIF-COMP.               00036200
+003630     MOVE 'E'    TO BQVFB21-38-ERR-DATA-BONIF-C-A.                00036300
+003640     ADD  1      TO W-CTR2.                                       00036400
+003650     GO TO ML-110.                                                00036500
+003660 ML-090.                                                          00036600
+003670*--- DATA BONIF.   NUMERICA                                       00036700
+003680*--- DEVE ESSERE = ZERO SE IL PROGR. BONIF.   E' = 1              00036800
+003690     IF (BQVFB21-38-DATA-BONIF-COMP > ZERO    AND                 00036900
+003700         BQVFB21-38-PROG-ACCR-BONA IS NUMERIC AND                 00037000
+003710         BQVFB21-38-PROG-ACCR-BON = 1)                            00037100
+003720        GO TO ML-105.                                             00037200
+003730 ML-095.                                                          00037300
+003740*--- DATA BONIF.   NUMERICA                                       00037400
+003750*--- DEVE ESSERE > ZERO SE IL PROGR. BONIF.   E' > 1              00037500
+003760     IF (BQVFB21-38-DATA-BONIF-COMP = ZERO    AND                 00037600
+003770         BQVFB21-38-PROG-ACCR-BONA IS NUMERIC AND                 00037700
+003780         BQVFB21-38-PROG-ACCR-BON > 1)                            00037800
+003790        GO TO ML-102.                                             00037900
+003800 ML-100.                                                          00038000
+003810*---                                                              00038100
+003820*--- SI AGGIUNGE L'INIZIALIZZAZIONE DELL'IMPORTO ANTICIPO CALCOLAT00038200
+003830*--- E DELLA DATA ANTICIPO                                        00038300
+003840*---                                                              00038400
+003850     IF  BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                    00038500
+003860         BQVFB21-38-PROG-ACCR-BON = 1                             00038600
+003870         MOVE ZERO TO W-ANTIC-CALC                                00038700
+003880         MOVE ZERO TO W-ANTIC-I24-CALC                            00038800
+003890         MOVE ZERO TO W-DATA-ANTIC                                00038900
+003900     END-IF.                                                      00039000
+003910*---                                                              00039100
+003920     GO TO ML-110.                                                00039200
+003930 ML-102.                                                          00039300
+003940*--- DATA BONIF. COMPENSATIVO NON IMPOSTATA PER PROG. ACC > 01    00039400
+003950     MOVE 96     TO BQVFB21-38-ERR-DATA-BONIF-COMP.               00039500
+003960     MOVE 'E'    TO BQVFB21-38-ERR-DATA-BONIF-C-A.                00039600
+003970     ADD  1      TO W-CTR2.                                       00039700
+003980     GO TO ML-110.                                                00039800
+003990 ML-105.                                                          00039900
+004000*--- DATA BONIF. COMPENSATIVO IMPOSTATA PER PROG. ACC = 01        00040000
+004010     MOVE 55     TO BQVFB21-38-ERR-DATA-BONIF-COMP.               00040100
+004020     MOVE 'E'    TO BQVFB21-38-ERR-DATA-BONIF-C-A.                00040200
+004030     ADD  1      TO W-CTR2.                                       00040300
+004040 ML-110.                                                          00040400
+004050*-----------------------------------------------------------*     00040500
+004060*             CONTROLLO NUMERO OPERAZIONE                   *     00040600
+004070*-----------------------------------------------------------*     00040700
+004080*--- DEVE ESSERE NUMERICO                                         00040800
+004090*F   IF BQVFB21-38-CROA        IS NUMERIC                         00040900
+004100*F      GO TO ML-130.                                             00041000
+004110     MOVE ZERO TO W-FLAG-DECOD.                                   00041100
+004120     MOVE BQVFB21-38-CRO TO BQVFB21-38-CRO-NEW.                   00041200
+004130     IF BQVFB21-38-CRO-NEW     IS NOT NUMERIC                     00041300
+004140        PERFORM B1-010 THRU B1-EXIT.                              00041400
+004150     IF W-FLAG-DECOD = '0'                                        00041500
+004160        GO TO ML-130.                                             00041600
+004170 ML-120.                                                          00041700
+004180* NUMERO OPERAZIONE   NON NUMERICO:  ERRORE BLOCCANTE             00041800
+004190     MOVE 33     TO BQVFB21-38-ERR-CRO.                           00041900
+004200     MOVE 'E'    TO BQVFB21-38-ERR-CRO-A.                         00042000
+004210     ADD  1      TO W-CTR2.                                       00042100
+004220     GO TO ML-150.                                                00042200
+004230 ML-130.                                                          00042300
+004240*--- NUMERO OPER.  NUMERICO:                                      00042400
+004250*--- DEVE ESSERE = ZERO SE L'IMPORTO BONIFICO E' = ZERO           00042500
+004260*F   IF BQVFB21-38-CRO           > ZERO AND                       00042600
+004270     IF BQVFB21-38-CRO-NEW       > ZERO AND                       00042700
+004280        W-APP-IMP-BONIF          = ZERO                           00042800
+004290        GO TO ML-145.                                             00042900
+004300 ML-140.                                                          00043000
+004310*--- SE CRO = 0 IMPRTO BONIFICO DEV'ESSERE = 0                    00043100
+004320     IF BQVFB21-38-ERR-CRO       = ZERO AND                       00043200
+004330*F      BQVFB21-38-CRO           = ZERO AND                       00043300
+004340        BQVFB21-38-CRO-NEW       = ZERO AND                       00043400
+004350        W-APP-IMP-BONIF          > ZERO                           00043500
+004360       MOVE 55     TO BQVFB21-38-ERR-CRO                          00043600
+004370       MOVE 'E'    TO BQVFB21-38-ERR-CRO-A                        00043700
+004380       ADD  1      TO W-CTR2.                                     00043800
+004390     GO TO ML-150.                                                00043900
+004400 ML-145.                                                          00044000
+004410*--- NUMERO OPERAZIONE NON CONGRUENTE CON IMPORTO BONIFICO        00044100
+004420     IF BQVFB21-38-ERR-CRO   = ZERO                               00044200
+004430        MOVE 55     TO BQVFB21-38-ERR-CRO                         00044300
+004440        MOVE 'E'    TO BQVFB21-38-ERR-CRO-A                       00044400
+004450        ADD  1      TO W-CTR2.                                    00044500
+004460 ML-150.                                                          00044600
+004470*-----------------------------------------------------------*     00044700
+004480*             CONTROLLO BANCA MITTENTE                      *     00044800
+004490*-----------------------------------------------------------*     00044900
+004500*--- DEVE ESSERE NUMERICO                                         00045000
+004510     IF BQVFB21-38-MITTENTEA   IS NUMERIC                         00045100
+004520        GO TO ML-170.                                             00045200
+004530 ML-160.                                                          00045300
+004540* CODICE BANCA MITT.  NON NUMERICO:  ERRORE BLOCCANTE             00045400
+004550     MOVE 33     TO BQVFB21-38-ERR-MITTENTE.                      00045500
+004560     MOVE 'E'    TO BQVFB21-38-ERR-MITTENTE-A.                    00045600
+004570     ADD  1      TO W-CTR2.                                       00045700
+004580     GO TO ML-190.                                                00045800
+004590 ML-170.                                                          00045900
+004600*--- CODICE BANCA  NUMERICO:                                      00046000
+004610*--- DEVE ESSERE > ZERO SE L'IMPORTO BONIFICO E' > DI ZERO        00046100
+004620*--- DEVE ESSERE = ZERO SE L'IMPORTO BONIFICO E' = DI ZERO        00046200
+004630     IF BQVFB21-38-MITTENTE      > ZERO AND                       00046300
+004640        W-APP-IMP-BONIF          = ZERO                           00046400
+004650        GO TO ML-180.                                             00046500
+004660 ML-175.                                                          00046600
+004670     GO TO ML-190.                                                00046700
+004680 ML-180.                                                          00046800
+004690*--- CODICE BANCA NON CONGRUENTE CON IMPORTO BONIFICO             00046900
+004700     MOVE 55     TO BQVFB21-38-ERR-MITTENTE.                      00047000
+004710     MOVE 'E'    TO BQVFB21-38-ERR-MITTENTE-A.                    00047100
+004720     ADD  1      TO W-CTR2.                                       00047200
+004730 ML-190.                                                          00047300
+004740*-----------------------------------------------------------*     00047400
+004750*             CONTROLLO IMPORTO COMMISSIONI                 *     00047500
+004760*-----------------------------------------------------------*     00047600
+004770*--- DEVE ESSERE NUMERICO                                         00047700
+004780     IF BQVFB21-38-IMP-COMMISA  IS NUMERIC                        00047800
+004790        GO TO ML-210.                                             00047900
+004800 ML-200.                                                          00048000
+004810* IMPORTO COMMISSIONI NON NUMERICO:  ERRORE BLOCCANTE             00048100
+004820     MOVE 33     TO BQVFB21-38-ERR-IMP-COMMIS.                    00048200
+004830     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMMIS-A.                  00048300
+004840     ADD  1      TO W-CTR2.                                       00048400
+004850*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00048500
+004860*-- QUADRATURA                                                    00048600
+004870     MOVE 1      TO W-FLAG-NO-QUAD.                               00048700
+004880     GO TO ML-240.                                                00048800
+004890 ML-210.                                                          00048900
+004900*--- IMPORTO COMMISSIONI NUMERICO                                 00049000
+004910*--- DEVE ESSERE = ZERO SE IL PROGRESSIVO E' MAGGIORE DI 1        00049100
+004920     IF BQVFB21-38-IMP-COMMIS    > ZERO       AND                 00049200
+004930        BQVFB21-38-PROG-ACCR-BONA  IS NUMERIC AND                 00049300
+004940        BQVFB21-38-PROG-ACCR-BON > 1                              00049400
+004950        GO TO ML-230.                                             00049500
+004960 ML-220.                                                          00049600
+004970     GO TO ML-240.                                                00049700
+004980 ML-230.                                                          00049800
+004990*--- IMP. COMMIS.  NON CONGRUENTE CON PROGRESSIVO                 00049900
+005000     MOVE 15     TO BQVFB21-38-ERR-IMP-COMMIS.                    00050000
+005010     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMMIS-A.                  00050100
+005020     ADD  1      TO W-CTR2.                                       00050200
+005030*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00050300
+005040*-- QUADRATURA                                                    00050400
+005050     MOVE 1      TO W-FLAG-NO-QUAD.                               00050500
+005060 ML-240.                                                          00050600
+005070*-----------------------------------------------------------*     00050700
+005080*     CONTROLLO IMPORTO RESIDUO COMMISSIONI DI SPETTANZA    *     00050800
+005090*-----------------------------------------------------------*     00050900
+005100*--- DEVE ESSERE NUMERICO                                         00051000
+005110     IF BQVFB21-38-IMP-COMMIS-RESA IS NUMERIC                     00051100
+005120        GO TO ML-260.                                             00051200
+005130 ML-250.                                                          00051300
+005140* IMPORTO COMMISSIONI NON NUMERICO:  ERRORE BLOCCANTE             00051400
+005150     MOVE 33     TO BQVFB21-38-ERR-IMP-COMMIS-RES.                00051500
+005160     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMM-RES-A.                00051600
+005170     ADD  1      TO W-CTR2.                                       00051700
+005180*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00051800
+005190*-- QUADRATURA                                                    00051900
+005200     MOVE 1      TO W-FLAG-NO-QUAD.                               00052000
+005210     GO TO ML-290.                                                00052100
+005220 ML-260.                                                          00052200
+005230*--- IMPORTO COMMISSIONI NUMERICO                                 00052300
+005240*--- DEVE ESSERE = ZERO SE L'IMPORTO BONIFICI E' > DI ZERO        00052400
+005250     IF  BQVFB21-38-IMP-BONIFA NOT = ZERO       OR                00052500
+005260        (BQVFB21-38-IMP-COMMIS-RES = ZERO AND                     00052600
+005270         BQVFB21-38-IMP-BONIF > ZERO)           OR                00052700
+005280        (BQVFB21-38-IMP-COMMIS-RES > ZERO AND                     00052800
+005290         BQVFB21-38-IMP-BONIF = ZERO)           OR                00052900
+005300        (BQVFB21-38-IMP-COMMIS-RES = ZERO AND                     00053000
+005310         BQVFB21-38-IMP-BONIF = ZERO)                             00053100
+005320        GO TO ML-290.                                             00053200
+005330 ML-270.                                                          00053300
+005340*--- IMP. COMMIS.  NON CONGRUENTE CON IMPORTO BONIFICO            00053400
+005350     MOVE 15     TO BQVFB21-38-ERR-IMP-COMMIS-RES.                00053500
+005360     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMM-RES-A.                00053600
+005370     ADD  1      TO W-CTR2.                                       00053700
+005380*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00053800
+005390*-- QUADRATURA                                                    00053900
+005400     MOVE 1      TO W-FLAG-NO-QUAD.                               00054000
+005410 ML-290.                                                          00054100
+005420*-----------------------------------------------------------*     00054200
+005430*             CONTROLLO IMPORTO COMPENSATIVI                *     00054300
+005440*-----------------------------------------------------------*     00054400
+005450*--- DEVE ESSERE NUMERICO                                         00054500
+005460     IF BQVFB21-38-IMP-COMPENA IS NUMERIC                         00054600
+005470        GO TO ML-330.                                             00054700
+005480 ML-320.                                                          00054800
+005490* IMPORTO COMPENSATIVI NON NUMERICO:  ERRORE BLOCCANTE            00054900
+005500     MOVE 33     TO BQVFB21-38-ERR-IMP-COMPEN.                    00055000
+005510     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMPEN-A.                  00055100
+005520     ADD  1      TO W-CTR2.                                       00055200
+005530*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00055300
+005540*-- QUADRATURA                                                    00055400
+005550     MOVE 1      TO W-FLAG-NO-QUAD.                               00055500
+005560     GO TO ML-370.                                                00055600
+005570 ML-330.                                                          00055700
+005580     IF BQVFB21-38-IMP-COMPEN    = ZERO                           00055800
+005590        GO TO ML-370.                                             00055900
+005600 ML-340.                                                          00056000
+005610*--- IMPORTO COMP. > ZERO  : DEVE ESSERE = ZERO SE IL PROGRES-    00056100
+005620*--- SIVO BONIF. > 1                                              00056200
+005630     IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                     00056300
+005640        BQVFB21-38-PROG-ACCR-BON > 1                              00056400
+005650        GO TO ML-360.                                             00056500
+005660 ML-350.                                                          00056600
+005670     GO TO ML-370.                                                00056700
+005680 ML-360.                                                          00056800
+005690*--- IMPORTO COMPENSATIVI NON CONGRUENTE CON PROG. BONIFICO       00056900
+005700     MOVE 15     TO BQVFB21-38-ERR-IMP-COMPEN.                    00057000
+005710     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMPEN-A.                  00057100
+005720     ADD  1      TO W-CTR2.                                       00057200
+005730*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00057300
+005740*-- QUADRATURA                                                    00057400
+005750     MOVE 1      TO W-FLAG-NO-QUAD.                               00057500
+005760 ML-370.                                                          00057600
+005770*-----------------------------------------------------------*     00057700
+005780*          CONTROLLO NUMERO BONIFICI COMPENSATIVI           *     00057800
+005790*-----------------------------------------------------------*     00057900
+005800*--- DEVE ESSERE NUMERICO                                         00058000
+005810     IF BQVFB21-38-NUM-COMPENA IS NUMERIC                         00058100
+005820        GO TO ML-390.                                             00058200
+005830 ML-380.                                                          00058300
+005840* NUMERO  COMPENSATIVI NON NUMERICO:  ERRORE BLOCCANTE            00058400
+005850     MOVE 33     TO BQVFB21-38-ERR-NUM-COMPEN.                    00058500
+005860     MOVE 'E'    TO BQVFB21-38-ERR-NUM-COMPEN-A.                  00058600
+005870     ADD  1      TO W-CTR2.                                       00058700
+005880*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00058800
+005890*-- QUADRATURA                                                    00058900
+005900     MOVE 1      TO W-FLAG-NO-QUAD.                               00059000
+005910     GO TO ML-430.                                                00059100
+005920 ML-390.                                                          00059200
+005930*--- NUMERO  COMP. NUMERICO: DEVE ESSERE = ZERO SE IL PROGRES-    00059300
+005940*--- SIVO BONIF. > 1                                              00059400
+005950     IF BQVFB21-38-NUM-COMPEN    = ZERO                           00059500
+005960        GO TO ML-430.                                             00059600
+005970 ML-400.                                                          00059700
+005980*--- NUM. BONIFICI COMPENSATIVI > ZERO: SI CONTROLLA CHE          00059800
+005990*--- IL PROGR. BONIFICO SIA = 1                                   00059900
+006000     IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                     00060000
+006010        BQVFB21-38-PROG-ACCR-BON > 1                              00060100
+006020        GO TO ML-420.                                             00060200
+006030 ML-410.                                                          00060300
+006040     GO TO ML-430.                                                00060400
+006050 ML-420.                                                          00060500
+006060*--- NUM. ACCR. COMPENSATIVI NON CONGRUENTE CON PROG. BONIF.      00060600
+006070     MOVE 15     TO BQVFB21-38-ERR-NUM-COMPEN.                    00060700
+006080     MOVE 'E'    TO BQVFB21-38-ERR-NUM-COMPEN-A.                  00060800
+006090     ADD  1      TO W-CTR2.                                       00060900
+006100*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00061000
+006110*-- QUADRATURA                                                    00061100
+006120     MOVE 1      TO W-FLAG-NO-QUAD.                               00061200
+006130 ML-430.                                                          00061300
+006140*--                                                               00061400
+006150*-- MODIFICA 16/05/2002                                           00061500
+006160*-- SI EFFETTUANO I CONTROLLI SUI CAMPI RELATIVI ALL'ANTICIPO     00061600
+006170     PERFORM D2-010-CTR-ANTICIPO THRU D2-EXIT.                    00061700
+006180*--                                                               00061800
+006190*-- SONO TERMINATI CONTROLLI DI CONGRUENZA TRA VALORI DICHIARATI  00061900
+006200*-- SI EFFETTUANO I CONTROLLI SUI SINGOLI CAMPI SE NON CI SONO    00062000
+006210*-- ERRORI DI CONGRUENZA                                          00062100
+006220     IF BQVFB21-38-ERR-DATA-BONIF-C-A NOT = ZERO OR               00062200
+006230        BQVFB21-38-DATA-BONIF-COMP     = ZERO                     00062300
+006240        GO TO ML-500.                                             00062400
+006250 ML-440.                                                          00062500
+006260*---   DATA BONIF. > ZERO: SI ESEGUE IL CONTROLLO FORMALE         00062600
+006270*---   IMPOSTAZIONE PARAMETRI PER RICHIAMO ROUTINE DI CONTROLLO   00062700
+006280*---   DATA                                                       00062800
+006290*---                                                              00062900
+006300     MOVE BQVFB21-38-DATA-BONIF-COMP TO BQVFDA1-DAT1.             00063000
+006310     MOVE SPACE                      TO BQVFDA1-DAT2.             00063100
+006320*---                                                              00063200
+006330     CALL 'BQVFDA' USING BQVFDA1.                                 00063300
+006340*---                                                              00063400
+006350     IF BQVFDA1-OK = 0                                            00063500
+006360        GO TO ML-460.                                             00063600
+006370 ML-450.                                                          00063700
+006380*---  DATA BONIF. FORMALMENTE ERRATA                              00063800
+006390*---                                                              00063900
+006400     ADD 1        TO W-CTR2.                                      00064000
+006410     MOVE 096     TO BQVFB21-38-ERR-DATA-BONIF-COMP.              00064100
+006420     MOVE 'E'     TO BQVFB21-38-ERR-DATA-BONIF-C-A.               00064200
+006430     GO TO ML-500.                                                00064300
+006440 ML-460.                                                          00064400
+006450*---  SI CONTROLLA CHE LA DATA DI BONIF. SIA UN GIORNO            00064500
+006460*---  LAVORATIVO                                                  00064600
+006470     IF BQVFDA1-FESTIVO   = 1 OR                                  00064700
+006480        BQVFDA1-SETTIMANA > 5                                     00064800
+006490        GO TO ML-490.                                             00064900
+006500*---                                                              00065000
+006510*--- SI CAMBIA IL TEST A FRONTE DELL'INTRODUZIONE DEI CAMPI       00065100
+006520*--- ANTICIPO                                                     00065200
+006530*---                                                              00065300
+006540 ML-470.                                                          00065400
+006550*--- SI CONTROLLA CHE LA DATA DI BONIF. SIA MAGGIORE DELLA        00065500
+006560*--- DATA DI BONIFICO PRINCIPALE                                  00065600
+006570     IF BQVFB21-38-DATA-BONIF-COMP NOT < BQVFB21-DATA-BONIF       00065700
+006580        GO TO ML-480.                                             00065800
+006590 ML-472.                                                          00065900
+006600     IF BQVFB21-38-FLAG-ANTIC = '1' OR                            00066000
+006610        BQVFB21-38-FLAG-ANTIC = '2'                               00066100
+006620        GO TO ML-500.                                             00066200
+006630 ML-474.                                                          00066300
+006640*---  DATA BONIF. COMP. MINORE O UGUALE ALLA DATA DI BONIF. PRINC.00066400
+006650*---  IN UN BONIFICO NON DI ANTICIPO                              00066500
+006660     ADD 1        TO W-CTR2.                                      00066600
+006670     MOVE 024     TO BQVFB21-38-ERR-DATA-BONIF-COMP               00066700
+006680     MOVE 'E'     TO BQVFB21-38-ERR-DATA-BONIF-C-A.               00066800
+006690     GO TO ML-500.                                                00066900
+006700 ML-480.                                                          00067000
+006710     IF (BQVFB21-38-FLAG-ANTIC NOT = '1' AND                      00067100
+006720         BQVFB21-38-FLAG-ANTIC NOT = '2') OR                      00067200
+006730        (BQVFB21-38-FLAG-ANTIC     = '2' AND                      00067300
+006740         BQVFB21-38-DATA-BONIF-COMP = BQVFB21-DATA-BONIF)         00067400
+006750        GO TO ML-500.                                             00067500
+006760 ML-484.                                                          00067600
+006770*---  DATA BONIF. COMP. MAGGIORE O UGUALE DI DATA DI BONIF. PRINC.00067700
+006780*---  IN UN BONIFICO DI ANTICIPO                                  00067800
+006790     ADD 1        TO W-CTR2.                                      00067900
+006800     MOVE 024     TO BQVFB21-38-ERR-DATA-BONIF-COMP               00068000
+006810     MOVE 'E'     TO BQVFB21-38-ERR-DATA-BONIF-C-A.               00068100
+006820     GO TO ML-500.                                                00068200
+006830 ML-490.                                                          00068300
+006840*--- LA DATA BONIF. E' UN GIORNO FESTIVO: ERRORE BLOCCANTE        00068400
+006850     MOVE 45     TO BQVFB21-38-ERR-DATA-BONIF-COMP.               00068500
+006860     MOVE 'E'    TO BQVFB21-38-ERR-DATA-BONIF-C-A.                00068600
+006870     ADD  1      TO W-CTR2.                                       00068700
+006880 ML-500.                                                          00068800
+006890*---                                                              00068900
+006900*--- SI CONTROLLA LA COERENZA NEL FLUSSO DELLE DATE ANTICIPO      00069000
+006910*---                                                              00069100
+006920     IF BQVFB21-38-FLAG-ANTIC = '1'                               00069200
+006930        IF W-DATA-ANTIC = ZERO                                    00069300
+006940           MOVE BQVFB21-38-DATA-BONIF-COMP TO W-DATA-ANTIC        00069400
+006950        END-IF                                                    00069500
+006960        IF BQVFB21-38-DATA-BONIF-COMP NOT = W-DATA-ANTIC          00069600
+006970           ADD 1        TO W-CTR2                                 00069700
+006980           MOVE 506     TO BQVFB21-38-ERR-DATA-BONIF-COMP         00069800
+006990           MOVE 'E'     TO BQVFB21-38-ERR-DATA-BONIF-C-A          00069900
+007000        END-IF                                                    00070000
+007010     END-IF.                                                      00070100
+007020 ML-505.                                                          00070200
+007030     IF BQVFB21-38-ERR-MITTENTE-A  NOT = ZERO OR                  00070300
+007040        BQVFB21-38-MITTENTE            = ZERO                     00070400
+007050        GO TO ML-550.                                             00070500
+007060 ML-510.                                                          00070600
+007070* SI CONTROLLA LA PRESENZA DEL CODICE ABI SU TABELLA              00070700
+007080     MOVE BQVFB21-38-MITTENTE    TO W-AZIENDA-INP.                00070800
+007090     SEARCH  ALL W-TAB-AZIENDE-EL                                 00070900
+007100        AT END MOVE ZERO TO W-FLAG-TROVATO                        00071000
+007110     WHEN W-TAB-AZ-COD-NUM(W-PUNT-AZIENDE)                        00071100
+007120                                     EQUAL W-AZIENDA-INP          00071200
+007130        MOVE 1           TO W-FLAG-TROVATO.                       00071300
+007140     IF W-FLAG-TROVATO = 1                                        00071400
+007150        GO TO ML-550.                                             00071500
+007160 ML-520.                                                          00071600
+007170*--- CODICE ABI NON ESISTENTE SU TABELLA                          00071700
+007180     MOVE 146    TO BQVFB21-38-ERR-MITTENTE.                      00071800
+007190     MOVE 'E'    TO BQVFB21-38-ERR-MITTENTE-A.                    00071900
+007200     ADD  1      TO W-CTR2.                                       00072000
+007210 ML-550.                                                          00072100
+007220*--- BONIFICO INESISTENTE: OK                                     00072200
+007230*--- NEL CASO DI ERRORI SUI CAMPI IMPORTI NON SI IMPOSTANO        00072300
+007240*--- LE INFORMAZIONI PER I CONTROLLI DI QUADRATURA FINALI         00072400
+007250     IF W-FLAG-NO-QUAD = 1                                        00072500
+007260        GO TO ML-700.                                             00072600
+007270 ML-560.                                                          00072700
+007280*-- SI CONTROLLA CHE NON SIA GIA' PRESENTE SU BASE INFORMATIVA    00072800
+007290*-- UN RECORD DI BONIFICO                                         00072900
+007300     IF BQVFB21-38-ERR-DATA-BONIF-C-A NOT = 'E' AND               00073000
+007310        BQVFB21-ERR-COD-ABI-A         NOT = 'E' AND               00073100
+007320        BQVFB21-38-ERR-CRO-A          NOT = 'E' AND               00073200
+007330*F      BQVFB21-38-CRO                > ZERO                      00073300
+007340        BQVFB21-38-CRO-NEW            > ZERO                      00073400
+007350        GO TO ML-570.                                             00073500
+007360 ML-565.                                                          00073600
+007370*--                                                               00073700
+007380*-- SI IMPOSTANO I CAMPI RELATIVI AI BONIFICI COMPENSATIVI        00073800
+007390*-- ANCHE NEL CASO DI CRO = ZERO: TALE SITUAZIONE PRIMA NON ERA   00073900
+007400*-- GESTITA PERCHE' IL BONIFICO PRINCIPALE NON POTEVA AVERE       00074000
+007410*-- L'IMPORTO = ZERO IN PRESENZA DI COMPENSATIVI. CON L'INTRODU-  00074100
+007420*-- ZIONE DELL'ANTICIPO, INVECE, CIO' E' POSSIBILE                00074200
+007430*--                                                               00074300
+007440     IF BQVFB21-38-ERR-DATA-BONIF-C-A NOT = 'E' AND               00074400
+007450        BQVFB21-ERR-COD-ABI-A         NOT = 'E' AND               00074500
+007460        BQVFB21-38-ERR-CRO-A          NOT = 'E' AND               00074600
+007470        BQVFB21-38-ERR-MITTENTE-A     NOT = 'E' AND               00074700
+007480*F      BQVFB21-38-CRO                = ZERO                      00074800
+007490        BQVFB21-38-CRO-NEW            = ZERO                      00074900
+007500* PER PROGRESSIVO BONIFICO = 1 SI IMPOSTANO I DATI                00075000
+007510* DICHIARATI                                                      00075100
+007520        IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                  00075200
+007530           BQVFB21-38-PROG-ACCR-BON = 1                           00075300
+007540           MOVE BQVFB21-38-IMP-COMPEN   TO W-ACCR-BON-COMP        00075400
+007550           MOVE BQVFB21-38-NUM-COMPEN   TO W-NUMR-COMP            00075500
+007560        END-IF                                                    00075600
+007570* PER PROGRESSIVO BONIFICO > 1 SI IMPOSTANO I DATI                00075700
+007580* CALCOLATI                                                       00075800
+007590        IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                  00075900
+007600           BQVFB21-38-PROG-ACCR-BON > 1                           00076000
+007610           ADD BQVFB21-38-IMP-BONIF    TO W-ACCR-BON-COMP-CALC    00076100
+007620           ADD 1                       TO W-NUMR-COMP-CALC        00076200
+007630        END-IF                                                    00076300
+007640*---                                                              00076400
+007650        IF BQVFB21-38-FLAG-ANTIC = '1'                            00076500
+007660           ADD BQVFB21-38-IMP-BONIF       TO W-ANTIC-CALC         00076600
+007670        END-IF                                                    00076700
+007680        IF BQVFB21-38-FLAG-ANTIC = '2'                            00076800
+007690           IF BQVFB21-DATA-BONIF NOT LESS '20121204'              00076900
+007700              ADD BQVFB21-38-IMP-BONIF    TO W-ANTIC-I24-CALC     00077000
+007710                 ELSE                                             00077100
+007720              ADD BQVFB21-38-IMP-BONIF    TO W-ANTIC-CALC         00077200
+007730           END-IF                                                 00077300
+007740        END-IF                                                    00077400
+007750     END-IF.                                                      00077500
+007760*---                                                              00077600
+007770     GO TO ML-700.                                                00077700
+007780 ML-570.                                                          00077800
+007790     MOVE BQVFB21-DATA-BONIF TO W-APPO-DATA-BON.                  00077900
+007800     IF BQVFB21-38-PROG-ACCR-BONA IS NUMERIC AND                  00078000
+007810        BQVFB21-38-PROG-ACCR-BON > 1                              00078100
+007820        MOVE BQVFB21-38-DATA-BONIF-COMP TO W-APPO-DATA-BON.       00078200
+007830     IF W-PROVEN = 'C'                                            00078300
+007840        GO TO ML-574.                                             00078400
+007850 ML-572.                                                          00078500
+007860     SET M TO 1.                                                  00078600
+007870     SEARCH W-MEM-BQVFB21                                         00078700
+007880     WHEN W-MEM-COD-ABI(M)    = BQVFB21-COD-ABI               AND 00078800
+007890*F        W-MEM-CRO(M)        = BQVFB21-38-CRO                AND 00078900
+007900          W-MEM-CRO-NEW(M)    = BQVFB21-38-CRO-NEW            AND 00079000
+007910          (W-MEM-DATA-BONIF-COMP(M) = W-APPO-DATA-BON OR          00079100
+007920           W-MEM-DATA-BONIF(M)      = W-APPO-DATA-BON   )         00079200
+007930*-------- BONIFICO GIA' PRESENTE : ERRORE BLOCCANTE               00079300
+007940          MOVE 099 TO BQVFB21-ERR-COD-ABI                         00079400
+007950          MOVE 'E' TO BQVFB21-ERR-COD-ABI-A                       00079500
+007960          MOVE 099 TO BQVFB21-38-ERR-DATA-BONIF-COMP              00079600
+007970          MOVE 'E' TO BQVFB21-38-ERR-DATA-BONIF-C-A               00079700
+007980          MOVE 099 TO BQVFB21-38-ERR-CRO                          00079800
+007990          MOVE 'E' TO BQVFB21-38-ERR-CRO-A                        00079900
+008000          ADD  3   TO W-CTR2.                                     00080000
+008010          GO TO ML-576.                                           00080100
+008020 ML-574.                                                          00080200
+008030     SET M TO 1.                                                  00080300
+008040     SEARCH W-MEM-BQVFB21                                         00080400
+008050     WHEN W-MEM-MITT(M)    = BQVFB21-38-MITTENTEA             AND 00080500
+008060*F        W-MEM-CRO(M)     = BQVFB21-38-CRO                   AND 00080600
+008070          W-MEM-CRO-NEW(M) = BQVFB21-38-CRO-NEW               AND 00080700
+008080          (W-MEM-DATA-BONIF-COMP(M) = W-APPO-DATA-BON OR          00080800
+008090           W-MEM-DATA-BONIF(M)      = W-APPO-DATA-BON   )         00080900
+008100*-------- BONIFICO GIA' PRESENTE : ERRORE BLOCCANTE               00081000
+008110          MOVE 099 TO BQVFB21-38-ERR-MITTENTE                     00081100
+008120          MOVE 'E' TO BQVFB21-38-ERR-MITTENTE-A                   00081200
+008130          MOVE 099 TO BQVFB21-38-ERR-DATA-BONIF-COMP              00081300
+008140          MOVE 'E' TO BQVFB21-38-ERR-DATA-BONIF-C-A               00081400
+008150          MOVE 099 TO BQVFB21-38-ERR-CRO                          00081500
+008160          MOVE 'E' TO BQVFB21-38-ERR-CRO-A                        00081600
+008170          ADD  3   TO W-CTR2.                                     00081700
+008180 ML-576.                                                          00081800
+008190        IF BQVFB21-38-ERR-CRO-A = 'E'                             00081900
+008200            GO TO ML-700.                                         00082000
+008210 ML-600.                                                          00082100
+008220*--- BONIFICO INESISTENTE: OK                                     00082200
+008230     IF BQVFB21-38-PROG-ACCR-BONA IS NUMERIC AND                  00082300
+008240        BQVFB21-38-PROG-ACCR-BON = 1                              00082400
+008250        GO TO ML-620.                                             00082500
+008260 ML-610.                                                          00082600
+008270* PER PROGRESSIVO BONIFICO > 1 SI IMPOSTANO I DATI                00082700
+008280* CALCOLATI                                                       00082800
+008290     ADD BQVFB21-38-IMP-BONIF    TO W-ACCR-BON-COMP-CALC.         00082900
+008300     ADD 1                       TO W-NUMR-COMP-CALC.             00083000
+008310*---                                                              00083100
+008320*--- SI AGGIUNGE L'IMPOSTAZIONE DELL'IMPORTO ANTICIPO CALCOLATO   00083200
+008330*---                                                              00083300
+008340     IF BQVFB21-38-FLAG-ANTIC = '1'                               00083400
+008350        ADD BQVFB21-38-IMP-BONIF       TO W-ANTIC-CALC            00083500
+008360     END-IF.                                                      00083600
+008370     IF BQVFB21-38-FLAG-ANTIC = '2'                               00083700
+008380           IF BQVFB21-DATA-BONIF NOT LESS '20121204'              00083800
+008390              ADD BQVFB21-38-IMP-BONIF    TO W-ANTIC-I24-CALC     00083900
+008400                 ELSE                                             00084000
+008410              ADD BQVFB21-38-IMP-BONIF    TO W-ANTIC-CALC         00084100
+008420           END-IF                                                 00084200
+008430     END-IF.                                                      00084300
+008440     GO TO ML-700.                                                00084400
+008450 ML-620.                                                          00084500
+008460* PER PROGRESSIVO BONIFICO = 1 SI IMPOSTANO I DATI                00084600
+008470* DICHIARATI                                                      00084700
+008480     MOVE BQVFB21-38-IMP-COMPEN   TO W-ACCR-BON-COMP.             00084800
+008490     MOVE BQVFB21-38-NUM-COMPEN   TO W-NUMR-COMP.                 00084900
+008500     GO TO ML-700.                                                00085000
+008510 ML-650.                                                          00085100
+008520*************************************************************     00085200
+008530*                  CONTROLLI DI QUADRATURA                  *     00085300
+008540*************************************************************     00085400
+008550     PERFORM A1-010-CTL-QUAD THRU A1-010-CTL-QUAD-EX.             00085500
+008560 ML-700.                                                          00085600
+008570*---                                                              00085700
+008580*--- NEL CASO DI RELEASE 'R03'                                    00085800
+008590*--- SI INIZIALIZZANO I CAMPI ERRORE RELATIVI ALL'ANTICIPO, INTRO-00085900
+008600*--- DOTTI CON LA VERSIONE 'R04'                                  00086000
+008610*---                                                              00086100
+008620*                                                                 00086200
+008630     IF W-VERS = 'R03'                                            00086300
+008640        IF BQVFB21-38-ERR-FLAG-ANTIC-A = 'E'                      00086400
+008650           SUBTRACT 1 FROM W-CTR2                                 00086500
+008660        END-IF                                                    00086600
+008670        IF BQVFB21-38-ERR-FLAG-ANTIC-A = 'W'                      00086700
+008680           SUBTRACT 1 FROM W-CTR1                                 00086800
+008690        END-IF                                                    00086900
+008700        IF BQVFB21-38-ERR-IMP-ANTIC-A = 'E'                       00087000
+008710           SUBTRACT 1 FROM W-CTR2                                 00087100
+008720        END-IF                                                    00087200
+008730        IF BQVFB21-38-ERR-IMP-ANTIC-A = 'W'                       00087300
+008740           SUBTRACT 1 FROM W-CTR1                                 00087400
+008750        END-IF                                                    00087500
+008760        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A = 'E'                   00087600
+008770           SUBTRACT 1 FROM W-CTR2                                 00087700
+008780        END-IF                                                    00087800
+008790        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A = 'W'                   00087900
+008800           SUBTRACT 1 FROM W-CTR1                                 00088000
+008810        END-IF                                                    00088100
+008820        IF BQVFB21-38-ERR-INT-ANTIC-RES-A = 'E'                   00088200
+008830           SUBTRACT 1 FROM W-CTR2                                 00088300
+008840        END-IF                                                    00088400
+008850        IF BQVFB21-38-ERR-INT-ANTIC-RES-A = 'W'                   00088500
+008860           SUBTRACT 1 FROM W-CTR1                                 00088600
+008870        END-IF                                                    00088700
+008880        MOVE ZERO   TO BQVFB21-38-ERR-FLAG-ANTIC                  00088800
+008890        MOVE ZERO   TO BQVFB21-38-ERR-IMP-ANTIC                   00088900
+008900        MOVE ZERO   TO BQVFB21-38-ERR-IMP-INT-ANTIC               00089000
+008910        MOVE ZERO   TO BQVFB21-38-ERR-INT-ANTIC-RES               00089100
+008920        MOVE ZERO   TO BQVFB21-38-ERR-FLAG-ANTIC-A                00089200
+008930        MOVE ZERO   TO BQVFB21-38-ERR-IMP-ANTIC-A                 00089300
+008940        MOVE ZERO   TO BQVFB21-38-ERR-IMP-INT-ANTIC-A             00089400
+008950        MOVE ZERO   TO BQVFB21-38-ERR-INT-ANTIC-RES-A             00089500
+008960        MOVE ZERO   TO BQVFB21-38-ERR-IMP-ANTIC-I24-A             00089600
+008970     END-IF.                                                      00089700
+008980     MOVE BQVFB21     TO W-DATI.                                  00089800
+008990 ML-990.                                                          00089900
+009000     GOBACK.                                                      00090000
+009010*                                                                 00090100
+009020 A1-010-CTL-QUAD.                                                 00090200
+009030     MOVE  ZERO     TO  W-SALDO-AGEV.                             00090300
+009040     IF W-PROVEN = 'B'                                            00090400
+009050        MOVE ZERO   TO  BQVFB21-38-IMP-REV-SGRAV.                 00090500
+009060     MOVE ZERO TO W-COMR.                                         00090600
+009070* SI EFFETTUA IL CALCOLO DEL SALDO CASSA PER TUTTE LE PROVINCIE   00090700
+009080     MOVE 1    TO W-IND.                                          00090800
+009090     MOVE ZERO TO W-SALDO-CASSA.                                  00090900
+009100     MOVE ZERO TO W-COMM-I-R-APPO.                                00091000
+009110 A1-015.                                                          00091100
+009120* SI CALCOLA IL SALDO DI CASSA PER PROVINCIA                      00091200
+009130     COMPUTE W-SALDO-PARZ     =  W-SALDO-FISCO(W-IND) +           00091300
+009140                                 W-SALDO-INPS (W-IND) +           00091400
+009150                                 W-SALDO-REG  (W-IND) +           00091500
+009160                                 W-SALDO-ENTI (W-IND) +           00091600
+009170                                 W-SALDO-INAIL(W-IND) +           00091700
+009180                                 W-SALDO-ALTRI(W-IND) +           00091800
+009190                                 W-SALDO-ACCISE(W-IND).           00091900
+009200     ADD     W-SALDO-PARZ     TO W-SALDO-CASSA.                   00092000
+009210*---                                                              00092100
+009220*--- MODIFICHE MAGGIO 2001                                        00092200
+009230*---                                                              00092300
+009240*    COMPUTE W-COMM-I-R-PARZ =                                    00092400
+009250*     (W-NUM-DEL-NO-F(W-IND) + W-NUM-DEL-F(W-IND)) *              00092500
+009260*                              W-IMP-DELEGA.                      00092600
+009270*    IF W-DIVISA = 'EUR'                                          00092700
+009280*    COMPUTE W-COMM-I-R-PARZ =                                    00092800
+009290*     (W-NUM-DEL-NO-F(W-IND) + W-NUM-DEL-F(W-IND)) *              00092900
+009300*                              W-IMP-DELEGA-EUR.                  00093000
+009310*    ADD     W-COMM-I-R-PARZ  TO W-COMM-I-R-APPO.                 00093100
+009320     ADD 1                    TO W-IND.                           00093200
+009330* TEST CICLO TABELLA SALDI                                        00093300
+009340     IF W-IND NOT > 130   AND                                     00093400
+009350        W-PROV(W-IND) NOT = SPACE                                 00093500
+009360        GO TO A1-015.                                             00093600
+009370 A1-020.                                                          00093700
+009380* SI ARROTONDA PER ECCESSO AL COMMISSIONE CALCOLATA;              00093800
+009390* IN CASO DI IMPORTI IN LIRE, L'ARROTONDAMENTO NON HA EFFETTO     00093900
+009400*                                                                 00094000
+009410*    COMPUTE W-COMM-I-R = W-COMM-I-R-APPO + 0,50.                 00094100
+009420*                                                                 00094200
+009430     MOVE W-COMM-CALC     TO   W-COMM-I-R.                        00094300
+009440*                                                                 00094400
+009450* DICHIARATI SUL PROGRESSIVO '01' SIA PARI ALLA SOMMA DEI         00094500
+009460* BONIFICI DICHIARATI SUI PROGRESSIVI > 01                        00094600
+009470* BONIFICI DICHIARATI SUI PROGRESSIVI > 01                        00094700
+009480     IF W-ACCR-BON-COMP = W-ACCR-BON-COMP-CALC                    00094800
+009490        GO TO A1-040.                                             00094900
+009500 A1-030.                                                          00095000
+009510* ERRORE BLOCCANTE                                                00095100
+009520     MOVE 503    TO BQVFB21-38-ERR-IMP-COMPEN.                    00095200
+009530     MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMPEN-A.                  00095300
+009540     ADD  1      TO W-CTR2.                                       00095400
+009550 A1-040.                                                          00095500
+009560* SI CONTROLLA CHE IL NUMERO DEI   BONIFICI COMPENSATIVI          00095600
+009570* DICHIARATI SUL PROGRESSIVO '01' SIA PARI AL NUMERO DI BONI-     00095700
+009580* FICI CON PROGRESSIVO > 01                                       00095800
+009590     IF W-NUMR-COMP = W-NUMR-COMP-CALC                            00095900
+009600        GO TO A1-060.                                             00096000
+009610 A1-050.                                                          00096100
+009620* ERRORE BLOCCANTE                                                00096200
+009630     MOVE 503    TO BQVFB21-38-ERR-NUM-COMPEN.                    00096300
+009640     MOVE 'E'    TO BQVFB21-38-ERR-NUM-COMPEN-A.                  00096400
+009650     ADD  1      TO W-CTR2.                                       00096500
+009660 A1-060.                                                          00096600
+009670* IL TOTALE DELLE COMMISSIONI CALCOLATE                           00096700
+009680* DEVE ESSERE = ALLA SOMMA DELLE COMMISSIONI TRATTENUTE DI-       00096800
+009690* CHIARATE SU TUTTI I BONIFICI + LE COMMISSIONI RESIDUE DI-       00096900
+009700* CHIARATE SU TUTTI I BONIFICI                                    00097000
+009710     COMPUTE W-TOT-COMM-DICH   = BQVFB21-38-IMP-COMMIS-RES +      00097100
+009720                                 BQVFB21-38-IMP-COMMIS.           00097200
+009730* TEST SU COMMISSIONE RESIDUA                                     00097300
+009740     IF W-COMM-I-R = W-TOT-COMM-DICH                              00097400
+009750        GO TO A1-080.                                             00097500
+009760 A1-070.                                                          00097600
+009770* SQUADRATURA IMPORTO COMMISSIONI                                 00097700
+009780     MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS.                     00097800
+009790     MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMMIS-A.                   00097900
+009800     ADD  1     TO W-CTR2.                                        00098000
+009810     IF BQVFB21-38-IMP-COMMIS-RES > ZERO OR                       00098100
+009820        BQVFB21-38-IMP-BONIF      = ZERO                          00098200
+009830        MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS-RES               00098300
+009840        MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMM-RES-A               00098400
+009850        ADD  1     TO W-CTR2.                                     00098500
+009860 A1-080.                                                          00098600
+009870* SI CALCOLA L'ACCANTONAMENTO PER TUTTE                           00098700
+009880* LE PROVINCE                                                     00098800
+009890     COMPUTE W-C = W-SALDO-CASSA                                  00098900
+009900                + BQVFB21-38-IMP-REV-PIGN                         00099000
+009910                + BQVFB21-38-IMP-REV-SGRAV.                       00099100
+009920* SI CALCOLA IL TOTALE DEI BONIFICI DICHIARATI SU REC.38          00099200
+009930*    COMPUTE W-TOT-BON-DICH   = BQVFB21-38-IMP-BONIF +            00099300
+009940*                               W-ACCR-BON-COMP-CALC.             00099400
+009950     COMPUTE W-TOT-BON-DICH = (BQVFB21-38-IMP-BONIF      +        00099500
+009960                               BQVFB21-38-IMP-COMPEN     -        00099600
+009970                               BQVFB21-38-IMP-ANTIC      -        00099700
+009980                               BQVFB21-38-IMP-ANTIC-I24).         00099800
+009990*---                                                              00099900
+010000*--- SI CALCOLANO GLI EVENTUALI INTERESSI SULL'ANTICIPO           00100000
+010010*---                                                              00100100
+010020     PERFORM E2-010-INTERESSI THRU E2-EXIT.                       00100200
+010030*---                                                              00100300
+010040* SI CALCOLA IL TOTALE DEI BONIFICI DOVUTI                        00100400
+010050*    COMPUTE W-TOT-BON-CALC   = W-C       -                       00100500
+010060*                               W-COMM-I-R -                      00100600
+010070*                               W-SALDO-AGEV.                     00100700
+010080*                                                                 00100800
+010090*---                                                              00100900
+010100*    DISPLAY '***********************************'.               00101000
+010110*    MOVE W-COMM-CALC    TO W-C-ALF.                              00101100
+010120*    DISPLAY 'COMM-CALC 1: ' W-C-ALF.                             00101200
+010130*    MOVE W-SALDO-CASSA TO W-C-ALF.                               00101300
+010140*    DISPLAY 'SALDO CASSA: ' W-C-ALF.                             00101400
+010150*    MOVE BQVFB21-38-IMP-REV-PIGN TO W-C-ALF.                     00101500
+010160*    DISPLAY '38-IMP-REV-PIGN: ' W-C-ALF.                         00101600
+010170*    MOVE W-REV-SGRAV TO W-C-ALF.                                 00101700
+010180*    DISPLAY 'REV-SGRAV  : ' W-C-ALF.                             00101800
+010190*    MOVE W-C TO W-C-ALF.                                         00101900
+010200*    DISPLAY 'RISULTATO-1: ' W-C-ALF.                             00102000
+010210     IF W-C = ZERO                                                00102100
+010220        PERFORM A2-010-RISULT1 THRU A2-010-RISULT1-EX             00102200
+010230        MOVE ZERO TO W-TOT-BON-CALC                               00102300
+010240        GO TO A1-081.                                             00102400
+010250*                                                                 00102500
+010260     IF W-C > ZERO                                                00102600
+010270        PERFORM G2-010-RISULT1P THRU G2-010-RISULT1P-EX           00102700
+010280* SI CALCOLA IL RISULTATO2                                        00102800
+010290        COMPUTE W-RISULT2     = W-C        -                      00102900
+010300                                BQVFB21-38-IMP-ANTIC -            00103000
+010310                                BQVFB21-38-IMP-ANTIC-I24          00103100
+010320     END-IF.                                                      00103200
+010330*    MOVE BQVFB21-38-IMP-ANTIC TO W-C-ALF.                        00103300
+010340*    DISPLAY '38-IMP-ANTIC: ' W-C-ALF.                            00103400
+010350*    MOVE W-RISULT2 TO W-C-ALF.                                   00103500
+010360*    DISPLAY 'RISULTATO-2: ' W-C-ALF.                             00103600
+010370     IF W-RISULT2 NOT > ZERO                                      00103700
+010380        PERFORM F2-010-RISULT2N THRU F2-010-RISULT2N-EX           00103800
+010390        MOVE ZERO TO W-TOT-BON-CALC                               00103900
+010400        GO TO A1-081.                                             00104000
+010410*                                                                 00104100
+010420     IF W-RISULT2     > ZERO                                      00104200
+010430* SI CALCOLA IL RISULTATO3                                        00104300
+010440        COMPUTE W-RISULT3     = W-RISULT2  -                      00104400
+010450                                W-COMM-I-R                        00104500
+010460     END-IF.                                                      00104600
+010470*                                                                 00104700
+010480*    MOVE W-COMM-I-R TO W-C-ALF.                                  00104800
+010490*    DISPLAY 'W-COMM-I-R : ' W-C-ALF.                             00104900
+010500*    MOVE W-RISULT3 TO W-C-ALF.                                   00105000
+010510*    DISPLAY 'RISULTATO-3: ' W-C-ALF.                             00105100
+010520     IF W-RISULT3 NOT > ZERO                                      00105200
+010530        PERFORM C2-010-RISULT3N THRU C2-010-RISULT3N-EX           00105300
+010540        MOVE ZERO TO W-TOT-BON-CALC                               00105400
+010550        GO TO A1-081.                                             00105500
+010560*                                                                 00105600
+010570     IF W-RISULT3     > ZERO                                      00105700
+010580        PERFORM B2-010-RISULT3P THRU B2-010-RISULT3P-EX           00105800
+010590* SI CALCOLA IL RISULTATO4                                        00105900
+010600        COMPUTE W-RISULT4     = W-RISULT3  -                      00106000
+010610                                W-INT-ANTIC-CALC                  00106100
+010620     END-IF.                                                      00106200
+010630*    MOVE W-INT-ANTIC-CALC TO W-C-ALF.                            00106300
+010640*    DISPLAY 'INT-A-CALC : ' W-C-ALF.                             00106400
+010650*    MOVE W-RISULT4 TO W-C-ALF.                                   00106500
+010660*    DISPLAY 'RISULTATO-4: ' W-C-ALF.                             00106600
+010670     IF W-RISULT4 NOT > ZERO                                      00106700
+010680        PERFORM H2-010-RISULT4N THRU H2-010-RISULT4N-EX           00106800
+010690        MOVE ZERO TO W-TOT-BON-CALC                               00106900
+010700        GO TO A1-081.                                             00107000
+010710*---                                                              00107100
+010720     IF W-RISULT4     > ZERO                                      00107200
+010730        PERFORM I2-010-RISULT4P THRU I2-010-RISULT4P-EX           00107300
+010740        MOVE W-RISULT4 TO W-TOT-BON-CALC                          00107400
+010750     END-IF.                                                      00107500
+010760*---                                                              00107600
+010770 A1-081.                                                          00107700
+010780*                                                                 00107800
+010790*                                                                 00107900
+010800* S'IMPOSTA IL CAMPO DI LINKAGE RELATIVO AL TOTALE BONIFICI CALCOL00108000
+010810     MOVE W-TOT-BON-CALC        TO W-ACCR-BON-COMP-CALC.          00108100
+010820**      S'IMPOSTA IL CAMPO DI LINKAGE RELATIVO A COMMISS. CALCOLAT00108200
+010830     MOVE W-COMM-I-R TO W-COMM-CALC.                              00108300
+010840* SE L'IMPORTO PIGNORAMENTO E' IMPOSTATO, LA QUADRATURA SI        00108400
+010850* EFFETTUA SENZA LA POSSIBILITA' DI FORZATURE DELL'IMPORTO        00108500
+010860* BONIFICO DICHIARATO                                             00108600
+010870     IF BQVFB21-38-IMP-PIGN GREATER ZERO                          00108700
+010880       GO TO A1-150.                                              00108800
+010890 A1-085.                                                          00108900
+010900*---   SI CONTROLLA CHE IL BONIFICO CALCOLATO SIA PARI            00109000
+010910*---   A QUELLO DICHIARATO                                        00109100
+010920     IF W-TOT-BON-CALC = W-TOT-BON-DICH AND                       00109200
+010930        BQVFB21-38-FLAG-BONIF  EQUAL ZERO                         00109300
+010940        GO TO A1-170.                                             00109400
+010950 A1-090.                                                          00109500
+010960     IF W-TOT-BON-CALC        NOT EQUAL W-TOT-BON-DICH OR         00109600
+010970        BQVFB21-38-FLAG-BONIF NOT EQUAL 1                         00109700
+010980      GO TO A1-105.                                               00109800
+010990 A1-100.                                                          00109900
+011000*---   BONIF. CALC = DICH E FLAG AD 1                             00110000
+011010     MOVE 24             TO BQVFB21-38-ERR-FLAG-BONIF.            00110100
+011020     MOVE 'W'            TO BQVFB21-38-ERR-FLAG-BONIF-A.          00110200
+011030     ADD  1              TO W-CTR1.                               00110300
+011040     GO TO A1-170.                                                00110400
+011050 A1-105.                                                          00110500
+011060     IF W-TOT-BON-CALC < W-TOT-BON-DICH AND                       00110600
+011070        BQVFB21-38-FLAG-BONIF  EQUAL 1                            00110700
+011080      GO TO A1-170.                                               00110800
+011090 A1-110.                                                          00110900
+011100     IF W-TOT-BON-CALC        NOT < W-TOT-BON-DICH OR             00111000
+011110        BQVFB21-38-FLAG-BONIF NOT EQUAL 0                         00111100
+011120      GO TO A1-130.                                               00111200
+011130 A1-120.                                                          00111300
+011140*---   BONIF. CALC < DICH.  E FLAG = 0                            00111400
+011150     MOVE 510            TO BQVFB21-38-ERR-IMP-BONIF.             00111500
+011160     MOVE 'E'            TO BQVFB21-38-ERR-IMP-BONIF-A.           00111600
+011170     ADD  1              TO W-CTR2.                               00111700
+011180     IF BQVFB21-38-IMP-COMPEN NOT = ZERO                          00111800
+011190        MOVE 510   TO BQVFB21-38-ERR-IMP-COMPEN                   00111900
+011200        MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMPEN-A                 00112000
+011210        ADD  1     TO W-CTR2.                                     00112100
+011220     MOVE 1     TO W-FLAG-NO-QUAD.                                00112200
+011230     GO TO A1-170.                                                00112300
+011240 A1-130.                                                          00112400
+011250     IF W-TOT-BON-CALC NOT > W-TOT-BON-DICH                       00112500
+011260       GO TO A1-170.                                              00112600
+011270 A1-140.                                                          00112700
+011280*---   IMPORTO BONIF. CALC > DICH.                                00112800
+011290     MOVE 510   TO BQVFB21-38-ERR-IMP-BONIF.                      00112900
+011300     MOVE 'E'   TO BQVFB21-38-ERR-IMP-BONIF-A.                    00113000
+011310     ADD  1     TO W-CTR2.                                        00113100
+011320     IF BQVFB21-38-IMP-COMPEN  NOT = ZERO  AND                    00113200
+011330        BQVFB21-38-ERR-IMP-COMPEN  = ZERO                         00113300
+011340        MOVE 510   TO BQVFB21-38-ERR-IMP-COMPEN                   00113400
+011350        MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMPEN-A                 00113500
+011360        ADD  1     TO W-CTR2.                                     00113600
+011370     MOVE 1     TO W-FLAG-NO-QUAD.                                00113700
+011380     GO TO A1-170.                                                00113800
+011390 A1-150.                                                          00113900
+011400     IF W-TOT-BON-CALC EQUAL (W-TOT-BON-DICH +                    00114000
+011410                              BQVFB21-38-IMP-PIGN)                00114100
+011420       GO TO A1-170.                                              00114200
+011430 A1-160.                                                          00114300
+011440     MOVE 510   TO BQVFB21-38-ERR-IMP-BONIF.                      00114400
+011450     MOVE 'E'   TO BQVFB21-38-ERR-IMP-BONIF-A.                    00114500
+011460     MOVE 503   TO BQVFB21-38-ERR-IMP-PIGN.                       00114600
+011470     MOVE 'E'   TO BQVFB21-38-ERR-IMP-PIGN-A.                     00114700
+011480     ADD  2     TO W-CTR2.                                        00114800
+011490     IF BQVFB21-38-IMP-COMPEN  NOT = ZERO  AND                    00114900
+011500        BQVFB21-38-ERR-IMP-COMPEN  = ZERO                         00115000
+011510        MOVE 510   TO BQVFB21-38-ERR-IMP-COMPEN                   00115100
+011520        MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMPEN-A                 00115200
+011530        ADD  1     TO W-CTR2.                                     00115300
+011540     MOVE 1     TO W-FLAG-NO-QUAD.                                00115400
+011550 A1-170.                                                          00115500
+011560     IF W-FLAG-NO-QUAD EQUAL 1                                    00115600
+011570        GO TO A1-010-CTL-QUAD-EX.                                 00115700
+011580 A1-180.                                                          00115800
+011590***   IMPOSTAZIONE CAMPO DI LINKAGE RELATIVO A COMMISS. RESIDUE CA00115900
+011600      MOVE ZERO               TO W-COMR.                          00116000
+011610      IF W-TOT-BON-CALC NOT LESS W-COMM-CALC                      00116100
+011620        GO TO A1-010-CTL-QUAD-EX.                                 00116200
+011630 A1-190.                                                          00116300
+011640      COMPUTE W-COMR = W-COMM-CALC - W-TOT-BON-CALC.              00116400
+011650 A1-010-CTL-QUAD-EX.                                              00116500
+011660     EXIT.                                                        00116600
+011670*---                                                              00116700
+011680 C1-010-ALTRO.                                                    00116800
+011690     IF BQVFB21-38-FLAG-BONIF NOT NUMERIC         OR              00116900
+011700       (BQVFB21-38-FLAG-BONIF NOT EQUAL ZERO AND                  00117000
+011710        BQVFB21-38-FLAG-BONIF NOT EQUAL 1)                        00117100
+011720       MOVE  55                 TO BQVFB21-38-ERR-FLAG-BONIF      00117200
+011730       MOVE 'E'                 TO BQVFB21-38-ERR-FLAG-BONIF-A    00117300
+011740       ADD  1                   TO W-CTR2                         00117400
+011750       GO TO C1-050.                                              00117500
+011760 C1-020.                                                          00117600
+011770*-----------------------------------------------------------*     00117700
+011780*     CONTROLLO FLAG BONIFICO                                     00117800
+011790*-----------------------------------------------------------*     00117900
+011800*---                                                              00118000
+011810     IF BQVFB21-38-PROG-ACCR-BON NOT EQUAL 1  OR                  00118100
+011820        (BQVFB21-38-IMP-PIGN    NUMERIC AND                       00118200
+011830         BQVFB21-38-IMP-PIGN    GREATER ZERO)                     00118300
+011840       GO TO C1-030.                                              00118400
+011850 C1-025.                                                          00118500
+011860     GO TO C1-050.                                                00118600
+011870 C1-030.                                                          00118700
+011880     IF BQVFB21-38-FLAG-BONIF   EQUAL ZERO                        00118800
+011890        GO TO C1-050.                                             00118900
+011900 C1-040.                                                          00119000
+011910*--    FLAG BONIFICO IMPOSTATO PER RECORD V38                     00119100
+011920*--    SUCCESSIVO AL PRIMO                                        00119200
+011930     MOVE  15                   TO BQVFB21-38-ERR-FLAG-BONIF.     00119300
+011940     MOVE 'E'                   TO BQVFB21-38-ERR-FLAG-BONIF-A.   00119400
+011950     ADD  1                     TO W-CTR2.                        00119500
+011960 C1-050.                                                          00119600
+011970*---         NUMERICITA' IMPORTO PIGNORAMENTO                     00119700
+011980     IF BQVFB21-38-IMP-PIGNA     NOT NUMERIC                      00119800
+011990       MOVE  33               TO BQVFB21-38-ERR-IMP-PIGN          00119900
+012000       MOVE 'E'               TO BQVFB21-38-ERR-IMP-PIGN-A        00120000
+012010       ADD  1                 TO W-CTR2                           00120100
+012020       GO TO C1-090.                                              00120200
+012030 C1-060.                                                          00120300
+012040     IF BQVFB21-38-PROG-ACCR-BON EQUAL 1                          00120400
+012050       GO TO C1-090.                                              00120500
+012060 C1-070.                                                          00120600
+012070     IF BQVFB21-38-IMP-PIGN     EQUAL ZERO                        00120700
+012080       GO TO C1-090.                                              00120800
+012090 C1-080.                                                          00120900
+012100*--    IMP. PIGNORAMENTI           IMPOSTATO PER RECORD V38       00121000
+012110*--    SUCCESSIVO AL PRIMO                                        00121100
+012120     MOVE  15                    TO BQVFB21-38-ERR-IMP-PIGN.      00121200
+012130     MOVE 'E'                    TO BQVFB21-38-ERR-IMP-PIGN-A.    00121300
+012140     ADD  1                      TO W-CTR2.                       00121400
+012150 C1-090.                                                          00121500
+012160*                                                                 00121600
+012170*A - MODIFICA 28/01/2004 - CONTROLLI IMP. RECUPERATO E FLAG       00121700
+012180*                                                                 00121800
+012190     PERFORM L1-010-RECUP  THRU  L1-RECUP-EX.                     00121900
+012200*                                                                 00122000
+012210*A - FINE MODIFICA 28/01/2004                                     00122100
+012220*                                                                 00122200
+012230*---         NUMERICITA' REVOCA IMPORTO PIGNORAMENTO              00122300
+012240     IF BQVFB21-38-IMP-REV-PIGNA     NOT NUMERIC                  00122400
+012250       MOVE  33               TO BQVFB21-38-ERR-IMP-REV-PIGN      00122500
+012260       MOVE 'E'               TO BQVFB21-38-ERR-IMP-REV-PIGN-A    00122600
+012270       ADD  1                 TO W-CTR2                           00122700
+012280       GO TO C1-130.                                              00122800
+012290 C1-100.                                                          00122900
+012300     IF BQVFB21-38-IMP-REV-PIGN     EQUAL ZERO                    00123000
+012310       GO TO C1-130.                                              00123100
+012320 C1-110.                                                          00123200
+012330     IF BQVFB21-38-PROG-ACCR-BON EQUAL 1                          00123300
+012340       GO TO C1-130.                                              00123400
+012350 C1-120.                                                          00123500
+012360*--                                                               00123600
+012370*--                                                               00123700
+012380     MOVE  15                    TO BQVFB21-38-ERR-IMP-REV-PIGN.  00123800
+012390     MOVE 'E'                    TO BQVFB21-38-ERR-IMP-REV-PIGN-A.00123900
+012400     ADD  1                      TO W-CTR2.                       00124000
+012410 C1-130.                                                          00124100
+012420*---         NUMERICITA' REVOCA IMPORTO SGRAVI                    00124200
+012430     IF BQVFB21-38-IMP-REV-SGRAVA     NOT NUMERIC                 00124300
+012440       MOVE  33               TO BQVFB21-38-ERR-IMP-REV-SGRAV     00124400
+012450       MOVE 'E'               TO BQVFB21-38-ERR-IMP-REV-SGRAV-A   00124500
+012460       ADD  1                 TO W-CTR2                           00124600
+012470       GO TO C1-010-ALTRO-EX.                                     00124700
+012480 C1-140.                                                          00124800
+012490     IF BQVFB21-38-IMP-REV-SGRAV     EQUAL ZERO                   00124900
+012500       GO TO C1-010-ALTRO-EX.                                     00125000
+012510 C1-150.                                                          00125100
+012520     IF BQVFB21-38-PROG-ACCR-BON EQUAL 1                          00125200
+012530       GO TO C1-010-ALTRO-EX.                                     00125300
+012540 C1-160.                                                          00125400
+012550*--                                                               00125500
+012560*--                                                               00125600
+012570     MOVE  15                    TO BQVFB21-38-ERR-IMP-REV-SGRAV. 00125700
+012580     MOVE 'E'                    TO BQVFB21-38-ERR-IMP-REV-SGRAV-A00125800
+012590     ADD  1                      TO W-CTR2.                       00125900
+012600 C1-010-ALTRO-EX.                                                 00126000
+012610     EXIT.                                                        00126100
+012620*                                                                 00126200
+012630 RZ-010-INIZIA.                                                   00126300
+012640*                                                                 00126400
+012650      MOVE ZERO      TO BQVFB21-38-ERR-DATA-BONIF-COMP.           00126500
+012660      MOVE ZERO      TO BQVFB21-38-ERR-DATA-BONIF-C-A.            00126600
+012670      MOVE ZERO      TO BQVFB21-38-ERR-CRO.                       00126700
+012680      MOVE ZERO      TO BQVFB21-38-ERR-CRO-A.                     00126800
+012690      MOVE ZERO      TO BQVFB21-38-ERR-MITTENTE.                  00126900
+012700      MOVE ZERO      TO BQVFB21-38-ERR-MITTENTE-A.                00127000
+012710      MOVE ZERO      TO BQVFB21-38-ERR-IMP-BONIF.                 00127100
+012720      MOVE ZERO      TO BQVFB21-38-ERR-IMP-BONIF-A.               00127200
+012730      MOVE ZERO      TO BQVFB21-38-ERR-IMP-COMMIS.                00127300
+012740      MOVE ZERO      TO BQVFB21-38-ERR-IMP-COMMIS-A.              00127400
+012750      MOVE ZERO      TO BQVFB21-38-ERR-IMP-COMMIS-RES.            00127500
+012760      MOVE ZERO      TO BQVFB21-38-ERR-IMP-COMM-RES-A.            00127600
+012770      MOVE ZERO      TO BQVFB21-38-ERR-IMP-COMPEN.                00127700
+012780      MOVE ZERO      TO BQVFB21-38-ERR-IMP-COMPEN-A.              00127800
+012790      MOVE ZERO      TO BQVFB21-38-ERR-NUM-COMPEN.                00127900
+012800      MOVE ZERO      TO BQVFB21-38-ERR-NUM-COMPEN-A.              00128000
+012810      MOVE ZERO      TO BQVFB21-38-ERR-IMP-PIGN.                  00128100
+012820      MOVE ZERO      TO BQVFB21-38-ERR-IMP-PIGN-A.                00128200
+012830      MOVE ZERO      TO BQVFB21-38-IMP-REV-PIGN.                  00128300
+012840      MOVE ZERO      TO BQVFB21-38-IMP-REV-PIGNA.                 00128400
+012850      MOVE ZERO      TO BQVFB21-38-IMP-REV-SGRAV.                 00128500
+012860      MOVE ZERO      TO BQVFB21-38-IMP-REV-SGRAVA.                00128600
+012870      MOVE ZERO      TO BQVFB21-38-ERR-FILLER.                    00128700
+012880      MOVE ZERO      TO BQVFB21-38-ERR-FLAG-ANTIC                 00128800
+012890      MOVE ZERO      TO BQVFB21-38-ERR-FLAG-ANTIC-A               00128900
+012900      MOVE ZERO      TO BQVFB21-38-ERR-IMP-ANTIC                  00129000
+012910      MOVE ZERO      TO BQVFB21-38-ERR-IMP-ANTIC-A                00129100
+012920      MOVE ZERO      TO BQVFB21-38-ERR-IMP-INT-ANTIC              00129200
+012930      MOVE ZERO      TO BQVFB21-38-ERR-IMP-INT-ANTIC-A            00129300
+012940      MOVE ZERO      TO BQVFB21-38-ERR-INT-ANTIC-RES              00129400
+012950      MOVE ZERO      TO BQVFB21-38-ERR-INT-ANTIC-RES-A            00129500
+012960      MOVE ZERO      TO BQVFB21-38-ERR-IMP-ANTIC-I24              00129600
+012970      MOVE ZERO      TO BQVFB21-38-ERR-IMP-ANTIC-I24-A            00129700
+012980      MOVE ZERO      TO BQVFB21-38-ERR-FILLER.                    00129800
+012990 RZ-010-INIZIA-EX.                                                00129900
+013000     EXIT.                                                        00130000
+013010******************************************************************00130100
+013020* SE LA CASSA E' UGUALE A ZERO L'IMPORTO COMMISSIONI TRATTE-      00130200
+013030* NUTE DEVE ESSERE NULLO, L'IMPORTO COMMISSIONI RESIDUE DEVE      00130300
+013040* ESSERE UGUALE ALL'IMPORTO COMMISSIONI CALCOLATE                 00130400
+013050******************************************************************00130500
+013060*                                                                 00130600
+013070 A2-010-RISULT1.                                                  00130700
+013080     IF BQVFB21-38-IMP-COMMIS NOT = ZERO                          00130800
+013090* ERRORE                                                          00130900
+013100* SQUADRATURA IMPORTO COMMISSIONI                                 00131000
+013110        IF BQVFB21-38-ERR-IMP-COMMIS-A NOT = 'E'                  00131100
+013120           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS                00131200
+013130           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMMIS-A              00131300
+013140           ADD  1     TO W-CTR2                                   00131400
+013150        END-IF                                                    00131500
+013160     END-IF.                                                      00131600
+013170*                                                                 00131700
+013180     MOVE W-COMM-I-R TO W-COMR.                                   00131800
+013190     IF BQVFB21-38-IMP-COMMIS-RES NOT = W-COMM-I-R                00131900
+013200* ERRORE                                                          00132000
+013210* SQUADRATURA IMPORTO COMMISSIONI RESIDUE                         00132100
+013220        IF BQVFB21-38-ERR-IMP-COMM-RES-A NOT = 'E'                00132200
+013230           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS-RES            00132300
+013240           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMM-RES-A            00132400
+013250           ADD  1     TO W-CTR2                                   00132500
+013260        END-IF                                                    00132600
+013270     END-IF.                                                      00132700
+013280*---                                                              00132800
+013290*--- SI AGGIUNGONO I CONTROLLI RELATIVI ALL'INTRODUZIONE DELL'    00132900
+013300*--- ANTICIPO NEL CASO DI CASSA A ZERO                            00133000
+013310*---                                                              00133100
+013320     IF BQVFB21-38-IMP-ANTIC > ZERO                               00133200
+013330* ERRORE                                                          00133300
+013340* SQUADRATURA IMPORTO ANTICIPO                                    00133400
+013350        IF BQVFB21-38-ERR-IMP-ANTIC-A NOT = 'E'                   00133500
+013360           MOVE 510   TO BQVFB21-38-ERR-IMP-ANTIC                 00133600
+013370           MOVE 'E'   TO BQVFB21-38-ERR-IMP-ANTIC-A               00133700
+013380           ADD  1     TO W-CTR2                                   00133800
+013390        END-IF                                                    00133900
+013400     END-IF.                                                      00134000
+013410     IF BQVFB21-38-IMP-INT-ANTIC > ZERO                           00134100
+013420* ERRORE                                                          00134200
+013430* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00134300
+013440        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A NOT = 'E'               00134400
+013450           MOVE 510   TO BQVFB21-38-ERR-IMP-INT-ANTIC             00134500
+013460           MOVE 'E'   TO BQVFB21-38-ERR-IMP-INT-ANTIC-A           00134600
+013470           ADD  1     TO W-CTR2                                   00134700
+013480        END-IF                                                    00134800
+013490     END-IF.                                                      00134900
+013500     IF BQVFB21-38-INT-ANTIC-RES > ZERO                           00135000
+013510* ERRORE                                                          00135100
+013520* SQUADRATURA IMPORTO INTERESSI RESIDUI ANTICIPO                  00135200
+013530        IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'               00135300
+013540           MOVE 510   TO BQVFB21-38-ERR-INT-ANTIC-RES             00135400
+013550           MOVE 'E'   TO BQVFB21-38-ERR-INT-ANTIC-RES-A           00135500
+013560           ADD  1     TO W-CTR2                                   00135600
+013570        END-IF                                                    00135700
+013580     END-IF.                                                      00135800
+013590 A2-010-RISULT1-EX.                                               00135900
+013600     EXIT.                                                        00136000
+013610*************************************************************     00136100
+013620* SE LA CASSA (DOPO AVER SOTTRATTO L'ANTICIPO) E' MAGGIORE DI ZERO00136200
+013630* LE COMMISSIONI TRATTENUTE DEVONO ESSERE UGUALI ALL'IMPORTO      00136300
+013640* COMMISSIONI CALCOLATE E L'IMPORTO COMMISSIONI RESIDUE DEVE      00136400
+013650* ESSERE UGUALE A ZERO                                            00136500
+013660*************************************************************     00136600
+013670 B2-010-RISULT3P.                                                 00136700
+013680*---                                                              00136800
+013690     IF BQVFB21-38-IMP-COMMIS NOT = W-COMM-I-R                    00136900
+013700* ERRORE                                                          00137000
+013710* SQUADRATURA IMPORTO COMMISSIONI                                 00137100
+013720        IF BQVFB21-38-ERR-IMP-COMMIS-A NOT = 'E'                  00137200
+013730           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS                00137300
+013740           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMMIS-A              00137400
+013750           ADD  1     TO W-CTR2                                   00137500
+013760        END-IF                                                    00137600
+013770     END-IF.                                                      00137700
+013780*---                                                              00137800
+013790     IF BQVFB21-38-IMP-COMMIS-RES NOT = ZERO                      00137900
+013800* ERRORE                                                          00138000
+013810* SQUADRATURA IMPORTO COMMISSIONI RESIDUE                         00138100
+013820        IF BQVFB21-38-ERR-IMP-COMM-RES-A NOT = 'E'                00138200
+013830           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS-RES            00138300
+013840           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMM-RES-A            00138400
+013850           ADD  1     TO W-CTR2                                   00138500
+013860        END-IF                                                    00138600
+013870     END-IF.                                                      00138700
+013880 B2-010-RISULT3P-EX.                                              00138800
+013890     EXIT.                                                        00138900
+013900****************************************************************  00139000
+013910* SE L'IMPORTO BONIFICO CALCOLATO E' MINORE DELLE COMMISSIONI     00139100
+013920* CALCOLATE, L'IMPORTO COMMISSIONI DEVE ESSERE UGUALE ALL'        00139200
+013930* IMPORTO BONIFICO CALCOLATO E L'IMPORTO COMMISSIONI RESIDUE      00139300
+013940* DEVE ESSERE UGUALE AL VALORE ASSOLUTO DELLA DIFFERENZA          00139400
+013950****************************************************************  00139500
+013960 C2-010-RISULT3N.                                                 00139600
+013970     IF BQVFB21-38-IMP-BONIF NOT = ZERO                           00139700
+013980* ERRORE                                                          00139800
+013990* SQUADRATURA IMPORTO BONIFICO                                    00139900
+014000        IF BQVFB21-38-ERR-IMP-BONIF-A NOT = 'E'                   00140000
+014010           MOVE 510   TO BQVFB21-38-ERR-IMP-BONIF                 00140100
+014020           MOVE 'E'   TO BQVFB21-38-ERR-IMP-BONIF-A               00140200
+014030           ADD  1     TO W-CTR2                                   00140300
+014040        END-IF                                                    00140400
+014050     END-IF.                                                      00140500
+014060*---                                                              00140600
+014070     IF BQVFB21-38-IMP-COMMIS NOT = W-RISULT2                     00140700
+014080* ERRORE                                                          00140800
+014090* SQUADRATURA IMPORTO COMMISSIONI                                 00140900
+014100        IF BQVFB21-38-ERR-IMP-COMMIS-A NOT = 'E'                  00141000
+014110           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS                00141100
+014120           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMMIS-A              00141200
+014130           ADD  1     TO W-CTR2                                   00141300
+014140        END-IF                                                    00141400
+014150     END-IF.                                                      00141500
+014160*---                                                              00141600
+014170     MOVE W-RISULT3 TO W-COMR.                                    00141700
+014180     IF BQVFB21-38-IMP-COMMIS-RES NOT = (W-RISULT3 * -1)          00141800
+014190* ERRORE                                                          00141900
+014200* SQUADRATURA IMPORTO COMMISSIONI RESIDUE                         00142000
+014210        IF BQVFB21-38-ERR-IMP-COMM-RES-A NOT = 'E'                00142100
+014220           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS-RES            00142200
+014230           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMM-RES-A            00142300
+014240           ADD  1     TO W-CTR2                                   00142400
+014250        END-IF                                                    00142500
+014260     END-IF.                                                      00142600
+014270*---                                                              00142700
+014280     IF BQVFB21-38-IMP-INT-ANTIC NOT = ZERO                       00142800
+014290* ERRORE                                                          00142900
+014300* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00143000
+014310        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A NOT = 'E'               00143100
+014320           MOVE 510    TO BQVFB21-38-ERR-IMP-INT-ANTIC            00143200
+014330           MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A          00143300
+014340           ADD  1      TO W-CTR2                                  00143400
+014350        END-IF                                                    00143500
+014360     END-IF.                                                      00143600
+014370*---                                                              00143700
+014380* MODIFICA 31/03/2004                                             00143800
+014390     IF BQVFB21-38-INT-ANTIC-RES     < W-INT-ANTIC-CALC           00143900
+014400        MOVE BQVFB21-38-INT-ANTIC-RES TO W-INT-ANTIC-CALC.        00144000
+014410* FINE MODIFICA 31/03/2004                                        00144100
+014420     IF BQVFB21-38-INT-ANTIC-RES NOT = W-INT-ANTIC-CALC           00144200
+014430* ERRORE                                                          00144300
+014440* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00144400
+014450        IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'               00144500
+014460           MOVE 510    TO BQVFB21-38-ERR-INT-ANTIC-RES            00144600
+014470           MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A          00144700
+014480           ADD  1      TO W-CTR2                                  00144800
+014490        END-IF                                                    00144900
+014500     END-IF.                                                      00145000
+014510 C2-010-RISULT3N-EX.                                              00145100
+014520     EXIT.                                                        00145200
+014530*---                                                              00145300
+014540 D2-010-CTR-ANTICIPO.                                             00145400
+014550*-----------------------------------------------------------*     00145500
+014560*--- I CAMPI RELATIVI AGLI ANTICIPI DEVONO ESSERE NUMERICI  *     00145600
+014570*-----------------------------------------------------------*     00145700
+014580*             CONTROLLO IMPORTO ANTICIPO                    *     00145800
+014590*-----------------------------------------------------------*     00145900
+014600     IF BQVFB21-38-IMP-ANTICA  IS NOT NUMERIC                     00146000
+014610* NON NUMERICO:  ERRORE BLOCCANTE                                 00146100
+014620        MOVE 33     TO BQVFB21-38-ERR-IMP-ANTIC                   00146200
+014630        MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-A                 00146300
+014640        ADD  1      TO W-CTR2                                     00146400
+014650*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00146500
+014660*-- QUADRATURA                                                    00146600
+014670        MOVE 1      TO W-FLAG-NO-QUAD                             00146700
+014680     END-IF.                                                      00146800
+014690*-----------------------------------------------------------*     00146900
+014700*             CONTROLLO INTERESSI ANTICIPO                  *     00147000
+014710*-----------------------------------------------------------*     00147100
+014720     IF BQVFB21-38-IMP-INT-ANTICA  IS NOT NUMERIC                 00147200
+014730* NON NUMERICO:  ERRORE BLOCCANTE                                 00147300
+014740        MOVE 33     TO BQVFB21-38-ERR-IMP-INT-ANTIC               00147400
+014750        MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A             00147500
+014760        ADD  1      TO W-CTR2                                     00147600
+014770*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00147700
+014780*-- QUADRATURA                                                    00147800
+014790        MOVE 1      TO W-FLAG-NO-QUAD                             00147900
+014800     END-IF.                                                      00148000
+014810*-----------------------------------------------------------*     00148100
+014820*             CONTROLLO INTERESSI RESIDUI ANTICIPO          *     00148200
+014830*-----------------------------------------------------------*     00148300
+014840     IF BQVFB21-38-INT-ANTIC-RESA  IS NOT NUMERIC                 00148400
+014850* NON NUMERICO:  ERRORE BLOCCANTE                                 00148500
+014860        MOVE 33     TO BQVFB21-38-ERR-INT-ANTIC-RES               00148600
+014870        MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A             00148700
+014880        ADD  1      TO W-CTR2                                     00148800
+014890*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00148900
+014900*-- QUADRATURA                                                    00149000
+014910        MOVE 1      TO W-FLAG-NO-QUAD                             00149100
+014920     END-IF.                                                      00149200
+014930*-----------------------------------------------------------*     00149300
+014940*             CONTROLLO ANTICIPO I24                        *     00149400
+014950*-----------------------------------------------------------*     00149500
+014960     IF BQVFB21-38-IMP-ANTIC-I24A  IS NOT NUMERIC                 00149600
+014970* NON NUMERICO:  ERRORE BLOCCANTE                                 00149700
+014980        MOVE 33     TO BQVFB21-38-ERR-IMP-ANTIC-I24               00149800
+014990        MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-I24-A             00149900
+015000        ADD  1      TO W-CTR2                                     00150000
+015010*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00150100
+015020*-- QUADRATURA                                                    00150200
+015030        MOVE 1      TO W-FLAG-NO-QUAD                             00150300
+015040     END-IF.                                                      00150400
+015050*----------------------------------------------------------------*00150500
+015060                                                                  00150600
+015070*--- SE IL PROGRESSIVO BONIFICO E' MAGGIORE DI 1, TUTTI I CAMPI -*00150700
+015080*--- RELATIVI ALL'ANTICIPO DEVONO ESSERE NON IMPOSTATI          -*00150800
+015090*---                                                              00150900
+015100     IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                     00151000
+015110        BQVFB21-38-PROG-ACCR-BON > 1                              00151100
+015120        IF BQVFB21-38-FLAG-ANTIC NOT = '0' AND                    00151200
+015130           BQVFB21-38-FLAG-ANTIC NOT = '1' AND                    00151300
+015140           BQVFB21-38-FLAG-ANTIC NOT = '2'                        00151400
+015150*--- FLAG ANTICIPO ERRATO                                         00151500
+015160*F         MOVE 96     TO BQVFB21-38-ERR-IMP-ANTIC                00151600
+015170*F         MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-A              00151700
+015180*F         ADD  1      TO W-CTR2                                  00151800
+015190           MOVE 15     TO BQVFB21-38-ERR-FLAG-ANTIC               00151900
+015200           MOVE 'E'    TO BQVFB21-38-ERR-FLAG-ANTIC-A             00152000
+015210           ADD  1      TO W-CTR2                                  00152100
+015220*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00152200
+015230*-- QUADRATURA                                                    00152300
+015240           MOVE 1      TO W-FLAG-NO-QUAD                          00152400
+015250        END-IF                                                    00152500
+015260*---                                                              00152600
+015270        IF BQVFB21-38-IMP-ANTICA  IS NUMERIC AND                  00152700
+015280           BQVFB21-38-IMP-ANTIC   > ZERO                          00152800
+015290*--- IMPORTO ANTICIPO NON CONGRUENTE CON PROG. BONIFICO           00152900
+015300           MOVE 15     TO BQVFB21-38-ERR-IMP-ANTIC                00153000
+015310           MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-A              00153100
+015320           ADD  1      TO W-CTR2                                  00153200
+015330*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00153300
+015340*-- QUADRATURA                                                    00153400
+015350           MOVE 1      TO W-FLAG-NO-QUAD                          00153500
+015360        END-IF                                                    00153600
+015370*---                                                              00153700
+015380        IF BQVFB21-38-IMP-ANTIC-I24A IS NUMERIC AND               00153800
+015390           BQVFB21-38-IMP-ANTIC-I24   > ZERO                      00153900
+015400*--- IMPORTO ANTICIPO NON CONGRUENTE CON PROG. BONIFICO           00154000
+015410           MOVE 15     TO BQVFB21-38-ERR-IMP-ANTIC-I24            00154100
+015420           MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-I24-A          00154200
+015430           ADD  1      TO W-CTR2                                  00154300
+015440*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00154400
+015450*-- QUADRATURA                                                    00154500
+015460           MOVE 1      TO W-FLAG-NO-QUAD                          00154600
+015470        END-IF                                                    00154700
+015480*---                                                              00154800
+015490        IF BQVFB21-38-IMP-INT-ANTICA  IS NUMERIC AND              00154900
+015500           BQVFB21-38-IMP-INT-ANTIC   > ZERO                      00155000
+015510*--- IMPORTO INTERESSI RESIDUI NON CONGRUENTE CON PROG. BONIFICO  00155100
+015520           MOVE 15     TO BQVFB21-38-ERR-IMP-INT-ANTIC            00155200
+015530           MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A          00155300
+015540           ADD  1      TO W-CTR2                                  00155400
+015550*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00155500
+015560*-- QUADRATURA                                                    00155600
+015570           MOVE 1      TO W-FLAG-NO-QUAD                          00155700
+015580        END-IF                                                    00155800
+015590*---                                                              00155900
+015600        IF BQVFB21-38-INT-ANTIC-RESA  IS NUMERIC AND              00156000
+015610           BQVFB21-38-INT-ANTIC-RES   > ZERO                      00156100
+015620*--- IMPORTO INTERESSI RESIDUI NON CONGRUENTE CON PROG. BONIFICO  00156200
+015630           MOVE 15     TO BQVFB21-38-ERR-INT-ANTIC-RES            00156300
+015640           MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A          00156400
+015650           ADD  1      TO W-CTR2                                  00156500
+015660*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00156600
+015670*-- QUADRATURA                                                    00156700
+015680           MOVE 1      TO W-FLAG-NO-QUAD                          00156800
+015690        END-IF                                                    00156900
+015700*---                                                              00157000
+015710*--- SE IL PROGRESSIVO BONIFICO E' MAGGIORE DI 1, L'IMPORTO   ---*00157100
+015720*--- BONIFICO NON PUO' ESSERE UGUALE A ZERO                   ---*00157200
+015730*---                                                          ---*00157300
+015740        IF BQVFB21-38-IMP-BONIFA       IS NUMERIC AND             00157400
+015750           BQVFB21-38-IMP-BONIF        = ZERO                     00157500
+015760           MOVE 39     TO BQVFB21-38-ERR-IMP-BONIF                00157600
+015770           MOVE 'E'    TO BQVFB21-38-ERR-IMP-BONIF-A              00157700
+015780           ADD  1      TO W-CTR2                                  00157800
+015790           IF BQVFB21-38-ERR-PROG-ACCR-BON-A NOT = 'E'            00157900
+015800              MOVE 55  TO BQVFB21-38-ERR-PROG-ACCR-BON            00158000
+015810              MOVE 'E' TO BQVFB21-38-ERR-PROG-ACCR-BON-A          00158100
+015820              ADD  1   TO W-CTR2                                  00158200
+015830           END-IF                                                 00158300
+015840*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00158400
+015850*-- QUADRATURA                                                    00158500
+015860           MOVE 1      TO W-FLAG-NO-QUAD                          00158600
+015870        END-IF                                                    00158700
+015880     ELSE                                                         00158800
+015890*----------------------------------------------------------------*00158900
+015900                                                                  00159000
+015910*--- SE IL PROGRESSIVO BONIFICO E' UGUALE AD 1, SI CONTROLLA  ---*00159100
+015920*--- LA CONGRUENZA FRA I VALORI DEGLI IMPORTI                 ---*00159200
+015930*----------------------------------------------------------------*00159300
+015940        IF BQVFB21-38-PROG-ACCR-BONA NUMERIC AND                  00159400
+015950           BQVFB21-38-PROG-ACCR-BON = 1                           00159500
+015960*--- IL FLAG ANTICIPO NON PUO' ESSERE DIVERSO DA ZERO SUL PRIMO   00159600
+015970*--- BONIFICO                                                     00159700
+015980           IF BQVFB21-38-FLAG-ANTIC NOT = '0'                     00159800
+015990*--- FLAG ANTICIPO ERRATO                                         00159900
+016000              MOVE 15     TO BQVFB21-38-ERR-FLAG-ANTIC            00160000
+016010              MOVE 'E'    TO BQVFB21-38-ERR-FLAG-ANTIC-A          00160100
+016020              ADD  1      TO W-CTR2                               00160200
+016030*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00160300
+016040*-- QUADRATURA                                                    00160400
+016050              MOVE 1      TO W-FLAG-NO-QUAD                       00160500
+016060           END-IF                                                 00160600
+016070*--- L'IMPORTO COMPENSATIVI DEVE ESSERE SEMPRE MAGGIORE O UGUALE  00160700
+016080*--- ALL'IMPORTO ANTICIPI                                         00160800
+016090           IF BQVFB21-38-IMP-COMPENA NUMERIC AND                  00160900
+016100              BQVFB21-38-IMP-ANTICA  NUMERIC AND                  00161000
+016110              BQVFB21-38-IMP-COMPEN < BQVFB21-38-IMP-ANTIC        00161100
+016120                             + BQVFB21-38-IMP-ANTIC-I24           00161200
+016130              IF BQVFB21-38-ERR-IMP-COMPEN-A NOT = 'E'            00161300
+016140                 MOVE 24     TO BQVFB21-38-ERR-IMP-COMPEN         00161400
+016150                 MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMPEN-A       00161500
+016160                 ADD  1      TO W-CTR2                            00161600
+016170              END-IF                                              00161700
+016180              IF BQVFB21-38-ERR-IMP-ANTIC-A NOT = 'E'             00161800
+016190                 MOVE 24     TO BQVFB21-38-ERR-IMP-ANTIC          00161900
+016200                 MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-A        00162000
+016210                 ADD  1      TO W-CTR2                            00162100
+016220              END-IF                                              00162200
+016230*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00162300
+016240*-- QUADRATURA                                                    00162400
+016250              MOVE 1      TO W-FLAG-NO-QUAD                       00162500
+016260           END-IF                                                 00162600
+016270*---                                                              00162700
+016280           IF BQVFB21-38-IMP-COMPENA NUMERIC AND                  00162800
+016290              BQVFB21-38-IMP-ANTICA  NUMERIC AND                  00162900
+016300              BQVFB21-38-IMP-COMPEN NOT < BQVFB21-38-IMP-ANTIC    00163000
+016310*--- SE L'IMPORTO BONIFICO E' UGUALE A ZERO, L'IMPORTO COMPENSATI-00163100
+016320*--- VI DEVE ESSERE UGUALE ALL'IMPORTO ANTICIPO                   00163200
+016330              IF BQVFB21-38-IMP-BONIFA NUMERIC AND                00163300
+016340                 BQVFB21-38-IMP-BONIF = ZERO                      00163400
+016350                 IF BQVFB21-38-IMP-COMPENA NUMERIC AND            00163500
+016360                    BQVFB21-38-IMP-ANTICA  NUMERIC AND            00163600
+016370                    BQVFB21-38-IMP-COMPEN  NOT =                  00163700
+016380                                      BQVFB21-38-IMP-ANTIC        00163800
+016390                                    + BQVFB21-38-IMP-ANTIC-I24    00163900
+016400                    IF BQVFB21-38-ERR-IMP-COMPEN-A NOT = 'E'      00164000
+016410                       MOVE 24     TO BQVFB21-38-ERR-IMP-COMPEN   00164100
+016420                       MOVE 'E'    TO BQVFB21-38-ERR-IMP-COMPEN-A 00164200
+016430                       ADD  1      TO W-CTR2                      00164300
+016440                    END-IF                                        00164400
+016450                    IF BQVFB21-38-ERR-IMP-ANTIC-A NOT = 'E'       00164500
+016460                       MOVE 24     TO BQVFB21-38-ERR-IMP-ANTIC    00164600
+016470                       MOVE 'E'    TO BQVFB21-38-ERR-IMP-ANTIC-A  00164700
+016480                       ADD  1      TO W-CTR2                      00164800
+016490                    END-IF                                        00164900
+016500                    IF BQVFB21-38-ERR-IMP-ANTIC-I24-A NOT = 'E'   00165000
+016510                       MOVE 24  TO BQVFB21-38-ERR-IMP-ANTIC-I24   00165100
+016520                       MOVE 'E' TO BQVFB21-38-ERR-IMP-ANTIC-I24-A 00165200
+016530                       ADD  1   TO W-CTR2                         00165300
+016540                    END-IF                                        00165400
+016550*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00165500
+016560*-- QUADRATURA                                                    00165600
+016570                    MOVE 1      TO W-FLAG-NO-QUAD                 00165700
+016580                 END-IF                                           00165800
+016590              END-IF                                              00165900
+016600           END-IF                                                 00166000
+016610*---                                                              00166100
+016620           IF (BQVFB21-38-INT-ANTIC-RESA  IS NUMERIC AND          00166200
+016630               BQVFB21-38-INT-ANTIC-RES   > ZERO)           AND   00166300
+016640              (BQVFB21-38-IMP-BONIFA      IS NUMERIC AND          00166400
+016650               BQVFB21-38-IMP-BONIF       > ZERO)                 00166500
+016660*--- IMPORTO INTERESSI RESIDUI NON CONGRUENTE CON IMPORTO BONIFICO00166600
+016670               IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'        00166700
+016680                  MOVE 15     TO BQVFB21-38-ERR-INT-ANTIC-RES     00166800
+016690                  MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A   00166900
+016700                  ADD  1      TO W-CTR2                           00167000
+016710               END-IF                                             00167100
+016720*-- SI IMPOSTA IL FLAG PER INDICARE CHE NON VA EFFETTUATA LA      00167200
+016730*-- QUADRATURA                                                    00167300
+016740               MOVE 1      TO W-FLAG-NO-QUAD                      00167400
+016750           END-IF                                                 00167500
+016760        END-IF                                                    00167600
+016770     END-IF.                                                      00167700
+016780 D2-EXIT.                                                         00167800
+016790     EXIT.                                                        00167900
+016800*---                                                              00168000
+016810*--- SI CALCOLANO GLI INTERESSI SULL'IMPORTO DEL BONIFICO DI      00168100
+016820*--- ANTICIPO                                                     00168200
+016830*---                                                              00168300
+016840 E2-010-INTERESSI.                                                00168400
+016850*---                                                              00168500
+016860*---   SI CALCOLA LA DIFFERENZA DI GIORNI FRA LA DATA BONIFICO E  00168600
+016870*---   LA DATA ANTICIPO, SOLO SE DATA ANTICIPO E' VALORIZZATA     00168700
+016880*---                                                              00168800
+016890     MOVE ZERO                       TO W-INT-ANTIC-CALC.         00168900
+016900     IF W-DATA-ANTIC = ZERO                                       00169000
+016910        GO TO E2-EXIT.                                            00169100
+016920 E2-020.                                                          00169200
+016930     MOVE W-DATA-ANTIC               TO BQVFDA1-DAT1.             00169300
+016940     MOVE BQVFB21-DATA-BONIF         TO BQVFDA1-DAT2.             00169400
+016950*---                                                              00169500
+016960     CALL 'BQVFDA' USING BQVFDA1.                                 00169600
+016970*---                                                              00169700
+016980     IF BQVFDA1-OK NOT = 0                                        00169800
+016990        DISPLAY 'E2-010-BQVFB8-044: ERRORE NELLA CALL AD BQVFDA'  00169900
+017000        DISPLAY '                   VALORE RETURN-CODE = '        00170000
+017010                                        BQVFDA1-OK                00170100
+017020        DISPLAY '                   DATA BONIFICO      = '        00170200
+017030                                        BQVFB21-DATA-BONIF        00170300
+017040        DISPLAY '                   DATA ANTICIPO      = '        00170400
+017050                                        W-DATA-ANTIC              00170500
+017060        MOVE 0001                TO ABEND-CODE                    00170600
+017070        CALL 'BQVFSR' USING ABEND-CODE                            00170700
+017080        GO TO E2-EXIT.                                            00170800
+017090*---                                                              00170900
+017100*F MODIFICA 13/03/2006                                            00171000
+017110*                                                                 00171100
+017120 E2-030.                                                          00171200
+017130*                                                                 00171300
+017140     IF BQVFB21-DATA-BONIF NOT LESS '20060101'                    00171400
+017150        PERFORM E3-010-INTERESSI-NEW THRU E3-EXIT                 00171500
+017160        GO TO E2-040.                                             00171600
+017170*                                                                 00171700
+017180*INIZIO MODIFICA 12/12/2002                                       00171800
+017190*                                                                 00171900
+017200     MOVE BQVFCO1-TASSO-ANTIC  TO  W-TASSO-INT-ANTIC.             00172000
+017210*                                                                 00172100
+017220*** MODIFICA 16/06/2003                                           00172200
+017230*                                                                 00172300
+017240*    IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-01         00172400
+017250*       MOVE BQVFCO1-TASSO-ANTIC-01 TO W-TASSO-INT-ANTIC.         00172500
+017260*                                                                 00172600
+017270     IF  BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-01        00172700
+017280     AND BQVFB21-DATA-BONIF     LESS BQVFCO1-DATA-ANTIC-02        00172800
+017290        MOVE BQVFCO1-TASSO-ANTIC-01 TO W-TASSO-INT-ANTIC.         00172900
+017300*                                                                 00173000
+017310*** MODIFICA 22/12/2003                                           00173100
+017320*                                                                 00173200
+017330**** IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-02         00173300
+017340******* MOVE BQVFCO1-TASSO-ANTIC-02 TO W-TASSO-INT-ANTIC.         00173400
+017350*                                                                 00173500
+017360     IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-02 AND     00173600
+017370        BQVFB21-DATA-BONIF     LESS BQVFCO1-DATA-ANTIC-03         00173700
+017380        MOVE BQVFCO1-TASSO-ANTIC-02 TO W-TASSO-INT-ANTIC.         00173800
+017390*                                                                 00173900
+017400* INIZIO MODIFICA 05/04/2004                                      00174000
+017410*                                                                 00174100
+017420**** IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-03         00174200
+017430******* MOVE BQVFCO1-TASSO-ANTIC-03 TO W-TASSO-INT-ANTIC.         00174300
+017440*                                                                 00174400
+017450     IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-03 AND     00174500
+017460        BQVFB21-DATA-BONIF     LESS BQVFCO1-DATA-ANTIC-04         00174600
+017470        MOVE BQVFCO1-TASSO-ANTIC-03 TO W-TASSO-INT-ANTIC.         00174700
+017480*                                                                 00174800
+017490* INIZIO MODIFICA 28/12/2004                                      00174900
+017500*                                                                 00175000
+017510**** IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-04         00175100
+017520******* MOVE BQVFCO1-TASSO-ANTIC-04 TO W-TASSO-INT-ANTIC.         00175200
+017530*                                                                 00175300
+017540     IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-04 AND     00175400
+017550        BQVFB21-DATA-BONIF     LESS BQVFCO1-DATA-ANTIC-05         00175500
+017560        MOVE BQVFCO1-TASSO-ANTIC-04 TO W-TASSO-INT-ANTIC.         00175600
+017570*                                                                 00175700
+017580* INIZIO MODIFICA 29/12/2005                                      00175800
+017590*                                                                 00175900
+017600     IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-05         00176000
+017610        MOVE BQVFCO1-TASSO-ANTIC-05 TO W-TASSO-INT-ANTIC.         00176100
+017620*                                                                 00176200
+017630*FF  IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-05 AND     00176300
+017640*FF     BQVFB21-DATA-BONIF     LESS BQVFCO1-DATA-ANTIC-06         00176400
+017650*FF     MOVE BQVFCO1-TASSO-ANTIC-05 TO W-TASSO-INT-ANTIC.         00176500
+017660*                                                                 00176600
+017670*FF  IF BQVFB21-DATA-BONIF NOT LESS BQVFCO1-DATA-ANTIC-06         00176700
+017680*FF     MOVE BQVFCO1-TASSO-ANTIC-06 TO W-TASSO-INT-ANTIC.         00176800
+017690*                                                                 00176900
+017700* FINE MODIFICA 29/12/2005                                        00177000
+017710*                                                                 00177100
+017720* FINE MODIFICA 28/12/2004                                        00177200
+017730*                                                                 00177300
+017740* FINE MODIFICA 05/04/2004                                        00177400
+017750*                                                                 00177500
+017760*** FINE MODIFICA 22/12/2003                                      00177600
+017770*                                                                 00177700
+017780*** FINE MODIFICA 16/06/2003                                      00177800
+017790*                                                                 00177900
+017800 E2-040.                                                          00178000
+017810*                                                                 00178100
+017820     IF W-SALDO-CASSA < BQVFB21-38-IMP-ANTIC                      00178200
+017830        COMPUTE W-INTERESSI-ANTIC =                               00178300
+017840                       (BQVFDA1-GIORNI-TOT *                      00178400
+017850                        W-SALDO-CASSA      *                      00178500
+017860                        W-TASSO-INT-ANTIC) / 36500                00178600
+017870     ELSE                                                         00178700
+017880        COMPUTE W-INTERESSI-ANTIC =                               00178800
+017890                       (BQVFDA1-GIORNI-TOT   *                    00178900
+017900                        BQVFB21-38-IMP-ANTIC *                    00179000
+017910                        W-TASSO-INT-ANTIC) / 36500                00179100
+017920     END-IF.                                                      00179200
+017930*FINE MODIFICA 12/12/2002                                         00179300
+017940     COMPUTE W-INTERESSI-ANTIC = W-INTERESSI-ANTIC + 0,5.         00179400
+017950     MOVE    W-INTERESSI-ANTIC TO W-INT-ANTIC-CALC.               00179500
+017960*    DISPLAY 'W-INT-ANTIC-CALC = ' W-INT-ANTIC-CALC.              00179600
+017970 E2-EXIT.                                                         00179700
+017980     EXIT.                                                        00179800
+017990*                                                                 00179900
+018000* SE IL RISULTATO2 NON E' POSITIVO, L'IMPORTO BONIFICO, L'IMPORTO 00180000
+018010* COMMISSIONI TRATTENUTE E L'IMPORTO INTERESSI PRETTENUTI DEVONO  00180100
+018020* ESSERE UGUALI A ZERO E L'IMPORTO COMMISSIONI RESIDUE E L'IMPORTO00180200
+018030* ANTICIPO RESIDUO DEVONO ESSERE UGUALI AI VALURI CALCOLATI       00180300
+018040*                                                                 00180400
+018050 F2-010-RISULT2N.                                                 00180500
+018060     IF BQVFB21-38-IMP-BONIF NOT = ZERO                           00180600
+018070* ERRORE                                                          00180700
+018080* SQUADRATURA IMPORTO BONIFICO                                    00180800
+018090        IF BQVFB21-38-ERR-IMP-BONIF-A NOT = 'E'                   00180900
+018100           MOVE 510   TO BQVFB21-38-ERR-IMP-BONIF                 00181000
+018110           MOVE 'E'   TO BQVFB21-38-ERR-IMP-BONIF-A               00181100
+018120           ADD  1     TO W-CTR2                                   00181200
+018130        END-IF                                                    00181300
+018140     END-IF.                                                      00181400
+018150*---                                                              00181500
+018160     IF BQVFB21-38-IMP-COMMIS NOT = ZERO                          00181600
+018170* ERRORE                                                          00181700
+018180* SQUADRATURA IMPORTO COMMISSIONI                                 00181800
+018190        IF BQVFB21-38-ERR-IMP-COMMIS-A NOT = 'E'                  00181900
+018200           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS                00182000
+018210           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMMIS-A              00182100
+018220           ADD  1     TO W-CTR2                                   00182200
+018230        END-IF                                                    00182300
+018240     END-IF.                                                      00182400
+018250*---                                                              00182500
+018260     MOVE W-COMM-I-R TO W-COMR.                                   00182600
+018270     IF BQVFB21-38-IMP-COMMIS-RES NOT = W-COMM-I-R                00182700
+018280* ERRORE                                                          00182800
+018290* SQUADRATURA IMPORTO COMMISSIONI RESIDUE                         00182900
+018300        IF BQVFB21-38-ERR-IMP-COMM-RES-A NOT = 'E'                00183000
+018310           MOVE 510   TO BQVFB21-38-ERR-IMP-COMMIS-RES            00183100
+018320           MOVE 'E'   TO BQVFB21-38-ERR-IMP-COMM-RES-A            00183200
+018330           ADD  1     TO W-CTR2                                   00183300
+018340        END-IF                                                    00183400
+018350     END-IF.                                                      00183500
+018360*---                                                              00183600
+018370     IF BQVFB21-38-IMP-INT-ANTIC NOT = ZERO                       00183700
+018380* ERRORE                                                          00183800
+018390* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00183900
+018400        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A NOT = 'E'               00184000
+018410           MOVE 510    TO BQVFB21-38-ERR-IMP-INT-ANTIC            00184100
+018420           MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A          00184200
+018430           ADD  1      TO W-CTR2                                  00184300
+018440        END-IF                                                    00184400
+018450     END-IF.                                                      00184500
+018460*---                                                              00184600
+018470*F MODIFICA 31/03/2004                                            00184700
+018480     IF BQVFB21-38-INT-ANTIC-RES     < W-INT-ANTIC-CALC           00184800
+018490        MOVE BQVFB21-38-INT-ANTIC-RES TO W-INT-ANTIC-CALC.        00184900
+018500*F FINE MODIFICA 31/03/2004                                       00185000
+018510*---                                                              00185100
+018520     IF BQVFB21-38-INT-ANTIC-RES NOT = W-INT-ANTIC-CALC           00185200
+018530* ERRORE                                                          00185300
+018540* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00185400
+018550        IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'               00185500
+018560           MOVE 510    TO BQVFB21-38-ERR-INT-ANTIC-RES            00185600
+018570           MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A          00185700
+018580           ADD  1      TO W-CTR2                                  00185800
+018590        END-IF                                                    00185900
+018600     END-IF.                                                      00186000
+018610 F2-010-RISULT2N-EX.                                              00186100
+018620     EXIT.                                                        00186200
+018630*-----------------------------------------------------------------00186300
+018640* SE LA CASSA E' MAGGIORE DI ZERO, LA SOMMA DEGLI IMPORTI BONIFICI00186400
+018650* COMPENSATIVI AVENTI FLAG ANTICIPO = 1 DEVE ESSERE UGUALE ALL'   00186500
+018660* IMPORTO ANTICIPO INDICATO SUL RECORD CON PROGRESSIVO 1          00186600
+018670*                                                                 00186700
+018680 G2-010-RISULT1P.                                                 00186800
+018690*    DISPLAY '38-IMP-ANTIC = ' BQVFB21-38-IMP-ANTIC               00186900
+018700*    DISPLAY 'ANTIC-CALC   = ' W-ANTIC-CALC.                      00187000
+018710     IF BQVFB21-38-IMP-ANTIC = W-ANTIC-CALC                       00187100
+018720        GO TO G2-050.                                             00187200
+018730 G2-040.                                                          00187300
+018740* ERRORE                                                          00187400
+018750* SQUADRATURA IMPORTO ANTICIPO                                    00187500
+018760     IF BQVFB21-38-ERR-IMP-ANTIC-A NOT = 'E'                      00187600
+018770        MOVE 510   TO BQVFB21-38-ERR-IMP-ANTIC                    00187700
+018780        MOVE 'E'   TO BQVFB21-38-ERR-IMP-ANTIC-A                  00187800
+018790        ADD  1     TO W-CTR2.                                     00187900
+018800 G2-050.                                                          00188000
+018810*                                                                 00188100
+018820* SE LA CASSA E' MAGGIORE DI ZERO E L'IMPORTO ANTICIPO E' ZERO    00188200
+018830* NON SI EFFETTUANO ALTRI CONTROLLI                               00188300
+018840*                                                                 00188400
+018850     IF BQVFB21-38-IMP-ANTIC-I24 = W-ANTIC-I24-CALC               00188500
+018860        GO TO G2-052.                                             00188600
+018870*                                                                 00188700
+018880 G2-051.                                                          00188800
+018890*                                                                 00188900
+018900     IF BQVFB21-38-ERR-IMP-ANTIC-I24-A NOT = 'E'                  00189000
+018910        MOVE 510   TO BQVFB21-38-ERR-IMP-ANTIC-I24                00189100
+018920        MOVE 'E'   TO BQVFB21-38-ERR-IMP-ANTIC-I24-A              00189200
+018930        ADD  1     TO W-CTR2.                                     00189300
+018940*                                                                 00189400
+018950 G2-052.                                                          00189500
+018960*                                                                 00189600
+018970     IF BQVFB21-38-IMP-ANTICA = ZERO                              00189700
+018980        GO TO G2-010-RISULT1P-EX.                                 00189800
+018990 G2-055.                                                          00189900
+019000*                                                                 00190000
+019010* SE LA CASSA E' MAGGIORE DI ZERO, L'IMPORTO ANTICIPO INDICATO SUL00190100
+019020* RECORD CON PROGRESSIVO 1 NON DEVE ESSERE MINORE DELL'80% DELLA  00190200
+019030* CASSA                                                           00190300
+019040*                                                                 00190400
+019050     COMPUTE W-RISULT1-80 ROUNDED = (W-SALDO-CASSA * 80) / 100    00190500
+019060     IF BQVFB21-38-IMP-ANTIC NOT < W-RISULT1-80                   00190600
+019070        GO TO G2-010-RISULT1P-EX.                                 00190700
+019080 G2-060.                                                          00190800
+019090* WARNING                                                         00190900
+019100* L'IMPORTO ANTICIPO E' MINORE DELL'80% DELLA CASSA               00191000
+019110     IF BQVFB21-38-ERR-IMP-ANTIC-A NOT = 'E' AND                  00191100
+019120        BQVFB21-38-ERR-IMP-ANTIC-A NOT = 'W'                      00191200
+019130        MOVE 24    TO BQVFB21-38-ERR-IMP-ANTIC                    00191300
+019140        MOVE 'W'   TO BQVFB21-38-ERR-IMP-ANTIC-A                  00191400
+019150        ADD  1     TO W-CTR1.                                     00191500
+019160 G2-010-RISULT1P-EX.                                              00191600
+019170     EXIT.                                                        00191700
+019180*                                                                 00191800
+019190* SE L'IMPORTO BONIFICO CALCOLATO E' MINORE DEGLI INTERESSI PER   00191900
+019200* ANTICIPO CALCOLATI, L'IMPORTO INTERESSI DEVE ESSERE UGUALE ALL' 00192000
+019210* IMPORTO BONIFICO CALCOLATO E L'IMPORTO INTERESSI RESIDUI        00192100
+019220* DEVE ESSERE UGUALE AL VALORE ASSOLUTO DELLA DIFFERENZA          00192200
+019230*                                                                 00192300
+019240 H2-010-RISULT4N.                                                 00192400
+019250     IF BQVFB21-38-IMP-BONIF NOT = ZERO                           00192500
+019260* ERRORE                                                          00192600
+019270* SQUADRATURA IMPORTO BONIFICO                                    00192700
+019280        IF BQVFB21-38-ERR-IMP-BONIF-A NOT = 'E'                   00192800
+019290           MOVE 510   TO BQVFB21-38-ERR-IMP-BONIF                 00192900
+019300           MOVE 'E'   TO BQVFB21-38-ERR-IMP-BONIF-A               00193000
+019310           ADD  1     TO W-CTR2                                   00193100
+019320        END-IF                                                    00193200
+019330     END-IF.                                                      00193300
+019340*---                                                              00193400
+019350*F MODIFICA 31/03/2004                                            00193500
+019360     IF BQVFB21-38-IMP-INT-ANTIC     < W-RISULT3                  00193600
+019370        MOVE BQVFB21-38-IMP-INT-ANTIC TO W-RISULT3.               00193700
+019380*F FINE MODIFICA 31/03/2004                                       00193800
+019390*---                                                              00193900
+019400     IF BQVFB21-38-IMP-INT-ANTIC NOT = W-RISULT3                  00194000
+019410* ERRORE                                                          00194100
+019420* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00194200
+019430        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A NOT = 'E'               00194300
+019440           MOVE 510    TO BQVFB21-38-ERR-IMP-INT-ANTIC            00194400
+019450           MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A          00194500
+019460           ADD  1      TO W-CTR2                                  00194600
+019470        END-IF                                                    00194700
+019480     END-IF.                                                      00194800
+019490*---                                                              00194900
+019500*F MODIFICA 31/03/2004                                            00195000
+019510     IF BQVFB21-38-INT-ANTIC-RES     < (W-RISULT4 * -1)           00195100
+019520        COMPUTE W-RISULT4 = (BQVFB21-38-INT-ANTIC-RES * -1).      00195200
+019530*F FINE MODIFICA 31/03/2004                                       00195300
+019540*---                                                              00195400
+019550     IF BQVFB21-38-INT-ANTIC-RES NOT = (W-RISULT4 * -1)           00195500
+019560* ERRORE                                                          00195600
+019570* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00195700
+019580        IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'               00195800
+019590           MOVE 510    TO BQVFB21-38-ERR-INT-ANTIC-RES            00195900
+019600           MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A          00196000
+019610           ADD  1      TO W-CTR2                                  00196100
+019620        END-IF                                                    00196200
+019630     END-IF.                                                      00196300
+019640*F MODIFICA 31/03/2004                                            00196400
+019650     IF (BQVFB21-38-IMP-INT-ANTIC + BQVFB21-38-INT-ANTIC-RES) >   00196500
+019660        (W-RISULT3 + (W-RISULT4 * -1))                            00196600
+019670* SQUADRATURA IMPORTO INTERESSI ANTICIPO E RESIDUI                00196700
+019680        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A NOT = 'E'               00196800
+019690           MOVE 510    TO BQVFB21-38-ERR-IMP-INT-ANTIC            00196900
+019700           MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A          00197000
+019710           ADD  1      TO W-CTR2                                  00197100
+019720        END-IF                                                    00197200
+019730        IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'               00197300
+019740           MOVE 510    TO BQVFB21-38-ERR-INT-ANTIC-RES            00197400
+019750           MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A          00197500
+019760           ADD  1      TO W-CTR2                                  00197600
+019770        END-IF                                                    00197700
+019780     END-IF.                                                      00197800
+019790*F FINE MODIFICA 31/03/2004                                       00197900
+019800 H2-010-RISULT4N-EX.                                              00198000
+019810     EXIT.                                                        00198100
+019820***************************************************************   00198200
+019830* SE LA CASSA (DOPO AVER SOTTRATTO GLI INTERESSI PER L'ANTICIPO)  00198300
+019840* E' MAGGIORE DI ZERO, GLI INTERESSI TRATTENUTI DEVONO ESSERE     00198400
+019850* UGUALI ALL'IMPORTO INTERESSI CALCOLATI E L'IMPORTO INTERESSI    00198500
+019860* RESIDUI DEVE ESSERE UGUALE A ZERO                               00198600
+019870***************************************************************   00198700
+019880 I2-010-RISULT4P.                                                 00198800
+019890*---                                                              00198900
+019900*---                                                              00199000
+019910*F MODIFICA 31/03/2004                                            00199100
+019920     IF BQVFB21-38-IMP-INT-ANTIC     < W-INT-ANTIC-CALC           00199200
+019930        MOVE BQVFB21-38-IMP-INT-ANTIC TO W-INT-ANTIC-CALC         00199300
+019940        COMPUTE W-RISULT4     = W-RISULT3  -                      00199400
+019950                                W-INT-ANTIC-CALC.                 00199500
+019960*F FINE MODIFICA 31/03/2004                                       00199600
+019970*---                                                              00199700
+019980     IF BQVFB21-38-IMP-INT-ANTIC NOT = W-INT-ANTIC-CALC           00199800
+019990* ERRORE                                                          00199900
+020000* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00200000
+020010        IF BQVFB21-38-ERR-IMP-INT-ANTIC-A NOT = 'E'               00200100
+020020           MOVE 510    TO BQVFB21-38-ERR-IMP-INT-ANTIC            00200200
+020030           MOVE 'E'    TO BQVFB21-38-ERR-IMP-INT-ANTIC-A          00200300
+020040           ADD  1      TO W-CTR2                                  00200400
+020050        END-IF                                                    00200500
+020060     END-IF.                                                      00200600
+020070*---                                                              00200700
+020080     IF BQVFB21-38-INT-ANTIC-RES NOT = ZERO                       00200800
+020090* ERRORE                                                          00200900
+020100* SQUADRATURA IMPORTO INTERESSI ANTICIPO                          00201000
+020110        IF BQVFB21-38-ERR-INT-ANTIC-RES-A NOT = 'E'               00201100
+020120           MOVE 510    TO BQVFB21-38-ERR-INT-ANTIC-RES            00201200
+020130           MOVE 'E'    TO BQVFB21-38-ERR-INT-ANTIC-RES-A          00201300
+020140           ADD  1      TO W-CTR2                                  00201400
+020150        END-IF                                                    00201500
+020160     END-IF.                                                      00201600
+020170 I2-010-RISULT4P-EX.                                              00201700
+020180     EXIT.                                                        00201800
+020190******************************************************************00201900
+020200*A - MODIFICA 28/01/2004 - CONTROLLI IMP. RECUPERATO E FLAG       00202000
+020210*        (INSERITA PERFORM L1-010-RECUP)                          00202100
+020220 L1-010-RECUP.                                                    00202200
+020230*                                                                 00202300
+020240*CONTROLLO VALORI AMMESSI FLAG (0,1,2)                            00202400
+020250*                                                                 00202500
+020260     IF BQVFB21-38-FL-IMP-RECUP      NOT EQUAL  '0'  AND          00202600
+020270        BQVFB21-38-FL-IMP-RECUP      NOT EQUAL  '1'  AND          00202700
+020280        BQVFB21-38-FL-IMP-RECUP      NOT EQUAL  '2'               00202800
+020290          MOVE  55         TO BQVFB21-38-ERR-FL-IMP-RECUP         00202900
+020300          MOVE 'E'         TO BQVFB21-38-ERR-FL-IMP-RECUP-A       00203000
+020310          ADD   1          TO W-CTR2                              00203100
+020320     END-IF.                                                      00203200
+020330*                                                                 00203300
+020340*CONTROLLO IMPORTO DA RECUPERARE (NUMERICO)                       00203400
+020350*                                                                 00203500
+020360     IF BQVFB21-38-IMP-RECUPA   NOT NUMERIC                       00203600
+020370          MOVE  33         TO BQVFB21-38-ERR-IMP-RECUP            00203700
+020380          MOVE 'E'         TO BQVFB21-38-ERR-IMP-RECUP-A          00203800
+020390          ADD   1          TO W-CTR2                              00203900
+020400     END-IF.                                                      00204000
+020410*                                                                 00204100
+020420*CONTROLLI CONGRUENZA IMPORTO E FLAG                              00204200
+020430*                                                                 00204300
+020440     IF BQVFB21-38-ERR-FL-IMP-RECUP-A     =  'E'  OR              00204400
+020450        BQVFB21-38-ERR-IMP-RECUP-A        =  'E'                  00204500
+020460          GO TO L1-RECUP-EX.                                      00204600
+020470*                                                                 00204700
+020480* SE FLAG = 0 --> DEVE ESSERE IMPORTO = 0                         00204800
+020490*                                                                 00204900
+020500     IF BQVFB21-38-FL-IMP-RECUP    = '0'   AND                    00205000
+020510        BQVFB21-38-IMP-RECUP   NOT = ZERO                         00205100
+020520          MOVE  15         TO BQVFB21-38-ERR-IMP-RECUP            00205200
+020530          MOVE 'E'         TO BQVFB21-38-ERR-IMP-RECUP-A          00205300
+020540          ADD   1          TO W-CTR2                              00205400
+020550          GO TO L1-RECUP-EX                                       00205500
+020560     END-IF.                                                      00205600
+020570*                                                                 00205700
+020580* SE FLAG <> 0 --> DEVE ESSERE IMPORTO > 0                        00205800
+020590*                                                                 00205900
+020600     IF BQVFB21-38-FL-IMP-RECUP    NOT = '0'   AND                00206000
+020610        BQVFB21-38-IMP-RECUP           = ZERO                     00206100
+020620          MOVE  12         TO BQVFB21-38-ERR-IMP-RECUP            00206200
+020630          MOVE 'E'         TO BQVFB21-38-ERR-IMP-RECUP-A          00206300
+020640          ADD   1          TO W-CTR2                              00206400
+020650          GO TO L1-RECUP-EX                                       00206500
+020660     END-IF.                                                      00206600
+020670*                                                                 00206700
+020680* CONTROLLI DI CONGRUENZA CON IMP-PIGN(IMPORTO TOTALE NON VERSATO)00206800
+020690*                                                                 00206900
+020700     IF BQVFB21-38-IMP-PIGNA NOT NUMERIC                          00207000
+020710          GO TO L1-RECUP-EX.                                      00207100
+020720*                                                                 00207200
+020730* DEVE ESSERE IMP-RECUP <= IMP-PIGN                               00207300
+020740*                                                                 00207400
+020750     IF BQVFB21-38-IMP-RECUP > BQVFB21-38-IMP-PIGN                00207500
+020760          MOVE  96         TO BQVFB21-38-ERR-IMP-RECUP            00207600
+020770          MOVE 'E'         TO BQVFB21-38-ERR-IMP-RECUP-A          00207700
+020780          ADD   1          TO W-CTR2                              00207800
+020790          GO TO L1-RECUP-EX                                       00207900
+020800     END-IF.                                                      00208000
+020810*                                                                 00208100
+020820* SE FLAG = 2 --> DEVE ESSERE IMP-RECUP < IMP-PIGN                00208200
+020830*                                                                 00208300
+020840     IF BQVFB21-38-FL-IMP-RECUP     = '2'     AND                 00208400
+020850        BQVFB21-38-IMP-RECUP = BQVFB21-38-IMP-PIGN                00208500
+020860          MOVE  96         TO BQVFB21-38-ERR-IMP-RECUP            00208600
+020870          MOVE 'E'         TO BQVFB21-38-ERR-IMP-RECUP-A          00208700
+020880          ADD   1          TO W-CTR2                              00208800
+020890          GO TO L1-RECUP-EX                                       00208900
+020900     END-IF.                                                      00209000
+020910*                                                                 00209100
+020920 L1-RECUP-EX.                                                     00209200
+020930     EXIT.                                                        00209300
+020940*---                                                              00209400
+020950 E3-010-INTERESSI-NEW.                                            00209500
+020960*---                                                              00209600
+020970     MOVE 'INT'                      TO W-IC-TIPO.                00209700
+020980*                                                                 00209800
+020990     SEARCH W-TAB-IC-EL                                           00209900
+021000        AT END MOVE ZERO TO W-FLAG-TROVATO                        00210000
+021010     WHEN W-TAB-IC-TIPO(W-PUNT-IC)                                00210100
+021020                       EQUAL W-IC-TIPO AND                        00210200
+021030          W-TAB-IC-INIZIO-VAL(W-PUNT-IC)                          00210300
+021040                       NOT GREATER BQVFB21-DATA-BONIF AND         00210400
+021050          W-TAB-IC-FINE-VAL(W-PUNT-IC)                            00210500
+021060                       NOT LESS    BQVFB21-DATA-BONIF             00210600
+021070        MOVE 1           TO W-FLAG-TROVATO.                       00210700
+021080     IF W-FLAG-TROVATO = 1                                        00210800
+021090        GO TO E3-050.                                             00210900
+021100 E3-030.                                                          00211000
+021110      DISPLAY 'E3-030-BQVFB8-045: RECORD NON TROVATO SU BQVFIC'.  00211100
+021120      DISPLAY '                   TIPO               = '          00211200
+021130                                      W-IC-TIPO.                  00211300
+021140      DISPLAY '                   DATA BONIFICO      = '          00211400
+021150                                      BQVFB21-DATA-BONIF.         00211500
+021160      MOVE 0001                TO ABEND-CODE.                     00211600
+021170      CALL 'BQVFSR' USING ABEND-CODE.                             00211700
+021180      GO TO E3-EXIT.                                              00211800
+021190*                                                                 00211900
+021200 E3-050.                                                          00212000
+021210*                                                                 00212100
+021220     MOVE  W-TAB-IC-INTER(W-PUNT-IC) TO W-TASSO-INT-ANTIC.        00212200
+021230*                                                                 00212300
+021240 E3-EXIT.                                                         00212400
+021250     EXIT.                                                        00212500
+021260*---                                                              00212600
+021270 B1-010.                                                          00212700
+021280*---                                                              00212800
+021290     MOVE BQVFB21-38-CRO-NEW TO W-CRO-TAB.                        00212900
+021300     MOVE SPACE              TO W-CRO-TAB-DECOD.                  00213000
+021310     MOVE 1 TO W-IND-CRO.                                         00213100
+021320*                                                                 00213200
+021330 B1-020.                                                          00213300
+021340*---                                                              00213400
+021350     IF W-CRO-ALFA(W-IND-CRO) NUMERIC                             00213500
+021360        MOVE W-CRO-ALFA(W-IND-CRO) TO W-CRO-ALFA-DECOD(W-IND-CRO) 00213600
+021370        GO TO B1-030.                                             00213700
+021380     IF W-CRO-ALFA(W-IND-CRO) = 'A' OR 'J'                        00213800
+021390        MOVE '1' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00213900
+021400        GO TO B1-030.                                             00214000
+021410     IF W-CRO-ALFA(W-IND-CRO) = 'B' OR 'K' OR 'S'                 00214100
+021420        MOVE '2' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00214200
+021430        GO TO B1-030.                                             00214300
+021440     IF W-CRO-ALFA(W-IND-CRO) = 'C' OR 'L' OR 'T'                 00214400
+021450        MOVE '3' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00214500
+021460        GO TO B1-030.                                             00214600
+021470     IF W-CRO-ALFA(W-IND-CRO) = 'D' OR 'M' OR 'U'                 00214700
+021480        MOVE '4' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00214800
+021490        GO TO B1-030.                                             00214900
+021500     IF W-CRO-ALFA(W-IND-CRO) = 'E' OR 'N' OR 'V'                 00215000
+021510        MOVE '5' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00215100
+021520        GO TO B1-030.                                             00215200
+021530     IF W-CRO-ALFA(W-IND-CRO) = 'F' OR 'O' OR 'W'                 00215300
+021540        MOVE '6' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00215400
+021550        GO TO B1-030.                                             00215500
+021560     IF W-CRO-ALFA(W-IND-CRO) = 'G' OR 'P' OR 'X'                 00215600
+021570        MOVE '7' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00215700
+021580        GO TO B1-030.                                             00215800
+021590     IF W-CRO-ALFA(W-IND-CRO) = 'H' OR 'Q' OR 'Y'                 00215900
+021600        MOVE '8' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00216000
+021610        GO TO B1-030.                                             00216100
+021620     IF W-CRO-ALFA(W-IND-CRO) = 'I' OR 'R' OR 'Z'                 00216200
+021630        MOVE '9' TO W-CRO-ALFA-DECOD(W-IND-CRO)                   00216300
+021640        GO TO B1-030.                                             00216400
+021650     MOVE '1' TO W-FLAG-DECOD.                                    00216500
+021660*                                                                 00216600
+021670 B1-030.                                                          00216700
+021680     IF W-FLAG-DECOD = '0' AND                                    00216800
+021690        W-IND-CRO LESS 11                                         00216900
+021700        ADD 1 TO W-IND-CRO                                        00217000
+021710        GO TO B1-020.                                             00217100
+021720*                                                                 00217200
+021730 B1-040.                                                          00217300
+021740     IF W-FLAG-DECOD = '0'                                        00217400
+021750        MOVE W-CRO-TAB-DECOD TO BQVFB21-38-CRO-NEW.               00217500
+021760*                                                                 00217600
+021770 B1-EXIT.                                                         00217700
+021780     EXIT.                                                        00217800
+021790*----------------------------------------------------------------*00217900
+

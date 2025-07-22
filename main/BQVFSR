@@ -1,0 +1,57 @@
+000100*****************************************************************
+000200 IDENTIFICATION DIVISION.
+000300 PROGRAM-ID. BQVFSR.
+000400 AUTHOR. N9219 F.P. PISANI.
+000500 DATE-WRITTEN. 09/02/98.
+000600**************************************************************
+000700*$1 TITOLO: ROUTINE DI FINE ELABORAZIONE.
+000800*
+000900*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE
+001000*    IL COMPONENTE ESEGUE LO STOP RUN DELL'ELABORAZIONE
+001100*    IMPOSTANDO NEL RETURN CODE L'ABEND CODE PASSATO IN
+001200*    LINKAGE.
+001300*    IL COMPONENTE VIENE RICHIAMATO NEI CASI DI ERRORI
+001400*    BLOCCANTI PER TERMINARE L'ELABORAZIONE.
+001500
+001600     EJECT
+001700*****************************************************************
+001800*                  ENVIRONMENT DIVISION                         *
+001900*****************************************************************
+002000 ENVIRONMENT DIVISION.
+002100 CONFIGURATION SECTION.
+002200 INPUT-OUTPUT SECTION.
+002300 FILE-CONTROL.
+002400     EJECT
+002500*****************************************************************
+002600*                     DATA DIVISION                             *
+002700*****************************************************************
+002800 DATA DIVISION.
+002900 FILE SECTION.
+003000     EJECT
+003100*****************************************************************
+003200*                WORKING-STORAGE SECTION                        *
+003300*****************************************************************
+003400 WORKING-STORAGE SECTION.
+003500     SKIP2
+003600 77  FILLER                      PIC X(017)   VALUE
+003700                                 'INIZIO W-S BQVFSR'.
+003800     SKIP1
+003900*****************************************************************
+004000*                     LINKAGE SECTION                           *
+004100*****************************************************************
+004200 LINKAGE SECTION.
+004300     SKIP1
+004400 01  PARAMETRO.
+004500     03 ABEND-CODE               PIC 9(004).
+004600     SKIP1
+004700*****************************************************************
+004800*                    PROCEDURE DIVISION                         *
+004900*****************************************************************
+005000 PROCEDURE DIVISION USING PARAMETRO.
+005100     SKIP1
+005200 ML-010.
+005300     DISPLAY 'BQVFSR ABEND-CODE = ' ABEND-CODE.
+005400     MOVE ABEND-CODE TO RETURN-CODE.
+005500 ML-990-END.
+005600     STOP RUN.
+005700     EJECT

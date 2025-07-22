@@ -1,0 +1,267 @@
+000010******************************************************************00000100
+000020*                                                                *00000200
+000030*    TRACCIATO DELL'ARCHIVIO BQVFB4 CONTENENTE L'ESITO DEI       *00000300
+000040*    CONTROLLI EFFETTUATI SUI FLUSSI BANCHE PRESENTI IN          *00000400
+000050*    UNA TRASMISSIONE FISICA.                                    *00000500
+000060*    ---------------LUNGHEZZA---256--BYTES-----------------      *00000600
+000070******************************************************************00000700
+000080     SKIP2                                                        00000800
+000090* 1. L'ARCHIVIO NEL SISTEMA                                       00000900
+000100     SKIP2                                                        00001000
+000110*  L' ARCHIVIO CONTIENE I DATI IDENTIFICATIVI DI CIASCUN FLUSSO   00001100
+000120*  (TRASMISSIONE LOGICA) CONTENUTO IN UN ARCHIVIO CONTROLLATO.    00001200
+000130*  DI CIASCUN FLUSSO E' RIPORTATO L'ESITO DEL CONTROLLO, OVVERO   00001300
+000140*  SE LA TRASMISSIONE E' STATA ACCETTATA ED IN TAL CASO, SE SONO  00001400
+000150*  STATI RISCONTRATI ERRORI.                                      00001500
+000160*  L' ARCHIVIO E' COMPOSTO DA:                                    00001600
+000170*  -- 1 RECORD DI TESTA                                           00001700
+000180*     (CONTENENTE GLI ESTREMI IDENTIFICATIVI DELL'ARCHIVIO)       00001800
+000190*  -- N RECORD DI DETTAGLIO                                       00001900
+000200*     (CONTENENTI IL DETTAGLIO DEGLI ERRORI)                      00002000
+000210*  -- UN RECORD DI CODA                                           00002100
+000220*     (CONTENENTE I DATI RIEPILOGATIVI DELL'ARCHIVIO)             00002200
+000230*                                                                 00002300
+000240     SKIP2                                                        00002400
+000250* 2. MODALITA' DI GESTIONE DELL'ARCHIVIO                          00002500
+000260   SKIP1                                                          00002600
+000270*  2.1 CREAZIONE                                                  00002700
+000280*        EFFETTUATA DAL PROGRAMMA *BQSFBE* ESITO FLUSSI BANCHE    00002800
+000290*                                                                 00002900
+000300*                                                                 00003000
+000310 01  BQVFB41.                                                     00003100
+000320*                                                                 00003200
+000330*0-2                                                              00003300
+000340     03  BQVFB41-TIPO-REC                         PIC X(003).     00003400
+000350*        TIPO RECORD. VALE:                                       00003500
+000360*                     - 'EV0' - RECORD DI TESTA                   00003600
+000370*                     - 'EV1' - RECORD DI DETTAGLIO               00003700
+000380*                     - 'EV9' - RECORD DI CODA                    00003800
+000390*                                                                 00003900
+000400*3-255                                                            00004000
+000410     03  BQVFB41-EV0.                                             00004100
+000420*        RECORD DI TESTA 'EV0'                                    00004200
+000430*                                                                 00004300
+000440*3-20                                                             00004400
+000450         05  BQVFB41-EV0-ID-FLUSSO.                               00004500
+000460*        CHIAVE IDENTIFICATIVA DEL FLUSSO BANCHE ANALIZZATO       00004600
+000470*                                                                 00004700
+000480*3-7                                                              00004800
+000490             07  BQVFB41-EV0-COD-ABI              PIC X(005).     00004900
+000500*            CODICE ABI DELLA BANCA                               00005000
+000510*                                                                 00005100
+000520*8-15                                                             00005200
+000530             07  BQVFB41-EV0-DATA-BONIF           PIC X(008).     00005300
+000540*            DATA BONIFICO ESPRESSA IN ANNO MESE E GIORNO         00005400
+000550*                                                                 00005500
+000560*16-17                                                            00005600
+000570             07  BQVFB41-EV0-PROG-TRASM           PIC X(002).     00005700
+000580*            PROGRESSIVO TRASMISSIONE                             00005800
+000590*                                                                 00005900
+000600*18-18                                                            00006000
+000610             07  BQVFB41-EV0-TIPO-INVIO           PIC X(001).     00006100
+000620*            TIPO INVIO (O=ORDINARIO, C=CORRETTIVO,               00006200
+000630*                        A=ANNULLAMENTO)                          00006300
+000640*                                                                 00006400
+000650*19-20                                                            00006500
+000660             07  BQVFB41-EV0-PROG-INVIO           PIC X(002).     00006600
+000670*            PROGRESSIVO INVIO                                    00006700
+000680*                                                                 00006800
+000690*21-24                                                            00006900
+000700         05  BQVFB41-EV0-PROG-FLUSSO-TRASM        PIC X(004).     00007000
+000710*        PROGRESSIVO DELLA TRASMISSIONE LOGICA ALL'INTERNO        00007100
+000720*        DELLA TRASMISSIONE FISICA                                00007200
+000730*                                                                 00007300
+000740*25-32                                                            00007400
+000750         05  BQVFB41-EV0-DATA-ESITO               PIC X(008).     00007500
+000760*        DATA IN CUI E' EFFETTUATO IL CONTROLLO IN AAAAMMGG       00007600
+000770*                                                                 00007700
+000780*33-33                                                            00007800
+000790         05  BQVFB41-EV0-ESITO                    PIC X(001).     00007900
+000800*        ESITO DEL CONTROLLO; VALE:                               00008000
+000810*        - 0 PER ASSENZA DI ERRORI;                               00008100
+000820*        - 1 PER PRESENZA DI SOLI ERRORI NON BLOCCANTI;           00008200
+000830*        - 2 PER PRESENZA DI ERRORI BLOCCANTI;                    00008300
+000840*        - 3 PER PRESENZA DI ERRORI CHE DETERMINANO               00008400
+000850*            IL RIFIUTO DELLA TRASMISSIONE;                       00008500
+000860*        - 4 PER PRESENZA DI ERRORI BLOCCANTI TRA CUI SUADRATURE. 00008600
+000870*34-35                                                            00008700
+000880         05  BQVFB41-EV0-FLAG-TIPO-ERR            PIC X(002).     00008800
+000890*        SE BQVFB41-EV0-ESITO=3, INDICA IL MOTIVO PER CUI E'      00008900
+000900*        STATA RIFIUTATA L' INTERA TRASMISSIONE LOGICA:           00009000
+000910*        01- MANCA RECORD DI INIZIO TRASMISSIONE                  00009100
+000920*        02- BANCA ORDINANTE ERRATA                               00009200
+000930*        03- DATA DI BONIFICO ERRATA                              00009300
+000940*        04- PROGRESSIVO TRASMISSIONE ERRATO                      00009400
+000950*        05- TIPO INVIO ERRATO                                    00009500
+000960*        06- PROGRESSIVO INVIO ERRATO                             00009600
+000970*        07- RELEASE ERRATA                                       00009700
+000980*36-45                                                            00009800
+000990         05  BQVFB41-EV0-TOT-REC-ERRATI           PIC 9(010).     00009900
+001000*        NUMERO TOTALE DI RECORDS ERRATI                          00010000
+001010*                                                                 00010100
+001020*46-55                                                            00010200
+001030         05  BQVFB41-EV0-TOT-REC-ERR-BLOC         PIC 9(010).     00010300
+001040*        NUMERO TOTALE DI RECORDS CON ERRORI BLOCCANTI            00010400
+001050*                                                                 00010500
+001060*56-65                                                            00010600
+001070         05  BQVFB41-EV0-NUM-ERR-TOT              PIC 9(010).     00010700
+001080*        NUMERO DI ERRORI SEGNALATI                               00010800
+001090*                                                                 00010900
+001100*66-75                                                            00011000
+001110         05  BQVFB41-EV0-NUM-ERR-BLOC             PIC 9(010).     00011100
+001120*        NUMERO DI ERRORI BLOCCANTI                               00011200
+001130*                                                                 00011300
+001140*76-85                                                            00011400
+001150         05  BQVFB41-EV0-REC-FISCO                PIC 9(010).     00011500
+001160*        NUMERO TOTALE DI RECORDS FISCO (V01)                     00011600
+001170*                                                                 00011700
+001180*86-95                                                            00011800
+001190         05  BQVFB41-EV0-REC-INPS                 PIC 9(010).     00011900
+001200*        NUMERO TOTALE DI RECORDS INPS (V02)                      00012000
+001210*                                                                 00012100
+001220*96-105                                                           00012200
+001230         05  BQVFB41-EV0-REC-REG                  PIC 9(010).     00012300
+001240*        NUMERO TOTALE DI RECORDS REGIONE (V03)                   00012400
+001250*                                                                 00012500
+001260*106-115                                                          00012600
+001270         05  BQVFB41-EV0-REC-ENTI                 PIC 9(010).     00012700
+001280*        NUMERO TOTALE DI RECORDS ENTI LOCALI (V04)               00012800
+001290*                                                                 00012900
+001300*116-125                                                          00013000
+001310         05  BQVFB41-EV0-REC-INAIL                PIC 9(010).     00013100
+001320*        NUMERO TOTALE DI RECORDS INAIL (V05)                     00013200
+001330*                                                                 00013300
+001340*126-135                                                          00013400
+001350         05  BQVFB41-EV0-REC-ALTRI                PIC 9(010).     00013500
+001360*        NUMERO TOTALE DI RECORDS ALTRI ENTI                      00013600
+001370*        DELLA DELEGA (V06)                                       00013700
+001380*                                                                 00013800
+001381*136-145                                                          00013900
+001382         05  BQVFB41-EV0-REC-ACCISE               PIC 9(010).     00014000
+001383*        NUMERO TOTALE DI RECORDS ACCISE                          00014100
+001384*        DELLA DELEGA (V07)                                       00014200
+001385*                                                                 00014300
+001386*146-155                                                          00014310
+001387         05  BQVFB41-EV0-REC-IVA-AUTO             PIC 9(010).     00014320
+001388*        NUMERO TOTALE DI RECORDS IVA IMMATR. AUTO                00014330
+001389*        DELLA DELEGA (V12)                                       00014340
+001390*                                                                 00014350
+001391*156-165                                                          00014400
+001392         05  BQVFB41-EV0-REC-ANAG-PF              PIC 9(010).     00014500
+001393*        NUMERO TOTALE DI RECORDS ANAGRAFICI PER P.F. (V14)       00014600
+001394*                                                                 00014700
+001395*166-175                                                          00014800
+001396         05  BQVFB41-EV0-REC-ANAG-PNF             PIC 9(010).     00014900
+001397*        NUMERO TOTALE DI RECORDS ANAGRAFICI PER P.N.F. (V15)     00015000
+001600*                                                                 00015100
+001601*176-185                                                          00015200
+001602         05  BQVFB41-EV0-REC-ATM                  PIC 9(010).     00015300
+001603*        NUMERO TOTALE DI RECORDS ATM (V20)                       00015400
+001640*                                                                 00015500
+001641*186-195                                                          00015600
+001642         05  BQVFB41-EV0-REC-RIEPIL               PIC 9(010).     00015700
+001643*        NUMERO TOTALE DI RECORDS RIEPILOGATIVI                   00015800
+001644*        DELLA DELEGA (V36)                                       00015900
+001645*                                                                 00016000
+001646*196-205                                                          00016100
+001647         05  BQVFB41-EV0-REC-ACCRED               PIC 9(010).     00016200
+001648*        NUMERO TOTALE DI RECORDS ACCREDITAMENTO (V37)            00016300
+001730*                                                                 00016400
+001731*206-215                                                          00016500
+001732         05  BQVFB41-EV0-REC-BONIF                PIC 9(010).     00016600
+001733*        NUMERO TOTALE DI RECORDS BONIFICI (V38)                  00016700
+001770*                                                                 00016800
+001771*216-225                                                          00016900
+001772         05  BQVFB41-EV0-REC-ASS                  PIC 9(010).     00017000
+001773*        NUMERO TOTALE DI RECORDS ASSEGNI NON ANDATI              00017100
+001774*        A BUON FINE (V49)                                        00017200
+001820*                                                                 00017300
+001821*226-235                                                          00017400
+001822         05  BQVFB41-EV0-NUM-REC-TOT              PIC 9(010).     00017500
+001823*        TOTALE NUMERO RECORD                                     00017600
+001860*                                                                 00017700
+001861*236-255                                                          00017800
+001862         05  FILLER                               PIC X(020).     00017900
+001863*                                                                 00018000
+001900*                                                                 00018100
+001901*                                                                 00018200
+001902*3-255                                                            00018300
+001903     03  BQVFB41-EV1 REDEFINES BQVFB41-EV0.                       00018400
+001904*        RECORD DETTAGLIO 'EV1'                                   00018500
+001905*                                                                 00018600
+001906*3-18                                                             00018700
+001907         05  BQVFB41-EV1-KEY-REC.                                 00018800
+001908*        CHIAVE DEL RECORD ERRATO                                 00018900
+001909*                                                                 00019000
+001910*3-5                                                              00019100
+001911              07  BQVFB41-EV1-TIPO-REC-ERR     PIC X(003).        00019200
+001912*             TIPO RECORD                                         00019300
+001913*                                                                 00019400
+001914*6-11                                                             00019500
+001915              07  BQVFB41-EV1-PRG-DELEGA       PIC X(006).        00019600
+001916*             DELEGA                                              00019700
+001917*                                                                 00019800
+001918*12-14                                                            00019900
+001919              07  BQVFB41-EV1-RIGA             PIC X(003).        00020000
+001920*             RIGA                                                00020100
+001921*                                                                 00020200
+001922*15-16                                                            00020300
+001923              07  BQVFB41-EV1-PROV             PIC X(002).        00020400
+001924*             SIGLA PROVINCIA                                     00020500
+001925*                                                                 00020600
+001926*17-18                                                            00020700
+001927              07  BQVFB41-EV1-PROGRESSIVO      PIC X(002).        00020800
+001928*             PROGRESSIVO                                         00020900
+001929*                                                                 00021000
+001930*19-25                                                            00021100
+001931         05  BQVFB41-EV1-PRG-REC-FL            PIC 9(007).        00021200
+001932*        POSIZIONE DEL RECORD ERRATO NELL'AMBITO DEL FILE LOGICO  00021300
+001933*                                                                 00021400
+001934*26-27                                                            00021500
+001935         05  BQVFB41-EV1-PRG-REC-ERR           PIC 9(002).        00021600
+001936*        PROGRESSIVO DEGLI ERRORI PRESENTI SUL RECORD ERRATO.     00021700
+001937*        VALE 1 PER IL PRIMO RECORD RIPORTANTE I PRIMI 7 ERRORI   00021800
+001938*        DEL RECORD ERRATO; SI INCREMENTA DI 1 OGNI 7 ERRORI.     00021900
+001939*                                                                 00022000
+001940*28-216                                                           00022100
+001941         05  BQVFB41-EV1-ERRORI.                                  00022200
+001942*        DETTAGLIO ERRORI PRESENTI SUL RECORD ERRATO.             00022300
+001943                                                                  00022400
+001944             07  BQVFB41-EV1-TAB-ERR OCCURS 7.                    00022500
+002350                                                                  00022600
+002351                 09  BQVFB41-EV1-ERR-POS  PIC X(003).             00022700
+002352*                POSIZIONE                                        00022800
+002380                                                                  00022900
+002381                 09  BQVFB41-EV1-ERR-COD.                         00023000
+002382*                CODICE ERRORE                                    00023100
+002383                     11  BQVFB41-EV1-ERR-CO1 PIC X(001).          00023200
+002384                     11  BQVFB41-EV1-ERR-CO2 PIC X(001).          00023300
+002385                     11  BQVFB41-EV1-ERR-CO3 PIC X(001).          00023400
+002386                                                                  00023500
+002387                 09  BQVFB41-EV1-ERR-TIP  PIC X(001).             00023600
+002388*                TIPO ERRORE                                      00023700
+002389                                                                  00023800
+002390                 09  BQVFB41-EV1-ERR-VAL  PIC X(020).             00023900
+002391*                VALORE PRESENTE NEL CAMPO ERRATO.                00024000
+002500*                                                                 00024100
+002501*217-255                                                          00024200
+002502         05  FILLER                       PIC X(039).             00024300
+002503*                                                                 00024400
+002504*                                                                 00024500
+002550*                                                                 00024600
+002551*3-255                                                            00024700
+002552     03  BQVFB41-EV9 REDEFINES BQVFB41-EV1.                       00024800
+002553*        RECORD DI CODA 'EV9'                                     00024900
+002590*                                                                 00025000
+002591*3-20                                                             00025100
+002592         05  BQVFB41-EV9-ID-FLUSSO        PIC X(018).             00025200
+002593*        CHIAVE IDENTIFICATIVA DEL FLUSSO BANCHE ANALIZZATO       00025300
+002594*        CORRISPONDE A BQVFB41-EV0-ID-FLUSSO.                     00025400
+002595*                                                                 00025500
+002596*21-27                                                            00025600
+002597         05  BQVFB41-EV9-TOT-REC          PIC 9(007).             00025700
+002598*        TOTALE RECORD COMPONENTI IL FILE LOGICO                  00025800
+002599*                                                                 00025900
+002600*28-255                                                           00026000
+002601         05  FILLER                       PIC X(228).             00026100
+

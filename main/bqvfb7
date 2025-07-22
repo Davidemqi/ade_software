@@ -1,0 +1,535 @@
+000010 IDENTIFICATION DIVISION.                                         00000100
+000020 PROGRAM-ID.     BQVFB7.                                          00000200
+000030 AUTHOR. N9143 - R. D'ELIA.                                       00000300
+000040 DATE-WRITTEN.  05/04/2000.                                       00000400
+000050*************************************************************     00000500
+000060*$1 TITOLO - CONTROLLI FORMALI E QUADRATURA - RECORD V37          00000600
+000070*************************************************************     00000700
+000080*$1 FUNZIONI SVOLTE E LOGICA DI ELABORAZIONE                      00000800
+000090*   IL COMPONENTE RICEVE IN INPUT I DATI RELATIVI AL RECORD       00000900
+000100*   DI TIPO V37 E UNA TABELLA CONTENENTE I PAGAMENTI ED I         00001000
+000110*   RIMBORSI RELATIVI AI RECORD 01, 02, 03, 04, 05 E 06           00001100
+000120*   PER PROVINCIA.                                                00001200
+000130*   SVOLGE DEI CONTROLLI FORMALI E DI QUADRATURA SUI CAMPI;       00001300
+000140*   IN CASO DI INCORRETTEZZE PROVVEDE AD IMPOSTARE (NELLO         00001400
+000150*   STESSO MODULO) DEI CODICI DI ERRORE ED INCREMENTA I           00001500
+000160*   CONTATORI RELATIVI AL TIPO DI ERRORE (BLOCCANTE)              00001600
+000170*                                                                 00001700
+000180* 2. ARCHIVI GESTITI                                              00001800
+000190*      NESSUNO                                                    00001900
+000200*                                                                 00002000
+000210* 3. SUBROUTINES RICHIAMATE                                       00002100
+000220*      NOME       DESCRIZIONE                                     00002200
+000230*    BQVFSR    ROUTINE DI ABEND                                   00002300
+000240*                                                                 00002400
+000250 ENVIRONMENT DIVISION.                                            00002500
+000260 CONFIGURATION SECTION.                                           00002600
+000270 SPECIAL-NAMES.                                                   00002700
+000280     DECIMAL-POINT IS COMMA.                                      00002800
+000290 INPUT-OUTPUT SECTION.                                            00002900
+000300 FILE-CONTROL.                                                    00003000
+000310 DATA DIVISION.                                                   00003100
+000320 FILE SECTION.                                                    00003200
+000330***************  WORKING STORAGE SECTION  **********************  00003300
+000340 WORKING-STORAGE SECTION.                                         00003400
+000350 77  W-S                           PIC X(8) VALUE 'BQVX95WS'.     00003500
+000360*--- CAMPI PER SALDI                                              00003600
+000370 77  W-SALDO-TOT                   PIC S9(15).                    00003700
+000380 77  W-SALDO-FIS                   PIC  9(15).                    00003800
+000390 77  W-SALDO-NO-FIS                PIC  9(15).                    00003900
+000400*--- CAMPO D'APPOGGIO PER CONTROLLO CODICE PROVINCIA              00004000
+000410 77  W-COD-PROV                    PIC  X(002).                   00004100
+000420*---        CAMPO D'APPOGGIO PER IMPOSTAZIONE CODICI ABEND        00004200
+000430 77  W-ABEND-CODE                  PIC 9(004).                    00004300
+000440*                                                                 00004400
+000450 77  W-COMM-DELE                   PIC 9(006)V99.                 00004500
+000460*---               TRACCIATO RECORD "ESITI" - BANCA               00004600
+000470     COPY 'FBQVFB21'.                                             00004700
+000480*                                                                 00004800
+000490     COPY 'FBQVFCO1'.                                             00004900
+000500*---   CAMPI PER CONTROLLO CONGRUENZA IMPORTI CON DIVISA          00005000
+000510*                                                                 00005100
+000520 01  W-IMP-COMPENSI                 PIC 9(015).                   00005200
+000530 01  W-IMP-COMPENSI1 REDEFINES W-IMP-COMPENSI.                    00005300
+000540     03  W-IMP-COMPENSI1-12         PIC X(012).                   00005400
+000550     03  W-IMP-COMPENSI1-03         PIC X(003).                   00005500
+000560 01  W-IMP-COMPENSI2 REDEFINES W-IMP-COMPENSI.                    00005600
+000570     03  W-IMP-COMPENSI1-13         PIC X(013).                   00005700
+000580     03  W-IMP-COMPENSI1-02         PIC X(002).                   00005800
+000590********************** LINKAGE SECTION ***************************00005900
+000600*                                                                 00006000
+000610 LINKAGE SECTION.                                                 00006100
+000620*------------------------------------------------------*          00006200
+000630*---               AREA DI COLLOQUIO               ----*          00006300
+000640*------------------------------------------------------*          00006400
+000650*--- PROVENIENZA DATI: B=BANCHE C=CONCESSIONARI                   00006500
+000660 01  W-PROVEN                      PIC X(001).                    00006600
+000670*--- TIPO DI CHIAMATA PER IL PROGRAMMA:                           00006700
+000680*--- "Q" = SI EFFETTUANO I CONTROLLI DI QUADRATURA                00006800
+000690*--- " " = SI EFFETTUANO I CONTROLLI FORMALI                      00006900
+000700 01  W-TIPO-CHIAMATA               PIC X(001).                    00007000
+000710*---     AREA DATI RELATIVA AL FILE ESITO                         00007100
+000720 01  W-DATI                        PIC X(512).                    00007200
+000730*---        TABELLA SALDI PER PROVINCIA                           00007300
+000740 01  W-TAB-SALDI.                                                 00007400
+000741     03  W-EL-SALDI OCCURS 130 INDEXED BY P.                      00007500
+000760         05  W-PROV                PIC  X(002).                   00007600
+000770         05  W-SALDO-FISCO         PIC S9(015).                   00007700
+000780         05  FILLER                PIC  X(001).                   00007800
+000790         05  W-SALDO-INPS          PIC S9(015).                   00007900
+000800         05  W-SALDO-REG           PIC S9(015).                   00008000
+000810         05  W-SALDO-ENTI          PIC S9(015).                   00008100
+000820         05  W-SALDO-INAIL         PIC S9(015).                   00008200
+000830         05  W-SALDO-ALTRI         PIC S9(015).                   00008300
+000840         05  W-SALDO-ACCISE        PIC S9(015).                   00008400
+000850         05  W-FLAG-CONTR          PIC  9(001).                   00008500
+000860         05  W-NUM-DELEGHE-F       PIC  9(006).                   00008600
+000870         05  W-NUM-DELEGHE-IR      PIC  9(006).                   00008700
+000880*---                                                              00008800
+000890*---   DIVISA                                                     00008900
+000900 01 W-DIVISA                      PIC X(003).                     00009000
+000910*---   CONTATORI ERRORI  NON BLOCCANTI E BLOCCANTI                00009100
+000920 01  W-CTR1                        PIC 9(009).                    00009200
+000930 01  W-CTR2                        PIC 9(009).                    00009300
+000940*---   CONDIZIONE DI ERRORE SUI TIPI RECORD V37                   00009400
+000950 01  W-FLAG-NO-QUAD                PIC 9(001).                    00009500
+000960*---   CONTATORE DELEGHE PER PROVINCIA DA RESTITUIRE AL MAIN      00009600
+000970 01  W-NUM-SQUADR                  PIC 9(003).                    00009700
+000980 01  W-DATI-SQUADR.                                               00009800
+000990     03  W-SQ-PROV                 PIC X(002).                    00009900
+001000     03  W-SQ-SALDO-TOT-DICH       PIC 9(015)  COMP-3.            00010000
+001010     03  W-SQ-SALDO-TOT-CALC       PIC 9(015)  COMP-3.            00010100
+001020     03  W-SQ-SALDO-ER-DICH        PIC S9(015) COMP-3.            00010200
+001030     03  W-SQ-SALDO-ER-CALC        PIC S9(015) COMP-3.            00010300
+001040     03  W-SQ-SALDO-NO-ER-DICH     PIC S9(015) COMP-3.            00010400
+001050     03  W-SQ-SALDO-NO-ER-CALC     PIC S9(015) COMP-3.            00010500
+001060     03  W-SQ-DELEGHE-ER-DICH      PIC  9(006) COMP-3.            00010600
+001070     03  W-SQ-DELEGHE-ER-CALC      PIC  9(006) COMP-3.            00010700
+001080     03  W-SQ-DELEGHE-NO-ER-DICH   PIC  9(006) COMP-3.            00010800
+001090     03  W-SQ-DELEGHE-NO-ER-CALC   PIC  9(006) COMP-3.            00010900
+001100*                                                                 00011000
+001110*---   ACQUISIZIONE DEI PARAMETRI DI COLLOQUIO                    00011100
+001120*---                                                              00011200
+001130 PROCEDURE DIVISION   USING W-PROVEN                              00011300
+001140                            W-TIPO-CHIAMATA                       00011400
+001150                            W-DATI                                00011500
+001160                            W-TAB-SALDI                           00011600
+001170                            W-DIVISA                              00011700
+001180                            W-CTR1                                00011800
+001190                            W-CTR2                                00011900
+001200                            W-FLAG-NO-QUAD                        00012000
+001210                            W-NUM-SQUADR                          00012100
+001220                            W-DATI-SQUADR.                        00012200
+001230 ML-010-INIZIO.                                                   00012300
+001240*---   INIZIALIZZAZIONE DELLE AREE DI LAVORO                      00012400
+001250*---                                                              00012500
+001260     PERFORM RZ-010-INIZIA THRU RZ-010-INIZIA-EX.                 00012600
+001270*---                                                              00012700
+001280*---   IMPOSTAZIONE AREA DI LAVORO PER CONTROLLI                  00012800
+001290*---                                                              00012900
+001300     MOVE W-DATI                    TO BQVFB21.                   00013000
+001310 ML-020.                                                          00013100
+001320*---   SI CONTROLLA IL TIPO CHIAMATA: CONTROLLI FORMALI O         00013200
+001330*---   QUADRATURA                                                 00013300
+001340*                                                                 00013400
+001350     IF W-TIPO-CHIAMATA = 'Q'                                     00013500
+001360        GO TO ML-060.                                             00013600
+001370 ML-025.                                                          00013700
+001380*---   SI PUNTA ALL'ELEMENTO DI TABELLA-SALDO CON COD. PROVINCIA  00013800
+001390*---   DI INPUT                                                   00013900
+001400     MOVE BQVFB21-37-SIGLA-PROV TO W-COD-PROV.                    00014000
+001410     SET P TO 1.                                                  00014100
+001420     SEARCH W-EL-SALDI                                            00014200
+001430     AT END GO TO ML-035                                          00014300
+001440     WHEN   W-PROV(P) = W-COD-PROV                                00014400
+001450            GO TO ML-030.                                         00014500
+001460 ML-030.                                                          00014600
+001470*---   SEARCH OK                                                  00014700
+001480     MOVE 1                  TO W-FLAG-CONTR(P).                  00014800
+001490     GO TO ML-050.                                                00014900
+001500 ML-035.                                                          00015000
+001510*---   CONDIZIONE NON SODDISFATTA SU SEARCH:                      00015100
+001520*---   SE IL FLAG-NO-QUAD NON E' IMPOSTATO SI TRATTA DI ANOMALIA  00015200
+001530     IF W-FLAG-NO-QUAD = 1                                        00015300
+001540        GO TO ML-050.                                             00015400
+001550 ML-040.                                                          00015500
+001560     DISPLAY 'ML-040-BQVX95-001: SIGLA PROVINCIA NON PRESENTE  '. 00015600
+001570     DISPLAY '                   SU TABELLA SALDI:'.              00015700
+001580     DISPLAY '                   CODICE PROVINCIA =' W-COD-PROV.  00015800
+001590     MOVE 0001                   TO W-ABEND-CODE.                 00015900
+001600*---   SI RICHIAMA LA ROUTINE DI ABEND                            00016000
+001610*---                                                              00016100
+001620     CALL 'BQVFSR' USING W-ABEND-CODE.                            00016200
+001630 ML-050.                                                          00016300
+001640*---   SI RICHIAMA LA ROUTINE PER CONTROLLI FORMALI               00016400
+001650*---                                                              00016500
+001660     PERFORM C1-010-FORM THRU C1-010-FORM-EX.                     00016600
+001670     GO TO ML-070.                                                00016700
+001680 ML-060.                                                          00016800
+001690*************************************************************     00016900
+001700*            ROUTINE PER CONTROLLI DI QUADRATURA            *     00017000
+001710*************************************************************     00017100
+001720     PERFORM A1-010-CTL-QUAD THRU A1-010-CTL-QUAD-EX.             00017200
+001730 ML-070.                                                          00017300
+001740     MOVE BQVFB21             TO W-DATI.                          00017400
+001750 ML-990.                                                          00017500
+001760     GOBACK.                                                      00017600
+001770*                                                                 00017700
+001780 A1-010-CTL-QUAD.                                                 00017800
+001790* CI SI POSIZIONE SULL'ELEMENTO DI TABELLA RELATIVO ALLA PRO-     00017900
+001800* VINCIA DA CONTROLLARE                                           00018000
+001810     MOVE BQVFB21-37-SIGLA-PROV TO W-COD-PROV.                    00018100
+001820     SET P TO 1.                                                  00018200
+001830     SEARCH W-EL-SALDI                                            00018300
+001840     AT END GO TO A1-190                                          00018400
+001850     WHEN   W-PROV(P) = W-COD-PROV                                00018500
+001860            GO TO A1-020.                                         00018600
+001870 A1-020.                                                          00018700
+001880*---                                                              00018800
+001890*---   IMPOSTAZIONE IMPORTO COMMISSIONE PER DELEGA                00018900
+001900*---                                                              00019000
+001910     MOVE BQVFCO1-COM-DEL-LIRE     TO W-COMM-DELE.                00019100
+001920     IF W-DIVISA EQUAL 'EUR'                                      00019200
+001930       MOVE BQVFCO1-COM-DEL-EUR    TO W-COMM-DELE.                00019300
+001940*---                                                              00019400
+001950*--- SE IL FLUSSO E' RELATIVO ALL'ENTE POSTE, SI IMPOSTA LA       00019500
+001960*--- RELATIVA COMMISSIONE                                         00019600
+001970*---                                                              00019700
+001980     IF BQVFB21-COD-ABI = 7601                                    00019800
+001990       MOVE BQVFCO1-COM-DEL-LIRE-PT  TO W-COMM-DELE.              00019900
+002000     IF BQVFB21-COD-ABI = 7601 AND                                00020000
+002010        W-DIVISA EQUAL 'EUR'                                      00020100
+002020       MOVE BQVFCO1-COM-DEL-EUR-PT   TO W-COMM-DELE.              00020200
+002030     IF BQVFB21-37-ERR-NUM-DEL-F NOT EQUAL ZERO                   00020300
+002040       GO TO A1-050.                                              00020400
+002050 A1-030.                                                          00020500
+002060*---   QUADRATURA DI NUMERO DELEGHE FISCO  CON RECORD V36         00020600
+002070*                                                                 00020700
+002080     MOVE BQVFB21-37-NUM-DEL-F   TO W-SQ-DELEGHE-ER-DICH.         00020800
+002090     MOVE W-NUM-DELEGHE-F(P)     TO W-SQ-DELEGHE-ER-CALC.         00020900
+002100     IF BQVFB21-37-NUM-DEL-F EQUAL  W-NUM-DELEGHE-F (P)           00021000
+002110        GO TO A1-050.                                             00021100
+002120 A1-040.                                                          00021200
+002130*--    NUMERO DELEGHE FISCO DIVERSO DAL CALCOLATO                 00021300
+002140*-- SI IMPOSTANO I PARAMETRI RELATIVI ALLA SQUADRATURA PER SCRITTU00021400
+002150*-- BQVFBS                                                        00021500
+002160     ADD  1                      TO W-NUM-SQUADR.                 00021600
+002170     MOVE W-COD-PROV             TO W-SQ-PROV.                    00021700
+002180*                                                                 00021800
+002190     MOVE 503                    TO BQVFB21-37-ERR-NUM-DEL-F.     00021900
+002200     MOVE 'E'                    TO BQVFB21-37-ERR-NUM-DEL-F-A.   00022000
+002210     ADD  1                      TO W-CTR2.                       00022100
+002220 A1-050.                                                          00022200
+002230     IF BQVFB21-37-ERR-NUM-DEL-IR NOT EQUAL ZERO                  00022300
+002240       GO TO A1-080.                                              00022400
+002250 A1-060.                                                          00022500
+002260*---   QUADRATURA DI NUMERO DELEGHE NO FISCO  CON RECORD V36      00022600
+002270*                                                                 00022700
+002280     MOVE BQVFB21-37-NUM-DEL-IR  TO W-SQ-DELEGHE-NO-ER-DICH.      00022800
+002290     MOVE W-NUM-DELEGHE-IR(P)    TO W-SQ-DELEGHE-NO-ER-CALC.      00022900
+002300     IF BQVFB21-37-NUM-DEL-IR EQUAL  W-NUM-DELEGHE-IR (P)         00023000
+002310        GO TO A1-080.                                             00023100
+002320 A1-070.                                                          00023200
+002330*--    NUMERO DELEGHE NO FISCO DIVERSO DAL CALCOLATO              00023300
+002340*-- SI IMPOSTANO I PARAMETRI RELATIVI ALLA SQUADRATURA PER SCRITTU00023400
+002350*-- BQVFBS                                                        00023500
+002360     ADD  1                      TO W-NUM-SQUADR.                 00023600
+002370     MOVE W-COD-PROV             TO W-SQ-PROV.                    00023700
+002380*                                                                 00023800
+002390     MOVE 503                    TO BQVFB21-37-ERR-NUM-DEL-IR.    00023900
+002400     MOVE 'E'                    TO BQVFB21-37-ERR-NUM-DEL-IR-A.  00024000
+002410     ADD  1                      TO W-CTR2.                       00024100
+002420 A1-080.                                                          00024200
+002430     IF BQVFB21-37-ERR-SALDO-TOT NOT EQUAL ZERO                   00024300
+002440       GO TO A1-110.                                              00024400
+002450 A1-085.                                                          00024500
+002460     COMPUTE W-SALDO-TOT =          W-SALDO-FISCO(P) +            00024600
+002470                                    W-SALDO-INPS (P) +            00024700
+002480                                    W-SALDO-REG  (P) +            00024800
+002490                                    W-SALDO-ENTI (P) +            00024900
+002500                                    W-SALDO-INAIL(P) +            00025000
+002510                                    W-SALDO-ALTRI(P) +            00025100
+002520                                    W-SALDO-ACCISE(P).            00025200
+002530*---   IL SALDO TOTALE NON PUO' ESSERE NEGATIVO                   00025300
+002540     IF W-SALDO-TOT NOT LESS ZERO                                 00025400
+002550       GO TO A1-095.                                              00025500
+002560 A1-090.                                                          00025600
+002570*---   ERRORE SU SALDO DELEGHE                                    00025700
+002580     MOVE  42                    TO BQVFB21-37-ERR-SALDO-TOT.     00025800
+002590     MOVE 'E'                    TO BQVFB21-37-ERR-SALDO-TOT-A.   00025900
+002600     ADD  1                      TO W-CTR2.                       00026000
+002610     GO TO A1-110.                                                00026100
+002620 A1-095.                                                          00026200
+002630*---   QUADRATURA DI SALDO DELEGHE CON RECORD V01, V02... V06     00026300
+002640*                                                                 00026400
+002650     MOVE BQVFB21-37-SALDO-TOT   TO W-SQ-SALDO-TOT-DICH.          00026500
+002660     MOVE W-SALDO-TOT            TO W-SQ-SALDO-TOT-CALC.          00026600
+002670     IF BQVFB21-37-SALDO-TOT EQUAL W-SALDO-TOT                    00026700
+002680       GO TO A1-110.                                              00026800
+002690 A1-100.                                                          00026900
+002700*---   ERRORE SU SALDO DELEGHE                                    00027000
+002710*-- SI IMPOSTANO I PARAMETRI RELATIVI ALLA SQUADRATURA PER SCRITTU00027100
+002720*-- BQVFBS                                                        00027200
+002730     ADD  1                      TO W-NUM-SQUADR.                 00027300
+002740     MOVE W-COD-PROV             TO W-SQ-PROV.                    00027400
+002750*                                                                 00027500
+002760     MOVE 510                    TO BQVFB21-37-ERR-SALDO-TOT.     00027600
+002770     MOVE 'E'                    TO BQVFB21-37-ERR-SALDO-TOT-A.   00027700
+002780     ADD  1                      TO W-CTR2.                       00027800
+002790 A1-110.                                                          00027900
+002800*---         CONTROLLO SE HO RISCONTRATO ERRORI SU                00028000
+002810*---         SEGNO/SALDO NO ERARIO                                00028100
+002820     IF BQVFB21-37-ERR-SEGNO-NO-ERARIO NOT EQUAL ZERO  OR         00028200
+002830        BQVFB21-37-ERR-SALDO-NO-ERARIO NOT EQUAL ZERO             00028300
+002840       GO TO A1-150.                                              00028400
+002850 A1-120.                                                          00028500
+002860*---   CONTROLLO IL SALDO DICH. CON QUELLO V01.....V06            00028600
+002870     COMPUTE W-SALDO-NO-FIS =       W-SALDO-INPS (P) +            00028700
+002880                                    W-SALDO-REG  (P) +            00028800
+002890                                    W-SALDO-ENTI (P) +            00028900
+002900                                    W-SALDO-INAIL(P) +            00029000
+002910                                    W-SALDO-ALTRI(P) +            00029100
+002920                                    W-SALDO-ACCISE(P).            00029200
+002930     MOVE BQVFB21-37-SALDO-NO-ERARIO   TO W-SQ-SALDO-NO-ER-DICH.  00029300
+002940     MOVE W-SALDO-NO-FIS               TO W-SQ-SALDO-NO-ER-CALC.  00029400
+002950     IF BQVFB21-37-SALDO-NO-ERARIO NOT EQUAL W-SALDO-NO-FIS       00029500
+002960*-- SI IMPOSTANO I PARAMETRI RELATIVI ALLA SQUADRATURA PER SCRITTU00029600
+002970*-- BQVFBS                                                        00029700
+002980       ADD  1                      TO W-NUM-SQUADR                00029800
+002990       MOVE W-COD-PROV             TO W-SQ-PROV                   00029900
+003000*                                                                 00030000
+003010       MOVE  510              TO BQVFB21-37-ERR-SALDO-NO-ERARIO   00030100
+003020       MOVE 'E'               TO BQVFB21-37-ERR-SALDO-NO-ERAR-A   00030200
+003030       ADD  1                 TO W-CTR2                           00030300
+003040       GO TO A1-150.                                              00030400
+003050 A1-130.                                                          00030500
+003060*---   CONTROLLO CONGRUENZA TRA SALDO E SEGNO                     00030600
+003070     IF ((W-SALDO-INPS (P) +   W-SALDO-REG  (P) +                 00030700
+003080          W-SALDO-ENTI (P) +   W-SALDO-INAIL(P) +                 00030800
+003090          W-SALDO-ALTRI(P) +   W-SALDO-ACCISE(P)                  00030900
+003100                           LESS ZERO              AND             00031000
+003110         BQVFB21-37-SEGNO-NO-ERARIO EQUAL 'N')           OR       00031100
+003120         (W-SALDO-INPS (P) +   W-SALDO-REG  (P) +                 00031200
+003130          W-SALDO-ENTI (P) +   W-SALDO-INAIL(P) +                 00031300
+003140          W-SALDO-ALTRI(P) +   W-SALDO-ACCISE(P)                  00031400
+003150                           NOT LESS ZERO          AND             00031500
+003160         BQVFB21-37-SEGNO-NO-ERARIO EQUAL 'P'))                   00031600
+003170       GO TO A1-150.                                              00031700
+003180 A1-140.                                                          00031800
+003190     MOVE  42               TO BQVFB21-37-ERR-SALDO-NO-ERARIO.    00031900
+003200     MOVE 'E'               TO BQVFB21-37-ERR-SALDO-NO-ERAR-A.    00032000
+003210     ADD  1                 TO W-CTR2.                            00032100
+003220 A1-150.                                                          00032200
+003230*---         CONTROLLO SE HO RISCONTRATO ERRORI SU                00032300
+003240*---         SEGNO/SALDO ERARIO                                   00032400
+003250     IF BQVFB21-37-ERR-SEGNO-ERARIO NOT EQUAL ZERO  OR            00032500
+003260        BQVFB21-37-ERR-SALDO-ERARIO NOT EQUAL ZERO                00032600
+003270       GO TO A1-010-CTL-QUAD-EX.                                  00032700
+003280 A1-160.                                                          00032800
+003290*---   CONTROLLO IL SALDO DICH. CON QUELLO V01.....V06            00032900
+003300     MOVE W-SALDO-FISCO (P)         TO W-SALDO-FIS.               00033000
+003310     MOVE BQVFB21-37-SALDO-ERARIO  TO W-SQ-SALDO-ER-DICH.         00033100
+003320     MOVE W-SALDO-FIS              TO W-SQ-SALDO-ER-CALC.         00033200
+003330     IF BQVFB21-37-SALDO-ERARIO NOT EQUAL W-SALDO-FIS             00033300
+003340*-- SI IMPOSTANO I PARAMETRI RELATIVI ALLA SQUADRATURA PER SCRITTU00033400
+003350*-- BQVFBS                                                        00033500
+003360        ADD  1                      TO W-NUM-SQUADR               00033600
+003370        MOVE W-COD-PROV               TO W-SQ-PROV                00033700
+003380*                                                                 00033800
+003390       MOVE  510              TO BQVFB21-37-ERR-SALDO-ERARIO      00033900
+003400       MOVE 'E'               TO BQVFB21-37-ERR-SALDO-ERARIO-A    00034000
+003410       ADD  1                 TO W-CTR2                           00034100
+003420       GO TO A1-010-CTL-QUAD-EX.                                  00034200
+003430 A1-170.                                                          00034300
+003440*---   CONTROLLO CONGRUENZA TRA SALDO E SEGNO                     00034400
+003450     IF (W-SALDO-FISCO (P)      LESS ZERO AND                     00034500
+003460         BQVFB21-37-SEGNO-ERARIO EQUAL 'N')           OR          00034600
+003470         (W-SALDO-FISCO (P) NOT LESS ZERO AND                     00034700
+003480         BQVFB21-37-SEGNO-ERARIO EQUAL 'P')                       00034800
+003490       GO TO A1-010-CTL-QUAD-EX.                                  00034900
+003500 A1-180.                                                          00035000
+003510     MOVE  42               TO BQVFB21-37-ERR-SALDO-ERARIO.       00035100
+003520     MOVE 'E'               TO BQVFB21-37-ERR-SALDO-ERARIO-A.     00035200
+003530     ADD  1                 TO W-CTR2.                            00035300
+003540     GO TO A1-010-CTL-QUAD-EX.                                    00035400
+003550 A1-190.                                                          00035500
+003560* CONDIZIONE NON SODDISFATTA SU SEARCH: ABEND                     00035600
+003570     DISPLAY 'A1-190-BQVX95-001: SIGLA PROVINCIA NON PRESENTE  '. 00035700
+003580     DISPLAY '                   SU TABELLA SALDI:'.              00035800
+003590     DISPLAY '                   CODICE PROVINCIA =' W-COD-PROV.  00035900
+003600     MOVE 0001              TO W-ABEND-CODE.                      00036000
+003610*---   SI RICHIAMA LA ROUTINE DI ABEND                            00036100
+003620*---                                                              00036200
+003630     CALL 'BQVFSR' USING W-ABEND-CODE.                            00036300
+003640 A1-010-CTL-QUAD-EX.                                              00036400
+003650     EXIT.                                                        00036500
+003660*                                                                 00036600
+003670 C1-010-FORM.                                                     00036700
+003680*-----------------------------------------------------------*     00036800
+003690*            CONTROLLO NUMERO DELEGHE FISCO                 *     00036900
+003700*-----------------------------------------------------------*     00037000
+003710     IF BQVFB21-37-NUM-DEL-FA NUMERIC                             00037100
+003720       GO TO C1-030.                                              00037200
+003730 C1-020.                                                          00037300
+003740     MOVE  33                 TO BQVFB21-37-ERR-NUM-DEL-F.        00037400
+003750     MOVE 'E'                 TO BQVFB21-37-ERR-NUM-DEL-F-A.      00037500
+003760     ADD  1                   TO W-CTR2.                          00037600
+003770 C1-030.                                                          00037700
+003780*-----------------------------------------------------------*     00037800
+003790*             CONTROLLO NUMERO DELEGHE NON FISCO            *     00037900
+003800*-----------------------------------------------------------*     00038000
+003810     IF BQVFB21-37-NUM-DEL-IRA NUMERIC                            00038100
+003820       GO TO C1-050.                                              00038200
+003830 C1-040.                                                          00038300
+003840     MOVE  33                 TO BQVFB21-37-ERR-NUM-DEL-IR.       00038400
+003850     MOVE 'E'                 TO BQVFB21-37-ERR-NUM-DEL-IR-A.     00038500
+003860     ADD  1                   TO W-CTR2.                          00038600
+003870 C1-050.                                                          00038700
+003880*-----------------------------------------------------------*     00038800
+003890*             CONTROLLO SALDO TOTALE                        *     00038900
+003900*-----------------------------------------------------------*     00039000
+003910     IF BQVFB21-37-SALDO-TOTA NUMERIC                             00039100
+003920       GO TO C1-070.                                              00039200
+003930 C1-060.                                                          00039300
+003940     MOVE  33                 TO BQVFB21-37-ERR-SALDO-TOT.        00039400
+003950     MOVE 'E'                 TO BQVFB21-37-ERR-SALDO-TOT-A.      00039500
+003960     ADD  1                   TO W-CTR2.                          00039600
+003970 C1-070.                                                          00039700
+003980     IF BQVFB21-37-SALDO-TOT         EQUAL ZERO OR                00039800
+003990        BQVFB21-37-ERR-SALDO-TOT NOT EQUAL ZERO OR                00039900
+004000        (W-DIVISA NOT EQUAL 'ITL' AND                             00040000
+004010         W-DIVISA NOT EQUAL 'EUR')                                00040100
+004020       GO TO C1-100.                                              00040200
+004030 C1-080.                                                          00040300
+004040*---   SI CONTROLLA CHE IL SALDO TOTALE ABBIA LE ULTIME TRE       00040400
+004050*---   CIFRE = 0 SE DIVISA = ITL; LE ULTIME DUE = 0 SE DIVISA     00040500
+004060*---   = EUR                                                      00040600
+004070     MOVE BQVFB21-37-SALDO-TOT        TO W-IMP-COMPENSI.          00040700
+004080*INIZIO MODIFICA EURO                                             00040800
+004090*CB 30/11/2001                                                    00040900
+004100     IF (W-DIVISA EQUAL 'ITL' AND                                 00041000
+004110         W-IMP-COMPENSI1-03 EQUAL ZERO)                           00041100
+004120     OR  W-DIVISA EQUAL 'EUR'                                     00041200
+004130*    AND W-IMP-COMPENSI1-02 EQUAL ZERO)                           00041300
+004140         GO TO C1-100.                                            00041400
+004150*CB 30/11/2001                                                    00041500
+004160*FINE   MODIFICA EURO                                             00041600
+004170 C1-090.                                                          00041700
+004180*--    SALDO TOTALE ERRATO IN RELAZIONE ALLA DIVISA               00041800
+004190*                                                                 00041900
+004200     MOVE  96                    TO BQVFB21-37-ERR-SALDO-TOT.     00042000
+004210     MOVE 'E'                    TO BQVFB21-37-ERR-SALDO-TOT-A.   00042100
+004220     ADD  1                      TO W-CTR2.                       00042200
+004230 C1-100.                                                          00042300
+004240*---         SEGNO SEZIONI NON ERARIO                             00042400
+004250     IF BQVFB21-37-SEGNO-NO-ERARIO EQUAL 'N' OR                   00042500
+004260        BQVFB21-37-SEGNO-NO-ERARIO EQUAL 'P'                      00042600
+004270       GO TO C1-120.                                              00042700
+004280 C1-110.                                                          00042800
+004290     MOVE  55                 TO BQVFB21-37-ERR-SEGNO-NO-ERARIO.  00042900
+004300     MOVE 'E'                 TO BQVFB21-37-ERR-SEGNO-NO-ERAR-A.  00043000
+004310     ADD  1                   TO W-CTR2.                          00043100
+004320 C1-120.                                                          00043200
+004330*---         NUMERICITA' SALDO   NON ERARIO                       00043300
+004340     IF BQVFB21-37-SALDO-NO-ERARIOA NUMERIC                       00043400
+004350       GO TO C1-140.                                              00043500
+004360 C1-130.                                                          00043600
+004370     MOVE  33               TO BQVFB21-37-ERR-SALDO-NO-ERARIO.    00043700
+004380     MOVE 'E'               TO BQVFB21-37-ERR-SALDO-NO-ERAR-A.    00043800
+004390     ADD  1                 TO W-CTR2.                            00043900
+004400 C1-140.                                                          00044000
+004410     IF BQVFB21-37-SALDO-NO-ERARIO     EQUAL ZERO OR              00044100
+004420        BQVFB21-37-ERR-SALDO-NO-ERARIO NOT EQUAL ZERO OR          00044200
+004430        (W-DIVISA NOT EQUAL 'ITL' AND                             00044300
+004440         W-DIVISA NOT EQUAL 'EUR')                                00044400
+004450       GO TO C1-170.                                              00044500
+004460 C1-150.                                                          00044600
+004470*---    CONTROLLO VALIDITA' SALDO IN RELAZIONE ALLA DIVISA        00044700
+004480     MOVE BQVFB21-37-SALDO-NO-ERARIO  TO W-IMP-COMPENSI.          00044800
+004490*INIZIO MODIFICA EURO                                             00044900
+004500*CB 30/11/2001                                                    00045000
+004510     IF (W-DIVISA EQUAL 'ITL' AND                                 00045100
+004520         W-IMP-COMPENSI1-03 EQUAL ZERO)                           00045200
+004530     OR  W-DIVISA EQUAL 'EUR'                                     00045300
+004540*    AND W-IMP-COMPENSI1-02 EQUAL ZERO)                           00045400
+004550       GO TO C1-170.                                              00045500
+004560*CB 30/11/2001                                                    00045600
+004570*FINE   MODIFICA EURO                                             00045700
+004580 C1-160.                                                          00045800
+004590*---         ERRORE                                               00045900
+004600     MOVE  96                 TO BQVFB21-37-ERR-SALDO-NO-ERARIO.  00046000
+004610     MOVE 'E'                 TO BQVFB21-37-ERR-SALDO-NO-ERAR-A.  00046100
+004620     ADD  1                   TO W-CTR2.                          00046200
+004630 C1-170.                                                          00046300
+004640*---         SEGNO SEZIONI     ERARIO                             00046400
+004650     IF BQVFB21-37-SEGNO-ERARIO EQUAL 'N' OR                      00046500
+004660        BQVFB21-37-SEGNO-ERARIO EQUAL 'P'                         00046600
+004670       GO TO C1-190.                                              00046700
+004680 C1-180.                                                          00046800
+004690     MOVE  55                 TO BQVFB21-37-ERR-SEGNO-ERARIO.     00046900
+004700     MOVE 'E'                 TO BQVFB21-37-ERR-SEGNO-ERARIO-A.   00047000
+004710     ADD  1                   TO W-CTR2.                          00047100
+004720 C1-190.                                                          00047200
+004730*---         NUMERICITA' SALDO       ERARIO                       00047300
+004740     IF BQVFB21-37-SALDO-ERARIOA NUMERIC                          00047400
+004750       GO TO C1-210.                                              00047500
+004760 C1-200.                                                          00047600
+004770     MOVE  33               TO BQVFB21-37-ERR-SALDO-ERARIO.       00047700
+004780     MOVE 'E'               TO BQVFB21-37-ERR-SALDO-ERARIO-A.     00047800
+004790     ADD  1                 TO W-CTR2.                            00047900
+004800 C1-210.                                                          00048000
+004810     IF BQVFB21-37-SALDO-ERARIO     EQUAL ZERO OR                 00048100
+004820        BQVFB21-37-ERR-SALDO-ERARIO NOT EQUAL ZERO OR             00048200
+004830        (W-DIVISA NOT EQUAL 'ITL' AND                             00048300
+004840         W-DIVISA NOT EQUAL 'EUR')                                00048400
+004850       GO TO C1-010-FORM-EX.                                      00048500
+004860 C1-220.                                                          00048600
+004870*---    CONTROLLO VALIDITA' SALDO IN RELAZIONE ALLA DIVISA        00048700
+004880     MOVE BQVFB21-37-SALDO-ERARIO  TO W-IMP-COMPENSI.             00048800
+004890*INIZIO MODIFICA EURO                                             00048900
+004900*CB 30/11/2001                                                    00049000
+004910     IF (W-DIVISA EQUAL 'ITL' AND                                 00049100
+004920         W-IMP-COMPENSI1-03 EQUAL ZERO)                           00049200
+004930     OR  W-DIVISA EQUAL 'EUR'                                     00049300
+004940*    AND W-IMP-COMPENSI1-02 EQUAL ZERO)                           00049400
+004950       GO TO C1-010-FORM-EX.                                      00049500
+004960*CB 30/11/2001                                                    00049600
+004970*FINE   MODIFICA EURO                                             00049700
+004980 C1-230.                                                          00049800
+004990*---         ERRORE                                               00049900
+005000     MOVE  96                 TO BQVFB21-37-ERR-SALDO-ERARIO.     00050000
+005010     MOVE 'E'                 TO BQVFB21-37-ERR-SALDO-ERARIO-A.   00050100
+005020     ADD  1                   TO W-CTR2.                          00050200
+005030 C1-010-FORM-EX.                                                  00050300
+005040     EXIT.                                                        00050400
+005050*                                                                 00050500
+005060 RZ-010-INIZIA.                                                   00050600
+005070*                                                                 00050700
+005080      MOVE ZERO              TO BQVFB21-37-ERR-SEGNO-NO-ERARIO.   00050800
+005090      MOVE ZERO              TO BQVFB21-37-ERR-SEGNO-NO-ERAR-A.   00050900
+005100      MOVE ZERO              TO BQVFB21-37-ERR-SALDO-NO-ERARIO.   00051000
+005110      MOVE ZERO              TO BQVFB21-37-ERR-SALDO-NO-ERAR-A.   00051100
+005120      MOVE ZERO              TO BQVFB21-37-ERR-SEGNO-ERARIO.      00051200
+005130      MOVE ZERO              TO BQVFB21-37-ERR-SEGNO-ERARIO-A.    00051300
+005140      MOVE ZERO              TO BQVFB21-37-ERR-SALDO-ERARIO.      00051400
+005150      MOVE ZERO              TO BQVFB21-37-ERR-SALDO-ERARIO-A.    00051500
+005160      MOVE ZERO              TO BQVFB21-37-ERR-NUM-DEL-F.         00051600
+005170      MOVE ZERO              TO BQVFB21-37-ERR-NUM-DEL-F-A.       00051700
+005180      MOVE ZERO              TO BQVFB21-37-ERR-NUM-DEL-IR.        00051800
+005190      MOVE ZERO              TO BQVFB21-37-ERR-NUM-DEL-IR-A.      00051900
+005200      MOVE ZERO              TO BQVFB21-37-ERR-SALDO-TOT.         00052000
+005210      MOVE ZERO              TO BQVFB21-37-ERR-SALDO-TOT-A.       00052100
+005220*                                                                 00052200
+005230      MOVE ZEROS             TO W-SQ-SALDO-TOT-DICH.              00052300
+005240      MOVE ZEROS             TO W-SQ-SALDO-TOT-CALC.              00052400
+005250      MOVE ZEROS             TO W-SQ-SALDO-ER-DICH.               00052500
+005260      MOVE ZEROS             TO W-SQ-SALDO-ER-CALC.               00052600
+005270      MOVE ZEROS             TO W-SQ-SALDO-NO-ER-DICH.            00052700
+005280      MOVE ZEROS             TO W-SQ-SALDO-NO-ER-CALC.            00052800
+005290      MOVE ZEROS             TO W-SQ-DELEGHE-ER-DICH.             00052900
+005300      MOVE ZEROS             TO W-SQ-DELEGHE-ER-CALC.             00053000
+005310      MOVE ZEROS             TO W-SQ-DELEGHE-NO-ER-DICH.          00053100
+005320      MOVE ZEROS             TO W-SQ-DELEGHE-NO-ER-CALC.          00053200
+005330 RZ-010-INIZIA-EX.                                                00053300
+005340     EXIT.                                                        00053400
+

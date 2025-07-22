@@ -1,0 +1,19 @@
+000100***************************************************
+000200* COPY ARCHIVIO LINK TRIBUTO - COMUNE
+000300***************************************************
+000400 01  BQVFTC1.
+000500*                       CHIAVE TABELLA
+000600   05 BQVFTC1-KEY.
+000700*                       CODICE CATASTALE COMUNE
+000800     10 BQVFTC1-COD-ENTE     PIC X(4).
+000900*                       CODICE TRIBUTO
+001000     10 BQVFTC1-COD-TRIB     PIC X(4).
+001100*                       INIZIO VALIDITA'
+001200     10 BQVFTC1-INIZIO-VAL   PIC X(8).
+001300*                       FINE VALIDITA'
+001400   05 BQVFTC1-FINE-VAL     PIC X(8).
+001500*                       TIPO IMPOSTA
+001600   05 BQVFTC1-TIPO-IMP     PIC X(10).
+001700*                       DENOMINAZIONE COMUNE
+001800   05 BQVFTC1-DESCR        PIC X(60).
+

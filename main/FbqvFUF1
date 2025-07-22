@@ -1,0 +1,27 @@
+000100********************************************************
+000200* COPY CATALOGATA FBQVFUF1.COBOL2                      *
+000300*                                                      *
+000400* G.D'AMBROSIO - NETSIEL 10/03/2000                    *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*                        UFFICI                        *
+000800* LUNGHEZZA RECORD: 59 BYTES                           *
+000900*                                                      *
+001000*                                                      *
+001100* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001200* BARG.BQVX29                                          *
+001300********************************************************
+001400 01 BQVFUF1.
+001500*      CHIAVE
+001600    03 BQVFUF1-KEY.
+001700*      CODICE AMBITO
+001800       05 BQVFUF1-KEY-UFFICIO  PIC X(003).
+001900*      DATA INIZIO VALIDITA'
+002000       05 BQVFUF1-INIZIO-VAL   PIC X(008).
+002100*      SETTORE
+002200    03 BQVFUF1-SETTORE         PIC X(001).
+002300*      DENOMINAZIONE
+002400    03 BQVFUF1-DENOM           PIC X(039).
+002500*      DATA FINE VALIDITA'
+002600    03 BQVFUF1-FINE-VAL        PIC X(008).
+002700

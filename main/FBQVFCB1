@@ -1,0 +1,35 @@
+000100********************************************************
+000101* COPY CATALOGATA FBQVFCB1                             *
+000300*                                                      *
+000400* F.DE INNOCENTIIS- 08/04/2015                         *
+000500*                                                      *
+000600*              TRACCIATO RECORD ARCHIVIO               *
+000700*               CONTROLLO COMPENSAZIONI                *
+000800*                     TRIBUTI                          *
+000900*                                                      *
+000901* LUNGHEZZA RECORD: 32 BYTES                           *
+001100*                                                      *
+001200* VALORIZZATO CON I RISPETTIVI CAMPI DELLA TABELLA DB2 *
+001300* BARG.BQVADX                                          *
+001400********************************************************
+001401 01 BQVFCB1.
+001600*      CHIAVE
+001601    03 BQVFCB1-KEY.
+001800*      CODICE COMPENSAZIONE
+001801       05 BQVFCB1-COD-COMP       PIC X(003).
+002000*      CODICE TRIBUTO
+002001       05 BQVFCB1-COD-TRIB       PIC X(004).
+002200*      ESPOSIZIONE TRIBUTO
+002201       05 BQVFCB1-ESP-TRIB       PIC X(001).
+002400*      DATA INIZIO VALIDITA'
+002401       05 BQVFCB1-INIZIO-VAL     PIC X(008).
+002600*      DATA FINE VALIDITA'
+002601    03 BQVFCB1-FINE-VAL          PIC X(008).
+002800*      TIPO TRIBUTO
+002900*      ANNO RIFERIMENTO INIZIALE
+002901    03 BQVFCB1-ANNO-RIF          PIC X(004).
+003100*      INIZIO INTERVALLO
+003101    03 BQVFCB1-INIZ-INTER        PIC 9(002).
+003300*      FINE INTERVALLO
+003301    03 BQVFCB1-FINE-INTER        PIC 9(002).
+
