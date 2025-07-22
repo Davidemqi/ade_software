@@ -1,0 +1,508 @@
+                       PACCHETTO DI CONTROLLO F24
+
+                  MODIFICHE PRESENTI NELLA VERSIONE 6.75
+
+
+
+La nuova versione 6.76 del 03/07/2024 del diagnostico di controllo, viene rilasciata a seguito di un refuso relativo alla cartella archivi ( ark ) per il tributo E073 erroneamente trascritto come F073
+
+*********************************************************************************************   
+
+
+La versione 6.75 del diagnostico di controllo viene rilasciata in seguito alla modifica del manuale SIA-RI-VEUN versione 6.21 che prevede il controllo sulla presenza di crediti anche per le deleghe con
+modalità di conferimento 1 e 2.
+
+	N.B.:
+	oltre alla consueta compilazione del programma main BQVFB0, è necessario compilare
+	precedentemente il seguente programma:
+
+	- BQVFB6
+
+
+*********************************************************************************************   
+
+
+La versione 6.74 del diagnostico di controllo, viene rilasciata in seguito al perfezionamento del codice compensazione BTC relativo al tributo 1727, ridenominato in data 06/02/2024 con la risoluzione n. 10 del 06/02/2024.
+
+	N.B.:
+	oltre alla consueta compilazione del programma main BQVFB0, è necessario compilare
+	precedentemente e nell'ordine i seguenti programmi:
+
+	- BQVFB1
+	- BQVFB6
+
+*********************************************************************************************   
+
+La versione 6.73 del diagnostico di controllo, viene rilasciata in seguito al perfezionamento del controllo riguardante la modifica dell'appendice Q della versione 6.72.
+
+        BQVFB0  ( Bug dovuto al controllo del codice fiscale, a fronte del FLAG ERRORE CODICE FISCALE impostato ).
+
+*********************************************************************************************   
+La versione 6.72 del diagnostico di controllo, viene rilasciata in seguito al perfezionamento del controllo riguardante la modifica dell'appendice Q della versione 6.71.
+
+        BQVFB0  ( Modificato il main per poter consentire l'utilizzo dei controlli già in essere, eliminando il vincolo del controllo del codice fiscale,
+                  alla sola codifica EBCIDIC ).
+
+*********************************************************************************************   
+
+La versione 6.71 del diagnostico di controllo viene rilasciata in seguito alla modifica del manuale SIA-RI-VEUN versione 6.20.
+
+ 	Le modifiche riguardano i seguenti programmi:
+
+	BQVFE8  ( TABELLA U.2.1 Controlli Codice Ditta: è stato aggiunto il nuovo valore ‘K’ tra quelli ammessi e in particolare per il componente “imposta”
+                  del campo in questione );
+  BQVFB0  ( Appendice Q - Codice Fiscale - Controlli strutturali: il codice fiscale alfanumerico deve essere compilato con caratteri maiuscoli,
+            altrimenti la delega di pagamento non puo essere abbinata al contribuente. In piu, nella sezione relativa al codice catastale del codice
+            fiscale, il sottocampo2 puo assumere i valori da '000' a '999' oppure i valori L, M, N,P, Q, R, S, T, U, V. 
+            In questo caso, il primo carattere del sottocampo 2, puo assumere solamente i valori L, M, N, P.)
+
+*********************************************************************************************    
+
+La versione 6.70 del diagnostico di controllo viene rilasciata in seguito alla correzione della routine di controllo delle date.
+
+APPLICAZIONE M.F.:
+  
+ 	Le modifiche riguardano i seguenti programmi:
+
+	BQVFDA
+
+	N.B.:
+	oltre alla consueta compilazione del programma main BQVFB0, è necessario compilare
+	precedentemente e nell'ordine i seguenti programmi:
+        BQVFDA 
+        BQVFB4
+        BQVFB8
+        BQVFB9
+								
+*********************************************************************************************
+
+Nel file di controllo dei codici tributo bqvdtrib.cos a posizione 111 (il nome del campo del modulo 
+catalogato FBQVFTR1 è BQVFTR1-FLAG-AGEV) è presente l'indicazione dell'eventuale esclusione del
+calcolo del limite di compensabilità dell'importo a credito del tributo:
+0	concorre
+1	non concorre.
+
+*********************************************************************************************
+
+Si ricorda che essendo stato modificato il modulo FBQVFTR1 della "tabella tributi", dove sono stati
+aggiunti tre nuovi campi che referenziano l'indicazione del codice atto, l'indicazione del codice 
+ufficio e l'anno massimo di riferimento accettato, è necessario modificare la lunghezza dell'archivio 
+corrispondente da 113 a 119 byte.
+
+*********************************************************************************************		
+
+Dalla versione 6.45 viene eliminato l'archivio di controllo "Controllo crediti" BQVDCOMP. 
+Il controllo delle compensazioni sarà effettuato con i due nuovi archivi di controllo.
+
+	Di conseguenza varia:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+
+Tutti i riferimenti a tale archivio, riportati di seguito, non hanno più valore e vengono 
+mantenuti solo per tener conto delle variazioni del pacchetto di controllo avvenute nel tempo.
+		
+*********************************************************************************************		
+
+Dalla versione 6.38 viene eliminato l'archivio di controllo "Link comuni-tributi" BQVDLINK. 
+Il controllo della correttezza del codice indicato nel periodo di riferimento, in caso di 
+T0, T1 e T2, sarà effettuato direttamente con gli archivi di controllo corrispondenti.
+
+	Di conseguenza varia:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+
+Tutti i riferimenti a tale archivio, riportati di seguito, non hanno più valore e vengono 
+mantenuti solo per tener conto delle variazioni del pacchetto di controllo avvenute nel tempo.  
+
+*********************************************************************************************	 		
+
+A partire dalla versione 6.21 non sarà più distribuita l'applicazione P.C..
+
+*********************************************************************************************
+Dalla versione 6.13, viene introdotto un nuovo archivio dei controlli delle compensazioni. 
+L'archivio è denominato BQVDCOMP.COS e assume lunghezza del record logico pari a 26 bytes 
+ed è utilizzato nella procedura con il nome logico BQVFCP. 
+	Di conseguenza variano:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+	 
+				
+*********************************************************************************************
+Dalla versione 6.11, viene introdotto un nuovo archivio delle province per diritti camerali 
+L'archivio è denominato BQVDPRDC.COS e assume lunghezza del record logico pari a 38 bytes 
+ed è utilizzato nella procedura con il nome logico BQVFPC. 
+	Di conseguenza variano:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+	 
+				
+*********************************************************************************************
+		
+Dalla versione 6.0, vengono introdotti due nuovi archivi, uno del codice identificativo relativo 
+al secondo codice fiscale, l'altro del tipo veicolo relativo all'IVA - immatricolazione auto.
+Gli archivi sono denominati: il primo BQVDIDEN.COS (codice identificativo), assume lunghezza del 
+record logico pari a 18 bytes ed è utilizzato nella procedura con il nome logico BQVFCI, il 
+secondo BQVDVEIC.COS (tipo veicolo), assume lunghezza del record logico pari a 17 bytes ed è 
+utilizzato nella procedura con il nome logico BQVFCV.
+	Di conseguenza variano:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+	 - il contenuto dell'archivio dei displacement dei campi, referenziato 
+	   nella procedura con nome logico BQVFBT (file BQVDDISB.TXT fornito nella directory ark).
+
+
+*********************************************************************************************
+
+Dalla versione 5.12, viene introdotto un nuovo archivio relativo al calcolo degli interessi e 
+delle commissioni. 
+L'archivio è denominato BQVDINCM.COS e assume lunghezza del record logico pari a 35 bytes 
+ed è utilizzato nella procedura con il nome logico BQVFIC. 
+	Di conseguenza variano:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+
+		
+
+*********************************************************************************************
+
+Dalla versione 5.11, viene introdotto un nuovo archivio relativo alla territorialità per i 
+codici tributo da indicare nella sezione Erario del modello F24. 
+L'archivio è denominato BQVDCDT3.COS e assume lunghezza del record logico pari a 22 bytes 
+ed è utilizzato nella procedura con il nome logico BQVFT3. 
+	Di conseguenza variano:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+
+				
+*********************************************************************************************
+
+Si ricorda che, dalla versione 5.0, viene introdotto un nuovo archivio di link codici tributo
+        - codici ente.
+	L'archivio è denominato BQVDTREN.COS, assume lunghezza del record logico pari a 51 bytes
+	ed è utilizzato nella procedura con il nome logico BQVFTE.
+	Di conseguenza variano:
+	 - lo schema di procedura jcl (file BQVFBJCL fornito nella directory main)
+	 - il contenuto dell'archivio dei displacement dei campi, referenziato 
+	   nella procedura con nome logico BQVFBT (file BQVDDISB.TXT fornito nella directory ark).
+
+Si ricorda inoltre che, dalla versione 4.13, l'archivio dei codici tributo - BQVDTRCO.COS - assume
+lunghezza del record logico pari a 112 bytes.  
+
+Si ricorda infine che, in seguito all'introduzione dell'archivio "Link comuni-tributi",
+dalla versione 4.10 del sw sono state introdotte le seguenti novità:
+1) eliminato l'archivio BQVDCOMU.COS e sostituito con BQVDTRCO.COS (lrecl=94);
+2) nuovo schema della procedura (nuovo archivio referenziato con ddname BQVFTC; 
+tolta la ddname obsoleta BQVFCM), come mostrato nel file BQVFBJCL;
+3) eliminata la copy FBQVFCM1 e sostituita da FBQVFTC1.
+
+L'archivio BQVDTRCO.COS contiene la corrispondenza dei codici tributo "ICI ed altri tributi 
+comunali" con i comuni aderenti alle singole convenzioni.
+
+
+
+                              *************
+
+Analogamente alle versioni precedenti si forniscono le istruzioni di carattere 
+generale per l'aggiornamento delle tabelle BQVDTRIB (tributi) e BQVDLINK
+(link tributi-territorialita'), da utilizzare per l'eventuale inserimento 
+dei dati relativi a tributi istituiti successivamente al rilascio della 
+presente versione del SW applicativo.
+
+                              *************
+
+Consultando la TABELLA DEI CODICI TRIBUTO, ad uso del contribuente, pubblicata
+sul sito Internet www.agenziaentrate.it, è possibile desumere direttamente tutti i
+valori da impostare, tranne quello del tipo tributo (1).
+
+Inoltre il caricamento della tabella di link (2), da eseguire solo per i
+tributi che prevedono l'indicazione della territorialita' nel campo
+'periodo di riferimento', si effettua a partire dalla suddetta tabella
+dei tributi e dalle  tre tabelle 'T0 CODICI DELLE REGIONI E DELLE PROVINCE 
+AUTONOME', 'T1 CODICI DEGLI ENTI LOCALI' e ‘T2 SIGLA DELLE PROVINCE ITALIANE’ 
+(anch'esse presenti sul sito Internet www.agenziaentrate.it nonche' riportate 
+nelle specifiche tecniche).
+
+Il valore da impostare per la modalità di utilizzo del tributo 
+(solo a debito, solo a credito, entrambe le modalità)
+è allineato ai valori delle tabelle pubblicate su Internet.
+
+                              *************
+
+                        REGOLE DI UTILIZZO GENERALE
+
+                              *************
+
+
+Dalla versione 6.47 l'obbligatorietà del codice atto e/o del codice ufficio
+sarà riportata nei due nuovi campi dell'archivio di controllo dei codici
+tributo:
+
+          ***************************************************************
+      	  * CODICE ATTO *               * CODICE UFFICIO *
+      	  ***************************************************************
+          *     SI      * obbligatorio  *      SI        * obbligatorio * 
+          *     NO      * non rich.     *      NO        * non rich.    * 
+          *     FA      * facoltativo   *                               *
+          ***************************************************************
+
+                             
+(1) Tipo tributo (campo utilizzato dal diagnostico)
+    	
+          ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+          ³ VALORE TABELLA INTERNET        ³ VALORE TABELLA DIAGNOSTICO ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                            ³
+          ³ Cod. Atto      ³ Cod. Uff.     ³                            ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³ NO             ³  NO           ³            F               ³
+          ³ NO             ³  SI           ³            G               ³
+          ³ SI             ³  NO           ³            H (*)           ³
+          ³ SI             ³  SI           ³            I               ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+  (*) La regola generale per i tipi tributo si commenta tenendo conto che
+      alcuni codici tributo (relativi ad Art.36 Bis) costituiscono delle
+      eccezioni per la lettera 'H', nel senso che pur essendo richiesto
+      solo il codice atto:
+      1) per i tributi 9001, 9002, 9003, 9004, 9007, 9006, 9350, ADEM si indica tipo
+         tributo 'L';
+      2) per i tributi da Art. 36 Bis per cui si deve indicare la regione
+         (tipo periodo = 00T0AAAA), si indica tipo tributo 'J';
+      3) per i tributi - sempre da Art.36 Bis - relativi all'INPS
+         (codici 9301, 9302, 9303, 9304, 9305) si indica tipo tributo 'K';
+
+
+Si precisa che le tabelle distribuite con il SW di controllo continuano ad
+includere anche i tributi con tipo tributo 'A' (tributi di altri enti locali)
+e 'R' (tributi regionali).
+
+I valori da impostare per il tipo tributo dei tributi - istituiti fino al 2004 -
+della sezione ACCISE, MONOPOLI ED ALTRI VERSAMENTI AMMESSI sono:
+	'M' per i tributi ACCISE erariali;
+	'N' per i tributi ACCISE regionali;
+  'O' per i tributi ACCISE provinciali.
+
+Il valore da impostare per il tipo tributo dei tributi - di nuova istituzione dal 2005 -
+della sezione ACCISE, MONOPOLI ED ALTRI VERSAMENTI AMMESSI è:
+	'Q' tributi ACCISE/MONOPOLI/ALTRI.
+
+Per i tributi CAMERE DI COMMERCIO, il valore da impostare e':
+	'P' tributi CAMERE di COMMERCIO provinciali.
+
+Per i tributi ICI/IMU/IMIS/IMI/ILIA i valori da impostare sono:
+	'B' ICI/IMU - possibilità di detrazione;
+	'C' ICI/IMU;
+	'0' IMIS/IMI/ILIA - possibilità di detrazione;
+	'1' IMIS/IMI/ILIA;
+
+Per i tributi relativi agli altri pagamenti comunali, il valore da impostare e':
+	'D' altri tributi comunali.
+
+Per i tributi relativi alle Locazioni INPDAP, il valore da impostare e':
+	'E' ed è richiesto il codice atto.
+
+Per i tributi relativi all'IVA immatricolazione auto, il valore da impostare è:
+  'V', 'U', 'T' o 'W'.
+
+Per i tributi relativi ai nuovi pagamenti dell'addizionale comunale è:
+  'S'.
+Per i tributi relativi ai nuovi pagamenti della TARES è:
+  'X'.
+
+Tipo tributo record V12 (campo utilizzato dal diagnostico)
+          ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+          ³ VALORE TABELLA INTERNET        ³ VALORE TABELLA DIAGNOSTICO ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                            ³
+          ³ Cod. Atto      ³ Cod. Uff.     ³                            ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³ NO             ³  NO           ³            V               ³
+          ³ NO             ³  SI           ³            U               ³
+          ³ SI             ³  NO           ³            T               ³
+          ³ SI             ³  SI           ³            W               ³
+	        ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+Elemento identificativo record V12
+
+	        ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+          ³ VALORE TABELLA INTERNET        ³ VALORE TABELLA DIAGNOSTICO ³
+          ³                                ³                            ³
+          ³                                ³                            ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³ Obbligatorio                   ³            1               ³
+          ³ Facoltativo                    ³            2               ³
+      	  ³ Non compilare                  ³            3               ³
+      	  ³ ID-TELEMATICO                  ³            4               ³
+      	  ³ Codice catastale comune T4     ³            5               ³
+      	  ³ ID-CONCESSIONE DEMANIALE       ³            6               ³	
+	        ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+Infine per i tributi 8060, 8065, 8066, 8067, 8068, 8069, 8071, 8072, 8073, 8074, 8081,
+8090, 8091, 8092, 8093, 8094, 8101, 8102, 8103, 8104, 8105, 8106, istituiti nell'ambito 
+della legge 289 del 27/12/2002, pur non essendo richiesta l'indicazione del codice atto, 
+il valore da impostare e' la lettera 'L'.
+
+                              *************
+
+
+(2) Per i codici tributo con tipo periodo '00T0AAAA', la tabella BQVDLINK 
+    dovra' contenere un record per ciascun valore della tabella 'T0 CODICI 
+    DELLE REGIONI E DELLE PROVINCE AUTONOME', con il campo Codice Territorio
+    variabile sulla stessa tabella T0 e gli altri campi uguali ai valori 
+    corrispondenti presenti sulla tabella BQVDTRIB;
+
+    per i codici tributo con tipo periodo '00T1AAAA', la tabella BQVDLINK 
+    dovra' contenere un record per ciascun valore della tabella 'T1 CODICI 
+    DEGLI ENTI LOCALI', con il campo Codice Territorio variabile sulla
+    stessa tabella T1 e gli altri campi uguali ai valori corrispondenti 
+    presenti sulla tabella BQVDTRIB;
+
+    per i codici tributo con tipo periodo ‘00T2AAAA’, la tabella BQVDLINK
+    dovrà contenere un record per ciascun valore della tabella ‘T2 SIGLA DELLE
+    PROVINCE ITALIANE’, con il campo Codice Territorio variabile sulla
+    stessa tabella T2 e gli altri campi uguali ai valori corrispondenti 
+    presenti sulla tabella BQVTRIB.
+
+                              *************
+
+Dalla versione corrente si forniscono analoghe istruzioni relative alla 
+tabella dei formalismi INPS denominata BQVDMATR.
+
+                              *************
+
+          ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+          ³   Formalismo da manuale SIA    ³ Formalismo SW di controllo ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+          ³              1                 ³              1             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³              2                 ³              2             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³              3                 ³              3             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³              4                 ³              4             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³              5                 ³              5             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³              6                 ³            blank           ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³             5/6                ³              7             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³             6/7                ³              8             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³              8                 ³              9             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³              9                 ³              A             ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                                                              
+          ³             10                 ³              B             ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³                                                             ³ 
+          ³             5/7                ³              C             ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ 
+	        ³             11                 ³              D             ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³ 
+	        ³             12                 ³              E             ³
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³        
+  
+
+Dalla versione corrente si forniscono analoghe istruzioni relative alla 
+tabella dei formalismi INPS denominata BQVDMATR per quanto riguarda i
+periodi di inizio e fine riferimento.
+
+                              *************
+
+          ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+          ³   Formalismo inizio                       ³ Formalismo      ³
+          ³   riferimento da manuale SIA              ³ SW di controllo ³  
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+          ³  MM/AAAA                                  ³      A          ³
+	        ³  non minore di 01/1998                    ³                 ³
+	        ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      B          ³
+      	  ³  non minore di 01/1997                    ³                 ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      C          ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+      	  ³                                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³          
+          ³  MM/AAAA                                  ³      D          ³
+      	  ³  NN/AAAA (NN indica la rata da 01 a 04)   ³                 ³
+      	  ³  l’anno deve essere maggiore di 1997      ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³  
+          ³  MM/AAAA                                  ³      E          ³
+      	  ³  non minore di 10/1997                    ³                 ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      F          ³
+      	  ³  non minore di 01/1989                    ³                 ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      G          ³
+      	  ³  non minore di 01/1996                    ³                 ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      I          ³
+      	  ³  se presente, l’anno deve essere non      ³                 ³
+      	  ³  minore di 1997                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      L          ³
+      	  ³  non minore di 02/2001                    ³                 ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  valorizzato a zero                       ³      0          ³
+      	  ³                                           ³                 ³
+      	  ³                                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      J          ³
+      	  ³                                           ³                 ³
+      	  ³                                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      M          ³
+      	  ³  non minore di 04/1973                    ³                 ³
+      	  ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      N          ³
+	        ³  non minore di 01/2005                    ³                 ³
+	        ³  non maggiore della data di riscossione   ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      P          ³
+      	  ³                                           ³                 ³
+      	  ³   uguale alla data di riscossione         ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+
+
+                               *************
+
+          ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+          ³   Formalismo fine                         ³ Formalismo      ³
+          ³   riferimento da manuale SIA              ³ SW di controllo ³  
+          ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+          ³  MM/AAAA                                  ³      A          ³
+      	  ³  anno uguale inizio rifeirmento           ³                 ³
+      	  ³  mese non minore inizio riferimento       ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      B          ³
+      	  ³  non minore inizio riferimento            ³                 ³
+      	  ³                                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      D          ³
+      	  ³  non maggiore di 12/1998                  ³                 ³
+      	  ³  non minore inizio riferimento            ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  valorizzato a zero                       ³      0          ³
+      	  ³                                           ³                 ³
+      	  ³                                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³
+          ³  MM/AAAA                                  ³      E          ³
+      	  ³  se impostato                             ³                 ³
+      	  ³                                           ³                 ³
+          ³ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ³                             
+
+
+
+                              *************
+
+                        NOTA PER I CONCESSIONARI
+
+Il software diagnostico locale effettua il controllo sulle commissioni 
+trattenute secondo il sistema di calcolo delle commissioni unificato per 
+banche e concessionari. 
+Pertanto, il diagnostico potrebbe restituire segnalazioni anomale di errore
+sui record V38 - RECORD BONIFICO BANCA D'ITALIA (campi IMPORTO BONIFICO e 
+IMPORTO COMMISSIONI TRATTENUTE) per invii contenenti i dati di riscossioni
+antecedenti il 01/09/2000, data di unificazione del suddetto sistema 
+di calcolo.
+Tali segnalazioni non sono da ritenersi significative ai fini della
+rendicontazione a Struttura di Gestione.
